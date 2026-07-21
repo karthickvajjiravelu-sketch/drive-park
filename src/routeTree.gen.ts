@@ -9,38 +9,186 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedMySlotsRouteImport } from './routes/_authenticated/my-slots'
+import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
+import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
+import { Route as AuthenticatedAddSlotRouteImport } from './routes/_authenticated/add-slot'
+import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedReservationsRoute =
+  AuthenticatedReservationsRouteImport.update({
+    id: '/reservations',
+    path: '/reservations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMySlotsRoute = AuthenticatedMySlotsRouteImport.update({
+  id: '/my-slots',
+  path: '/my-slots',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBookingsRoute = AuthenticatedBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAddSlotRoute = AuthenticatedAddSlotRouteImport.update({
+  id: '/add-slot',
+  path: '/add-slot',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
+  id: '/slot/$id',
+  path: '/slot/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/add-slot': typeof AuthenticatedAddSlotRoute
+  '/bookings': typeof AuthenticatedBookingsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/map': typeof AuthenticatedMapRoute
+  '/my-slots': typeof AuthenticatedMySlotsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/reservations': typeof AuthenticatedReservationsRoute
+  '/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/add-slot': typeof AuthenticatedAddSlotRoute
+  '/bookings': typeof AuthenticatedBookingsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/map': typeof AuthenticatedMapRoute
+  '/my-slots': typeof AuthenticatedMySlotsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/reservations': typeof AuthenticatedReservationsRoute
+  '/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/add-slot': typeof AuthenticatedAddSlotRoute
+  '/_authenticated/bookings': typeof AuthenticatedBookingsRoute
+  '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/my-slots': typeof AuthenticatedMySlotsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
+  '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/add-slot'
+    | '/bookings'
+    | '/earnings'
+    | '/home'
+    | '/map'
+    | '/my-slots'
+    | '/profile'
+    | '/reservations'
+    | '/slot/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/add-slot'
+    | '/bookings'
+    | '/earnings'
+    | '/home'
+    | '/map'
+    | '/my-slots'
+    | '/profile'
+    | '/reservations'
+    | '/slot/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/add-slot'
+    | '/_authenticated/bookings'
+    | '/_authenticated/earnings'
+    | '/_authenticated/home'
+    | '/_authenticated/map'
+    | '/_authenticated/my-slots'
+    | '/_authenticated/profile'
+    | '/_authenticated/reservations'
+    | '/_authenticated/slot/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +196,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/reservations': {
+      id: '/_authenticated/reservations'
+      path: '/reservations'
+      fullPath: '/reservations'
+      preLoaderRoute: typeof AuthenticatedReservationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/my-slots': {
+      id: '/_authenticated/my-slots'
+      path: '/my-slots'
+      fullPath: '/my-slots'
+      preLoaderRoute: typeof AuthenticatedMySlotsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/map': {
+      id: '/_authenticated/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof AuthenticatedMapRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/earnings': {
+      id: '/_authenticated/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AuthenticatedEarningsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bookings': {
+      id: '/_authenticated/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AuthenticatedBookingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/add-slot': {
+      id: '/_authenticated/add-slot'
+      path: '/add-slot'
+      fullPath: '/add-slot'
+      preLoaderRoute: typeof AuthenticatedAddSlotRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/slot/$id': {
+      id: '/_authenticated/slot/$id'
+      path: '/slot/$id'
+      fullPath: '/slot/$id'
+      preLoaderRoute: typeof AuthenticatedSlotIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAddSlotRoute: typeof AuthenticatedAddSlotRoute
+  AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRoute
+  AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedMySlotsRoute: typeof AuthenticatedMySlotsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
+  AuthenticatedSlotIdRoute: typeof AuthenticatedSlotIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAddSlotRoute: AuthenticatedAddSlotRoute,
+  AuthenticatedBookingsRoute: AuthenticatedBookingsRoute,
+  AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedMySlotsRoute: AuthenticatedMySlotsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
+  AuthenticatedSlotIdRoute: AuthenticatedSlotIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
