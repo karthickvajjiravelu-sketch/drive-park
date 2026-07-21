@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 // Google Maps JS API loader (async, with libraries)
 const KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string;
 const CHANNEL = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string;
