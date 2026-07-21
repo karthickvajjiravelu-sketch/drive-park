@@ -73,31 +73,36 @@ function SlotDetail() {
   }
 
   return (
-    <div>
+    <div className="pb-28">
       <div className="relative">
-        {slot.photos[0] ? (
-          <img src={slot.photos[0]} alt="" className="w-full h-64 object-cover"/>
-        ) : <div className="w-full h-64 bg-muted"/>}
+        {slot.photos[0]
+          ? <img src={slot.photos[0]} alt="" className="w-full h-72 object-cover"/>
+          : <div className="w-full h-72 bg-muted"/>}
+        <div className="absolute inset-0 hero-scrim pointer-events-none"/>
         <button onClick={() => navigate({ to: "/map" })}
-          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/60 grid place-items-center text-white">
+          className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
           <ArrowLeft className="w-5 h-5"/>
         </button>
-        {isFull && !booked && (
-          <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black text-white text-xs font-bold">FULL</div>
-        )}
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+          {isFull
+            ? <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">FULL</span>
+            : <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN NOW</span>}
+        </div>
+        <div className="absolute bottom-4 left-5 right-5 text-white">
+          <h1 className="text-2xl font-black leading-tight drop-shadow">{slot.name}</h1>
+          <div className="flex items-center gap-3 mt-1 text-sm">
+            <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{slot.approx_area}</span>
+            {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)}</span>}
+          </div>
+        </div>
       </div>
 
-      <div className="px-5 py-4">
-        <h1 className="text-2xl font-black">{slot.name}</h1>
-        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{slot.approx_area}</span>
-          {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)}</span>}
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+      <div className="px-5 py-5">
+        <div className="grid grid-cols-2 gap-2 text-sm">
           <Info icon={<Car className="w-4 h-4"/>} label="Vehicle" value={slot.vehicle_type}/>
           <Info icon={<Ruler className="w-4 h-4"/>} label="Size" value={slot.vehicle_size_limit || "Any"}/>
         </div>
+
 
         {booked ? (
           <div className="mt-6 rounded-2xl bg-primary/10 border-2 border-primary p-5 text-center">
