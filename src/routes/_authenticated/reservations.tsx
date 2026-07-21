@@ -4,7 +4,8 @@ import { useMyReservations } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, Navigation2, MapPin } from "lucide-react";
+import { Phone, Navigation2, MapPin, ShieldCheck } from "lucide-react";
+import { POLICY_META, refundEligible } from "@/lib/amenities";
 
 export const Route = createFileRoute("/_authenticated/reservations")({
   component: MyReservations,
@@ -45,6 +46,18 @@ function MyReservations() {
     else { toast.success("Extended by 1 hour"); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
   }
 
+  async function cancel(id: string, slot: any, startTime: string) {
+    const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
+    const refund = refundEligible(policy, startTime);
+    const msg = refund
+      ? `Cancel this booking? You'll get a full refund (${POLICY_META[policy].label} policy).`
+      : `Cancel this booking? No refund per ${POLICY_META[policy].label} policy (${POLICY_META[policy].hoursBefore}h notice required).`;
+    if (!confirm(msg)) return;
+    const { error } = await supabase.from("reservations").update({ status: "cancelled" }).eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success(refund ? "Cancelled — refund issued" : "Cancelled"); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+  }
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
 
   return (
@@ -60,7 +73,7 @@ function MyReservations() {
         )}
         {upcoming.length > 0 && (
           <Section title="Upcoming">
-            {upcoming.map(r => <UpcomingCard key={r.id} r={r}/>)}
+            {upcoming.map(r => <UpcomingCard key={r.id} r={r} onCancel={cancel}/>)}
           </Section>
         )}
         {past.length > 0 && (
@@ -125,13 +138,23 @@ function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (id: string) => voi
   );
 }
 
-function UpcomingCard({ r }: { r: any }) {
+function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: any, start: string) => void }) {
   const slot = r.slot;
+  const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
+  const refund = refundEligible(policy, r.start_time);
   return (
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="font-bold">{slot?.name}</div>
       <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()}</div>
       <div className="mt-1 text-sm font-semibold">₹{r.total_price} · {r.rate_type}</div>
+      <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
+        <ShieldCheck className="w-3 h-3"/>
+        <span className="capitalize">{POLICY_META[policy].label}</span> · {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
+      </div>
+      <button onClick={() => onCancel(r.id, slot, r.start_time)}
+        className="mt-3 w-full rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold">
+        Cancel booking
+      </button>
     </div>
   );
 }

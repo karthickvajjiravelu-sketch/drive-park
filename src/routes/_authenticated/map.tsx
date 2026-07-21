@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSlots, type Slot } from "@/lib/queries";
 import { ClientOnly } from "@/components/ClientOnly";
 import { MapPin, List as ListIcon, Filter } from "lucide-react";
+import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
 
@@ -31,6 +32,7 @@ function MapPage() {
   const [vehicle, setVehicle] = useState<"all" | "car" | "bike" | "both">("all");
   const [rate, setRate] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [maxPrice, setMaxPrice] = useState(500);
+  const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -57,9 +59,10 @@ function MapPage() {
     return slots.filter(s => {
       if (vehicle !== "all" && s.vehicle_type !== vehicle && s.vehicle_type !== "both") return false;
       if ((s as any)[rateKey] > maxPrice) return false;
+      for (const a of amenities) if (!s[a]) return false;
       return true;
     });
-  }, [slots, vehicle, rate, maxPrice]);
+  }, [slots, vehicle, rate, maxPrice, amenities]);
 
   const sorted = useMemo(() =>
     [...filtered].sort((a, b) => haversine(center, [a.lat, a.lng]) - haversine(center, [b.lat, b.lng])),
@@ -114,6 +117,24 @@ function MapPage() {
                   <button key={r} onClick={() => setRate(r)}
                     className={`px-3 py-1.5 rounded-full capitalize font-semibold ${rate === r ? "bg-primary text-primary-foreground" : "bg-white/10"}`}>{r}</button>
                 ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-white/60 font-semibold uppercase text-[10px] mb-1.5">Amenities</div>
+              <div className="flex gap-1.5 flex-wrap">
+                {AMENITIES.map(a => {
+                  const on = amenities.has(a.key);
+                  return (
+                    <button key={a.key} onClick={() => setAmenities(prev => {
+                      const next = new Set(prev);
+                      if (next.has(a.key)) next.delete(a.key); else next.add(a.key);
+                      return next;
+                    })}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold ${on ? "bg-primary text-primary-foreground" : "bg-white/10"}`}>
+                      <a.icon className="w-3 h-3"/>{a.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <label className="block">
@@ -175,7 +196,9 @@ function SlotCard({ slot, center, onClick }: { slot: Slot; center: [number, numb
         </div>
         <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
           <span className="chip capitalize">{slot.vehicle_type}</span>
-          {slot.vehicle_size_limit && <span className="chip">{slot.vehicle_size_limit}</span>}
+          {slotAmenities(slot).map(a => (
+            <span key={a.key} className="chip"><a.icon className="w-3 h-3"/>{a.label}</span>
+          ))}
           <span className="chip">Daily ₹{slot.daily_rate}</span>
         </div>
       </div>
