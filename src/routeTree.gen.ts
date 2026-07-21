@@ -14,8 +14,12 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedMySlotsRouteImport } from './routes/_authenticated/my-slots'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
+import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
+import { Route as AuthenticatedAddSlotRouteImport } from './routes/_authenticated/add-slot'
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -43,6 +47,11 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMySlotsRoute = AuthenticatedMySlotsRouteImport.update({
+  id: '/my-slots',
+  path: '/my-slots',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
   id: '/map',
   path: '/map',
@@ -51,6 +60,21 @@ const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBookingsRoute = AuthenticatedBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAddSlotRoute = AuthenticatedAddSlotRouteImport.update({
+  id: '/add-slot',
+  path: '/add-slot',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
@@ -62,8 +86,12 @@ const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/add-slot': typeof AuthenticatedAddSlotRoute
+  '/bookings': typeof AuthenticatedBookingsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
+  '/my-slots': typeof AuthenticatedMySlotsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -71,8 +99,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/add-slot': typeof AuthenticatedAddSlotRoute
+  '/bookings': typeof AuthenticatedBookingsRoute
+  '/earnings': typeof AuthenticatedEarningsRoute
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
+  '/my-slots': typeof AuthenticatedMySlotsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -82,8 +114,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/add-slot': typeof AuthenticatedAddSlotRoute
+  '/_authenticated/bookings': typeof AuthenticatedBookingsRoute
+  '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
+  '/_authenticated/my-slots': typeof AuthenticatedMySlotsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -93,8 +129,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/add-slot'
+    | '/bookings'
+    | '/earnings'
     | '/home'
     | '/map'
+    | '/my-slots'
     | '/profile'
     | '/reservations'
     | '/slot/$id'
@@ -102,8 +142,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/add-slot'
+    | '/bookings'
+    | '/earnings'
     | '/home'
     | '/map'
+    | '/my-slots'
     | '/profile'
     | '/reservations'
     | '/slot/$id'
@@ -112,8 +156,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/add-slot'
+    | '/_authenticated/bookings'
+    | '/_authenticated/earnings'
     | '/_authenticated/home'
     | '/_authenticated/map'
+    | '/_authenticated/my-slots'
     | '/_authenticated/profile'
     | '/_authenticated/reservations'
     | '/_authenticated/slot/$id'
@@ -162,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/my-slots': {
+      id: '/_authenticated/my-slots'
+      path: '/my-slots'
+      fullPath: '/my-slots'
+      preLoaderRoute: typeof AuthenticatedMySlotsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/map': {
       id: '/_authenticated/map'
       path: '/map'
@@ -176,6 +231,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/earnings': {
+      id: '/_authenticated/earnings'
+      path: '/earnings'
+      fullPath: '/earnings'
+      preLoaderRoute: typeof AuthenticatedEarningsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bookings': {
+      id: '/_authenticated/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AuthenticatedBookingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/add-slot': {
+      id: '/_authenticated/add-slot'
+      path: '/add-slot'
+      fullPath: '/add-slot'
+      preLoaderRoute: typeof AuthenticatedAddSlotRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/slot/$id': {
       id: '/_authenticated/slot/$id'
       path: '/slot/$id'
@@ -187,16 +263,24 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAddSlotRoute: typeof AuthenticatedAddSlotRoute
+  AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRoute
+  AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
+  AuthenticatedMySlotsRoute: typeof AuthenticatedMySlotsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedSlotIdRoute: typeof AuthenticatedSlotIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAddSlotRoute: AuthenticatedAddSlotRoute,
+  AuthenticatedBookingsRoute: AuthenticatedBookingsRoute,
+  AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
+  AuthenticatedMySlotsRoute: AuthenticatedMySlotsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedSlotIdRoute: AuthenticatedSlotIdRoute,
