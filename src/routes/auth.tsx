@@ -76,7 +76,7 @@ function AuthPage() {
               </button>
             </div>
             <Field label="Name" value={name} onChange={setName} required />
-            <Field label="Phone" value={phone} onChange={setPhone} type="tel" required />
+            <Field label="Phone" value={phone} onChange={setPhone} type="tel" required pattern="[0-9]{10}" title="Enter a 10-digit phone number" />
           </>
         )}
         <Field label="Email" type="email" value={email} onChange={setEmail} required />
