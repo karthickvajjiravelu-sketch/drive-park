@@ -120,7 +120,13 @@ function SlotDetail() {
                 <div>{slot.access_instructions || "None"}</div>
               </div>
             </div>
-            <Link to="/reservations" className="mt-4 inline-block w-full rounded-xl bg-black text-white py-3 font-semibold">View my bookings</Link>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
+              target="_blank" rel="noreferrer"
+              className="mt-4 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2">
+              <Navigation2 className="w-4 h-4"/>Directions
+            </a>
+            <Link to="/reservations" className="mt-2 inline-block w-full rounded-xl bg-black text-white py-3 font-semibold">View my bookings</Link>
           </div>
         ) : isFull ? (
           <button onClick={notifyMe}
