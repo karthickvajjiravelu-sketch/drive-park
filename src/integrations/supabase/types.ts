@@ -14,7 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: {
+          created_at: string
+          driver_id: string
+          end_time: string
+          id: string
+          rate_type: Database["public"]["Enums"]["rate_type"]
+          slot_id: string
+          start_time: string
+          status: Database["public"]["Enums"]["reservation_status"]
+          total_price: number
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          end_time: string
+          id?: string
+          rate_type?: Database["public"]["Enums"]["rate_type"]
+          slot_id: string
+          start_time: string
+          status?: Database["public"]["Enums"]["reservation_status"]
+          total_price?: number
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          end_time?: string
+          id?: string
+          rate_type?: Database["public"]["Enums"]["rate_type"]
+          slot_id?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["reservation_status"]
+          total_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservations_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          comment: string
+          created_at: string
+          driver_id: string
+          id: string
+          rating: number
+          slot_id: string
+        }
+        Insert: {
+          comment?: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          rating: number
+          slot_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          rating?: number
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slot_notify: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          slot_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          slot_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_notify_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slots: {
+        Row: {
+          access_instructions: string
+          approx_area: string
+          created_at: string
+          daily_rate: number
+          full_address: string
+          hourly_rate: number
+          id: string
+          lat: number
+          lng: number
+          monthly_rate: number
+          name: string
+          owner_id: string
+          photos: string[]
+          rating: number
+          status: Database["public"]["Enums"]["slot_status"]
+          vehicle_size_limit: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Insert: {
+          access_instructions?: string
+          approx_area: string
+          created_at?: string
+          daily_rate?: number
+          full_address: string
+          hourly_rate?: number
+          id?: string
+          lat: number
+          lng: number
+          monthly_rate?: number
+          name: string
+          owner_id: string
+          photos?: string[]
+          rating?: number
+          status?: Database["public"]["Enums"]["slot_status"]
+          vehicle_size_limit?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Update: {
+          access_instructions?: string
+          approx_area?: string
+          created_at?: string
+          daily_rate?: number
+          full_address?: string
+          hourly_rate?: number
+          id?: string
+          lat?: number
+          lng?: number
+          monthly_rate?: number
+          name?: string
+          owner_id?: string
+          photos?: string[]
+          rating?: number
+          status?: Database["public"]["Enums"]["slot_status"]
+          vehicle_size_limit?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +217,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      rate_type: "hourly" | "daily" | "monthly"
+      reservation_status: "upcoming" | "active" | "completed" | "cancelled"
+      slot_status: "open" | "full"
+      user_role: "driver" | "landowner"
+      vehicle_type: "car" | "bike" | "both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +348,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      rate_type: ["hourly", "daily", "monthly"],
+      reservation_status: ["upcoming", "active", "completed", "cancelled"],
+      slot_status: ["open", "full"],
+      user_role: ["driver", "landowner"],
+      vehicle_type: ["car", "bike", "both"],
+    },
   },
 } as const
