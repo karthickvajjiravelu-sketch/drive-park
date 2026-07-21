@@ -127,6 +127,7 @@ function SlotDetail() {
               <Navigation2 className="w-4 h-4"/>Directions
             </a>
             <Link to="/reservations" className="mt-2 inline-block w-full rounded-xl bg-black text-white py-3 font-semibold">View my bookings</Link>
+          </div>
         ) : isFull ? (
           <button onClick={notifyMe}
             className="mt-6 w-full rounded-2xl bg-black text-white py-4 font-bold">
