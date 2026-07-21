@@ -84,3 +84,30 @@
   height: 100%;
   z-index: 0;
 }
+
+/* YPS-style utilities */
+.card-elevated {
+  background: var(--color-card);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -8px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid var(--color-border);
+}
+.price-pill {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 800;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  padding: 0.25rem 0.6rem; border-radius: 999px;
+  background: var(--color-muted); font-size: 0.7rem; font-weight: 600;
+}
+.chip-dark { background: rgba(255,255,255,0.12); color: white; }
+.chip-yellow { background: var(--color-primary); color: var(--color-primary-foreground); }
+.hero-scrim { background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.8) 100%); }
+.mobile-shell { box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+
