@@ -95,8 +95,8 @@ function AuthPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", required }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean;
+function Field({ label, value, onChange, type = "text", required, pattern, title }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; pattern?: string; title?: string;
 }) {
   return (
     <label className="block">
@@ -104,6 +104,7 @@ function Field({ label, value, onChange, type = "text", required }: {
       <input
         className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
         type={type} value={value} onChange={e => onChange(e.target.value)} required={required}
+        pattern={pattern} title={title}
       />
     </label>
   );
