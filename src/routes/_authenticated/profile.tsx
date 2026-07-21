@@ -49,7 +49,8 @@ function ProfilePage() {
         </label>
         <label className="block">
           <span className="text-xs font-semibold text-muted-foreground uppercase">Phone</span>
-          <input value={phone} onChange={e => setPhone(e.target.value)}
+          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+            pattern="[0-9]{10}" title="Enter a 10-digit phone number"
             className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-3"/>
         </label>
         <button disabled={saving} onClick={save}
