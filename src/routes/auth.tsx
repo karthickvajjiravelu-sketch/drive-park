@@ -6,12 +6,20 @@ import { toast } from "sonner";
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
+  next: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   component: AuthPage,
 });
+
+function sanitizeNext(next: string | undefined): string | null {
+  if (!next) return null;
+  // Only allow same-origin relative paths.
+  if (!next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
 
 function AuthPage() {
   const search = Route.useSearch();
@@ -25,26 +33,33 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"driver" | "landowner">("driver");
 
+  const nextPath = sanitizeNext(search.next);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       if (mode === "signup") {
+        const emailRedirectTo = nextPath
+          ? `${window.location.origin}${nextPath}`
+          : window.location.origin;
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo,
             data: { name, phone, role },
           },
         });
         if (error) throw error;
         toast.success("Account created");
-        navigate({ to: "/home" });
+        if (nextPath) window.location.href = nextPath;
+        else navigate({ to: "/home" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/home" });
+        if (nextPath) window.location.href = nextPath;
+        else navigate({ to: "/home" });
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auth failed");
@@ -52,6 +67,7 @@ function AuthPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="mobile-shell">
