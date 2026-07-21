@@ -26,6 +26,12 @@ export type Slot = {
   access_instructions: string;
   photos: string[];
   rating: number;
+  covered: boolean;
+  cctv: boolean;
+  disabled_access: boolean;
+  height_limit_cm: number | null;
+  width_limit_cm: number | null;
+  cancellation_policy: "flexible" | "moderate" | "strict";
 };
 
 export type Reservation = {

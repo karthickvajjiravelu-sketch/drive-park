@@ -4,8 +4,9 @@ import { useSlot } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Star, Car, Ruler, MapPin, Phone, Navigation2 } from "lucide-react";
+import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { slotAmenities, POLICY_META } from "@/lib/amenities";
 
 export const Route = createFileRoute("/_authenticated/slot/$id")({
   component: SlotDetail,
@@ -83,7 +84,18 @@ function SlotDetail() {
           className="absolute top-4 left-4 w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
           <ArrowLeft className="w-5 h-5"/>
         </button>
-        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <button onClick={async () => {
+            const url = `${window.location.origin}/slot/${slot!.id}`;
+            const shareData = { title: slot!.name, text: `Parking at ${slot!.approx_area}`, url };
+            try {
+              if (navigator.share) await navigator.share(shareData);
+              else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
+            } catch {}
+          }}
+            className="w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
+            <Share2 className="w-4 h-4"/>
+          </button>
           {isFull
             ? <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">FULL</span>
             : <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN NOW</span>}
@@ -101,6 +113,29 @@ function SlotDetail() {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <Info icon={<Car className="w-4 h-4"/>} label="Vehicle" value={slot.vehicle_type}/>
           <Info icon={<Ruler className="w-4 h-4"/>} label="Size" value={slot.vehicle_size_limit || "Any"}/>
+        </div>
+
+        {(() => {
+          const amens = slotAmenities(slot);
+          const hasLimits = slot.height_limit_cm || slot.width_limit_cm;
+          if (amens.length === 0 && !hasLimits) return null;
+          return (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {amens.map(a => (
+                <span key={a.key} className="chip"><a.icon className="w-3 h-3"/>{a.label}</span>
+              ))}
+              {slot.height_limit_cm && <span className="chip">H ≤ {slot.height_limit_cm}cm</span>}
+              {slot.width_limit_cm && <span className="chip">W ≤ {slot.width_limit_cm}cm</span>}
+            </div>
+          );
+        })()}
+
+        <div className="mt-4 rounded-xl border border-border p-3 flex items-start gap-2 text-xs">
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5"/>
+          <div>
+            <div className="font-bold capitalize">{POLICY_META[slot.cancellation_policy].label} cancellation</div>
+            <div className="text-muted-foreground">{POLICY_META[slot.cancellation_policy].blurb}</div>
+          </div>
         </div>
 
 

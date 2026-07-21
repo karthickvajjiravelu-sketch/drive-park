@@ -153,9 +153,14 @@ export type Database = {
         Row: {
           access_instructions: string
           approx_area: string
+          cancellation_policy: string
+          cctv: boolean
+          covered: boolean
           created_at: string
           daily_rate: number
+          disabled_access: boolean
           full_address: string
+          height_limit_cm: number | null
           hourly_rate: number
           id: string
           lat: number
@@ -168,13 +173,19 @@ export type Database = {
           status: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          width_limit_cm: number | null
         }
         Insert: {
           access_instructions?: string
           approx_area: string
+          cancellation_policy?: string
+          cctv?: boolean
+          covered?: boolean
           created_at?: string
           daily_rate?: number
+          disabled_access?: boolean
           full_address: string
+          height_limit_cm?: number | null
           hourly_rate?: number
           id?: string
           lat: number
@@ -187,13 +198,19 @@ export type Database = {
           status?: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+          width_limit_cm?: number | null
         }
         Update: {
           access_instructions?: string
           approx_area?: string
+          cancellation_policy?: string
+          cctv?: boolean
+          covered?: boolean
           created_at?: string
           daily_rate?: number
+          disabled_access?: boolean
           full_address?: string
+          height_limit_cm?: number | null
           hourly_rate?: number
           id?: string
           lat?: number
@@ -206,6 +223,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+          width_limit_cm?: number | null
         }
         Relationships: []
       }
