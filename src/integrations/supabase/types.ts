@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -22,6 +55,9 @@ export type Database = {
           phone: string
           role: Database["public"]["Enums"]["user_role"]
           user_id: string
+          verification_note: string | null
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verified: boolean
         }
         Insert: {
           created_at?: string
@@ -30,6 +66,9 @@ export type Database = {
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
           user_id: string
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified?: boolean
         }
         Update: {
           created_at?: string
@@ -38,6 +77,9 @@ export type Database = {
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: string
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified?: boolean
         }
         Relationships: []
       }
@@ -283,6 +325,7 @@ export type Database = {
       slot_status: "open" | "full"
       user_role: "driver" | "landowner"
       vehicle_type: "car" | "bike" | "both"
+      verification_status: "unverified" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -415,6 +458,7 @@ export const Constants = {
       slot_status: ["open", "full"],
       user_role: ["driver", "landowner"],
       vehicle_type: ["car", "bike", "both"],
+      verification_status: ["unverified", "pending", "approved", "rejected"],
     },
   },
 } as const
