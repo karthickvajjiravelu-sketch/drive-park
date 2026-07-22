@@ -19,7 +19,10 @@ function SlotDetail() {
   const { data: slot, isLoading } = useSlot(id);
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
-  const [startTime, setStartTime] = useState(() => new Date(Date.now() + 15 * 60000).toISOString().slice(0, 16));
+  const [startTime, setStartTime] = useState(() => {
+    const d = new Date(Date.now() + 15 * 60000 - new Date().getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 16);
+  });
   const [reservationId, setReservationId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
