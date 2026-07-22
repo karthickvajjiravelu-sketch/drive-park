@@ -36,6 +36,12 @@ function SlotDetail() {
     return () => { supabase.removeChannel(channel); };
   }, [id, qc]);
 
+  useEffect(() => {
+    if (!vehicleId && vehicles.length) {
+      setVehicleId((vehicles.find(v => v.is_default) ?? vehicles[0]).id);
+    }
+  }, [vehicles, vehicleId]);
+
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
   if (!slot) return <div className="p-6">Slot not found</div>;
 
@@ -53,6 +59,7 @@ function SlotDetail() {
       const msPerUnit = rateType === "hourly" ? 3600e3 : rateType === "daily" ? 86400e3 : 30 * 86400e3;
       const end = new Date(start.getTime() + duration * msPerUnit);
       const status = start.getTime() <= Date.now() ? "active" : "upcoming";
+      const vehicle = vehicles.find(v => v.id === vehicleId) ?? null;
       const { data, error } = await supabase.from("reservations").insert({
         driver_id: user.id,
         slot_id: slot!.id,
@@ -61,7 +68,9 @@ function SlotDetail() {
         status,
         total_price: total,
         rate_type: rateType,
-      }).select("id").single();
+        vehicle_id: vehicle?.id ?? null,
+        vehicle_plate: vehicle?.plate ?? null,
+      } as any).select("id").single();
       if (error) throw error;
       setReservationId(data.id);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
