@@ -17,8 +17,10 @@ function SlotDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: slot, isLoading } = useSlot(id);
+  const { data: vehicles = [] } = useMyVehicles();
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
+  const [vehicleId, setVehicleId] = useState<string>("");
   const [startTime, setStartTime] = useState(() => {
     const d = new Date(Date.now() + 15 * 60000 - new Date().getTimezoneOffset() * 60000);
     return d.toISOString().slice(0, 16);
