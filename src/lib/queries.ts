@@ -34,6 +34,15 @@ export type Slot = {
   cancellation_policy: "flexible" | "moderate" | "strict";
 };
 
+export type Vehicle = {
+  id: string;
+  user_id: string;
+  plate: string;
+  make: string | null;
+  colour: string | null;
+  is_default: boolean;
+};
+
 export type Reservation = {
   id: string;
   driver_id: string;
@@ -43,7 +52,21 @@ export type Reservation = {
   status: "upcoming" | "active" | "completed" | "cancelled";
   total_price: number;
   rate_type: "hourly" | "daily" | "monthly";
+  vehicle_id: string | null;
+  vehicle_plate: string | null;
 };
+
+export const myVehiclesQuery = () => queryOptions({
+  queryKey: ["my-vehicles"],
+  queryFn: async (): Promise<Vehicle[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase.from("vehicles" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as unknown as Vehicle[];
+  },
+});
+export const useMyVehicles = () => useQuery(myVehiclesQuery());
 
 export const profileQuery = () => queryOptions({
   queryKey: ["profile"],

@@ -1,9 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useProfile } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LogOut } from "lucide-react";
+import { LogOut, Car, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -55,6 +55,12 @@ function ProfilePage() {
         </label>
         <button disabled={saving} onClick={save}
           className="w-full rounded-2xl bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60">Save</button>
+        {profile.role === "driver" && (
+          <Link to="/vehicles" className="w-full rounded-2xl bg-card border border-border py-3 px-4 flex items-center justify-between font-semibold">
+            <span className="flex items-center gap-2"><Car className="w-4 h-4"/>My Garage</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground"/>
+          </Link>
+        )}
         <button onClick={signOut}
           className="w-full rounded-2xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2">
           <LogOut className="w-4 h-4"/>Sign out

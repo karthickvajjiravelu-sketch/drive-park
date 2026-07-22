@@ -52,6 +52,8 @@ export type Database = {
           start_time: string
           status: Database["public"]["Enums"]["reservation_status"]
           total_price: number
+          vehicle_id: string | null
+          vehicle_plate: string | null
         }
         Insert: {
           created_at?: string
@@ -63,6 +65,8 @@ export type Database = {
           start_time: string
           status?: Database["public"]["Enums"]["reservation_status"]
           total_price?: number
+          vehicle_id?: string | null
+          vehicle_plate?: string | null
         }
         Update: {
           created_at?: string
@@ -74,6 +78,8 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["reservation_status"]
           total_price?: number
+          vehicle_id?: string | null
+          vehicle_plate?: string | null
         }
         Relationships: [
           {
@@ -81,6 +87,13 @@ export type Database = {
             columns: ["slot_id"]
             isOneToOne: false
             referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -224,6 +237,36 @@ export type Database = {
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
           width_limit_cm?: number | null
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          colour: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          make: string | null
+          plate: string
+          user_id: string
+        }
+        Insert: {
+          colour?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          make?: string | null
+          plate: string
+          user_id: string
+        }
+        Update: {
+          colour?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          make?: string | null
+          plate?: string
+          user_id?: string
         }
         Relationships: []
       }

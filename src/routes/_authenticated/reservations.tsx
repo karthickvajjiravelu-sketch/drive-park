@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMyReservations } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, Navigation2, MapPin, ShieldCheck } from "lucide-react";
+import { Phone, Navigation2, MapPin, ShieldCheck, Receipt, X, Printer, Car } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
 
 export const Route = createFileRoute("/_authenticated/reservations")({
@@ -28,22 +28,39 @@ function MyReservations() {
   const { data: reservations = [], isLoading } = useMyReservations();
   const qc = useQueryClient();
   const [reviewing, setReviewing] = useState<string | null>(null);
+  const [receipt, setReceipt] = useState<any | null>(null);
 
   const active = reservations.filter(r => r.status === "active");
   const upcoming = reservations.filter(r => r.status === "upcoming");
   const past = reservations.filter(r => r.status === "completed" || r.status === "cancelled");
 
-  async function endSession(id: string) {
-    const { error } = await supabase.from("reservations").update({ status: "completed" }).eq("id", id);
+  async function endSession(r: any) {
+    const start = new Date(r.start_time).getTime();
+    const end = new Date(r.end_time).getTime();
+    const now = Date.now();
+    const totalMs = Math.max(1, end - start);
+    const usedMs = Math.min(totalMs, Math.max(0, now - start));
+    const usedRatio = usedMs / totalMs;
+    const finalPrice = Math.round(r.total_price * usedRatio);
+    const refund = r.total_price - finalPrice;
+    if (!confirm(`End session now? You'll be charged ₹${finalPrice} (refund ₹${refund}).`)) return;
+    const { error } = await supabase.from("reservations")
+      .update({ status: "completed", end_time: new Date(now).toISOString(), total_price: finalPrice })
+      .eq("id", r.id);
     if (error) toast.error(error.message);
-    else { toast.success("Session ended"); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+    else { toast.success(`Session ended · refund ₹${refund}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
   }
 
-  async function extend(id: string, currentEnd: string) {
-    const newEnd = new Date(new Date(currentEnd).getTime() + 3600e3).toISOString();
-    const { error } = await supabase.from("reservations").update({ end_time: newEnd }).eq("id", id);
+  async function extend(r: any, minutes: number) {
+    const rate = r.slot?.[`${r.rate_type}_rate` as const] as number | undefined;
+    const perMinute = rate ? (r.rate_type === "hourly" ? rate / 60 : r.rate_type === "daily" ? rate / (24*60) : rate / (30*24*60)) : 0;
+    const extraCost = Math.round(perMinute * minutes);
+    const newEnd = new Date(new Date(r.end_time).getTime() + minutes * 60e3).toISOString();
+    const { error } = await supabase.from("reservations")
+      .update({ end_time: newEnd, total_price: r.total_price + extraCost })
+      .eq("id", r.id);
     if (error) toast.error(error.message);
-    else { toast.success("Extended by 1 hour"); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+    else { toast.success(`+${minutes} min · ₹${extraCost}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
   }
 
   async function cancel(id: string, slot: any, startTime: string) {
@@ -82,12 +99,19 @@ function MyReservations() {
               <div key={r.id} className="rounded-2xl bg-card border border-border p-4">
                 <div className="font-semibold">{r.slot?.name ?? "Slot"}</div>
                 <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()} · ₹{r.total_price}</div>
-                {r.status === "completed" && (
-                  <button onClick={() => setReviewing(r.slot_id)}
-                    className="mt-2 text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg">
-                    Leave review
+                {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
+                <div className="mt-2 flex gap-2">
+                  {r.status === "completed" && (
+                    <button onClick={() => setReviewing(r.slot_id)}
+                      className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg">
+                      Leave review
+                    </button>
+                  )}
+                  <button onClick={() => setReceipt(r)}
+                    className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <Receipt className="w-3 h-3"/>Receipt
                   </button>
-                )}
+                </div>
               </div>
             ))}
           </Section>
@@ -95,6 +119,7 @@ function MyReservations() {
         {reservations.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No bookings yet.</p>}
       </div>
       {reviewing && <ReviewModal slotId={reviewing} onClose={() => setReviewing(null)}/>}
+      {receipt && <ReceiptModal r={receipt} onClose={() => setReceipt(null)}/>}
     </div>
   );
 }
@@ -108,7 +133,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (id: string) => void; onExtend: (id: string, end: string) => void }) {
+function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (r: any) => void; onExtend: (r: any, minutes: number) => void }) {
   const remaining = useCountdown(r.end_time);
   const slot = r.slot;
   if (!slot) return null;
@@ -118,6 +143,7 @@ function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (id: string) => voi
         <div className="min-w-0">
           <div className="font-bold">{slot.name}</div>
           <div className="text-xs flex items-center gap-1 text-muted-foreground"><MapPin className="w-3 h-3"/>{slot.full_address}</div>
+          {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 font-semibold"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
         </div>
         <div className="text-right shrink-0">
           <div className="text-[10px] uppercase text-muted-foreground">Ends in</div>
@@ -130,10 +156,12 @@ function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (id: string) => voi
         <a href={`https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`} target="_blank" rel="noreferrer"
           className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><Navigation2 className="w-3.5 h-3.5"/>Directions</a>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <button onClick={() => onExtend(r.id, r.end_time)} className="rounded-xl border border-black py-2 text-xs font-semibold">Extend +1h</button>
-        <button onClick={() => onEnd(r.id)} className="rounded-xl bg-destructive text-destructive-foreground py-2 text-xs font-semibold">End session</button>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        <button onClick={() => onExtend(r, 15)} className="rounded-xl border border-black py-2 text-xs font-semibold">+15 min</button>
+        <button onClick={() => onExtend(r, 30)} className="rounded-xl border border-black py-2 text-xs font-semibold">+30 min</button>
+        <button onClick={() => onExtend(r, 60)} className="rounded-xl border border-black py-2 text-xs font-semibold">+1 hr</button>
       </div>
+      <button onClick={() => onEnd(r)} className="mt-2 w-full rounded-xl bg-destructive text-destructive-foreground py-2 text-xs font-semibold">End session (prorated)</button>
     </div>
   );
 }
@@ -147,6 +175,7 @@ function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: an
       <div className="font-bold">{slot?.name}</div>
       <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()}</div>
       <div className="mt-1 text-sm font-semibold">₹{r.total_price} · {r.rate_type}</div>
+      {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
       <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
         <ShieldCheck className="w-3 h-3"/>
         <span className="capitalize">{POLICY_META[policy].label}</span> · {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
@@ -155,6 +184,54 @@ function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: an
         className="mt-3 w-full rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold">
         Cancel booking
       </button>
+    </div>
+  );
+}
+
+function ReceiptModal({ r, onClose }: { r: any; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  function printReceipt() {
+    const html = ref.current?.innerHTML ?? "";
+    const w = window.open("", "_blank", "width=420,height=640");
+    if (!w) return;
+    w.document.write(`<html><head><title>Receipt ${r.id.slice(0,8)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:12px 0}dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}dt{color:#666}strong{font-size:20px}</style></head><body>${html}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 100);
+  }
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-4">
+          <h3 className="font-black text-lg">Receipt</h3>
+          <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-full bg-muted"><X className="w-4 h-4"/></button>
+        </div>
+        <div ref={ref} className="px-5 py-3 text-sm">
+          <h1 className="text-lg font-black">Usop Parking</h1>
+          <div className="text-xs text-muted-foreground">Receipt #{r.id.slice(0,8).toUpperCase()}</div>
+          <hr className="my-3 border-dashed border-border"/>
+          <dl className="grid grid-cols-[auto,1fr] gap-y-1.5 gap-x-3">
+            <dt className="text-muted-foreground">Slot</dt><dd className="font-semibold">{r.slot?.name ?? "—"}</dd>
+            <dt className="text-muted-foreground">Address</dt><dd>{r.slot?.full_address ?? r.slot?.approx_area ?? "—"}</dd>
+            <dt className="text-muted-foreground">Vehicle</dt><dd className="font-mono">{r.vehicle_plate ?? "—"}</dd>
+            <dt className="text-muted-foreground">Start</dt><dd>{new Date(r.start_time).toLocaleString()}</dd>
+            <dt className="text-muted-foreground">End</dt><dd>{new Date(r.end_time).toLocaleString()}</dd>
+            <dt className="text-muted-foreground">Rate</dt><dd className="capitalize">{r.rate_type}</dd>
+            <dt className="text-muted-foreground">Status</dt><dd className="capitalize">{r.status}</dd>
+          </dl>
+          <hr className="my-3 border-dashed border-border"/>
+          <div className="flex items-baseline justify-between">
+            <span className="text-muted-foreground">Total paid</span>
+            <strong className="text-xl font-black">₹{r.total_price}</strong>
+          </div>
+          <div className="mt-4 text-[10px] text-muted-foreground text-center">Thank you for parking with Usop</div>
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={printReceipt} className="w-full rounded-xl bg-primary py-2.5 font-bold text-primary-foreground flex items-center justify-center gap-2">
+            <Printer className="w-4 h-4"/>Print / Save PDF
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
