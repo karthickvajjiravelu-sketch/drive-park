@@ -18,6 +18,7 @@ function SlotDetail() {
   const qc = useQueryClient();
   const { data: slot, isLoading } = useSlot(id);
   const { data: vehicles = [] } = useMyVehicles();
+  const { data: owner } = useOwnerProfile(slot?.owner_id ?? "");
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
   const [vehicleId, setVehicleId] = useState<string>("");
