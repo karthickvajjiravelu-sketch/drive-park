@@ -205,6 +205,28 @@ function SlotDetail() {
                 value={duration} onChange={e => setDuration(+e.target.value || 1)}
                 className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2"/>
             </label>
+            <div>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Vehicle</span>
+              {vehicles.length === 0 ? (
+                <Link to="/vehicles" className="mt-1 flex items-center justify-between rounded-xl border-2 border-dashed border-border px-3 py-3 text-sm">
+                  <span className="text-muted-foreground">No vehicles saved</span>
+                  <span className="font-bold text-primary-foreground bg-primary px-2 py-0.5 rounded-lg text-xs">Add</span>
+                </Link>
+              ) : (
+                <div className="mt-1 flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
+                  {vehicles.map(v => (
+                    <button key={v.id} onClick={() => setVehicleId(v.id)}
+                      className={`shrink-0 rounded-xl border-2 px-3 py-2 text-left text-xs ${vehicleId === v.id ? "border-primary bg-primary/10" : "border-border"}`}>
+                      <div className="font-black tracking-wider">{v.plate}</div>
+                      <div className="text-muted-foreground truncate max-w-[9rem]">{[v.make, v.colour].filter(Boolean).join(" · ") || "—"}</div>
+                    </button>
+                  ))}
+                  <Link to="/vehicles" className="shrink-0 rounded-xl border-2 border-dashed border-border px-3 py-2 text-xs font-semibold grid place-items-center">
+                    + Add
+                  </Link>
+                </div>
+              )}
+            </div>
             <div className="flex items-baseline justify-between rounded-xl bg-muted p-4">
               <span className="text-sm text-muted-foreground">Total</span>
               <span className="text-2xl font-black">₹{total}</span>
