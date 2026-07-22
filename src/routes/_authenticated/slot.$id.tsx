@@ -117,7 +117,14 @@ function SlotDetail() {
             : <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN NOW</span>}
         </div>
         <div className="absolute bottom-4 left-5 right-5 text-white">
-          <h1 className="text-2xl font-black leading-tight drop-shadow">{slot.name}</h1>
+          <h1 className="text-2xl font-black leading-tight drop-shadow flex items-center gap-2">
+            {slot.name}
+            {owner?.verified && (
+              <span title="Verified host" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-black text-[10px] font-black">
+                <BadgeCheck className="w-3.5 h-3.5"/>VERIFIED
+              </span>
+            )}
+          </h1>
           <div className="flex items-center gap-3 mt-1 text-sm">
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{slot.approx_area}</span>
             {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)}</span>}
