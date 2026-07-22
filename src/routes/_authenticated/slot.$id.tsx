@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { useSlot, useMyVehicles } from "@/lib/queries";
+import { useSlot, useMyVehicles, useOwnerProfile } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck, BadgeCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 
