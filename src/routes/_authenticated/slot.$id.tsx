@@ -19,7 +19,10 @@ function SlotDetail() {
   const { data: slot, isLoading } = useSlot(id);
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
-  const [startTime, setStartTime] = useState(() => new Date(Date.now() + 15 * 60000).toISOString().slice(0, 16));
+  const [startTime, setStartTime] = useState(() => {
+    const d = new Date(Date.now() + 15 * 60000 - new Date().getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 16);
+  });
   const [reservationId, setReservationId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,12 +50,13 @@ function SlotDetail() {
       const start = new Date(startTime);
       const msPerUnit = rateType === "hourly" ? 3600e3 : rateType === "daily" ? 86400e3 : 30 * 86400e3;
       const end = new Date(start.getTime() + duration * msPerUnit);
+      const status = start.getTime() <= Date.now() ? "active" : "upcoming";
       const { data, error } = await supabase.from("reservations").insert({
         driver_id: user.id,
         slot_id: slot!.id,
         start_time: start.toISOString(),
         end_time: end.toISOString(),
-        status: "active",
+        status,
         total_price: total,
         rate_type: rateType,
       }).select("id").single();
