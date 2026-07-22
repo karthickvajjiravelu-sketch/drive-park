@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVehiclesRouteImport } from './routes/_authenticated/vehicles'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMySlotsRouteImport } from './routes/_authenticated/my-slots'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
@@ -63,6 +64,12 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMySlotsRoute = AuthenticatedMySlotsRouteImport.update({
   id: '/my-slots',
   path: '/my-slots',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
   '/my-slots': typeof AuthenticatedMySlotsRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/vehicles': typeof AuthenticatedVehiclesRoute
@@ -153,6 +161,7 @@ export interface FileRoutesByTo {
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
   '/my-slots': typeof AuthenticatedMySlotsRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
   '/vehicles': typeof AuthenticatedVehiclesRoute
@@ -174,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/my-slots': typeof AuthenticatedMySlotsRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
   '/_authenticated/vehicles': typeof AuthenticatedVehiclesRoute
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/map'
     | '/my-slots'
+    | '/notifications'
     | '/profile'
     | '/reservations'
     | '/vehicles'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/home'
     | '/map'
     | '/my-slots'
+    | '/notifications'
     | '/profile'
     | '/reservations'
     | '/vehicles'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/home'
     | '/_authenticated/map'
     | '/_authenticated/my-slots'
+    | '/_authenticated/notifications'
     | '/_authenticated/profile'
     | '/_authenticated/reservations'
     | '/_authenticated/vehicles'
@@ -302,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/my-slots': {
@@ -391,6 +411,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedMySlotsRoute: typeof AuthenticatedMySlotsRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
   AuthenticatedVehiclesRoute: typeof AuthenticatedVehiclesRoute
@@ -404,6 +425,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedMySlotsRoute: AuthenticatedMySlotsRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
   AuthenticatedVehiclesRoute: AuthenticatedVehiclesRoute,

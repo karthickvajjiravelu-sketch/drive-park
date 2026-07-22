@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { useSlot, useMyVehicles } from "@/lib/queries";
+import { useSlot, useMyVehicles, useOwnerProfile } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck, BadgeCheck } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 
@@ -18,6 +18,7 @@ function SlotDetail() {
   const qc = useQueryClient();
   const { data: slot, isLoading } = useSlot(id);
   const { data: vehicles = [] } = useMyVehicles();
+  const { data: owner } = useOwnerProfile(slot?.owner_id ?? "");
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
   const [vehicleId, setVehicleId] = useState<string>("");
@@ -116,7 +117,14 @@ function SlotDetail() {
             : <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN NOW</span>}
         </div>
         <div className="absolute bottom-4 left-5 right-5 text-white">
-          <h1 className="text-2xl font-black leading-tight drop-shadow">{slot.name}</h1>
+          <h1 className="text-2xl font-black leading-tight drop-shadow flex items-center gap-2">
+            {slot.name}
+            {owner?.verified && (
+              <span title="Verified host" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-black text-[10px] font-black">
+                <BadgeCheck className="w-3.5 h-3.5"/>VERIFIED
+              </span>
+            )}
+          </h1>
           <div className="flex items-center gap-3 mt-1 text-sm">
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{slot.approx_area}</span>
             {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)}</span>}

@@ -7,6 +7,20 @@ export type Profile = {
   name: string;
   phone: string;
   role: "driver" | "landowner";
+  verified: boolean;
+  verification_status: "unverified" | "pending" | "approved" | "rejected";
+  verification_note: string | null;
+};
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read: boolean;
+  created_at: string;
 };
 
 export type Slot = {
@@ -166,3 +180,31 @@ export const reviewsQuery = (slotId: string) => queryOptions({
   },
 });
 export const useReviews = (slotId: string) => useQuery(reviewsQuery(slotId));
+
+export const notificationsQuery = () => queryOptions({
+  queryKey: ["notifications"],
+  queryFn: async (): Promise<Notification[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("notifications" as any)
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data ?? []) as unknown as Notification[];
+  },
+});
+export const useNotifications = () => useQuery(notificationsQuery());
+
+export const ownerProfileQuery = (ownerId: string) => queryOptions({
+  queryKey: ["owner-profile", ownerId],
+  queryFn: async (): Promise<Profile | null> => {
+    const { data, error } = await supabase.from("profiles").select("*").eq("user_id", ownerId).maybeSingle();
+    if (error) throw error;
+    return data as Profile | null;
+  },
+});
+export const useOwnerProfile = (ownerId: string) => useQuery(ownerProfileQuery(ownerId));
+
