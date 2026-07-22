@@ -13,6 +13,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedVehiclesRouteImport } from './routes/_authenticated/vehicles'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedMySlotsRouteImport } from './routes/_authenticated/my-slots'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVehiclesRoute = AuthenticatedVehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReservationsRoute =
   AuthenticatedReservationsRouteImport.update({
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/my-slots': typeof AuthenticatedMySlotsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
+  '/vehicles': typeof AuthenticatedVehiclesRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/my-slots': typeof AuthenticatedMySlotsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
+  '/vehicles': typeof AuthenticatedVehiclesRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/_authenticated/my-slots': typeof AuthenticatedMySlotsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
+  '/_authenticated/vehicles': typeof AuthenticatedVehiclesRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/my-slots'
     | '/profile'
     | '/reservations'
+    | '/vehicles'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/slot/$id'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/my-slots'
     | '/profile'
     | '/reservations'
+    | '/vehicles'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/slot/$id'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/_authenticated/my-slots'
     | '/_authenticated/profile'
     | '/_authenticated/reservations'
+    | '/_authenticated/vehicles'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/slot/$id'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/vehicles': {
+      id: '/_authenticated/vehicles'
+      path: '/vehicles'
+      fullPath: '/vehicles'
+      preLoaderRoute: typeof AuthenticatedVehiclesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reservations': {
       id: '/_authenticated/reservations'
@@ -374,6 +393,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMySlotsRoute: typeof AuthenticatedMySlotsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
+  AuthenticatedVehiclesRoute: typeof AuthenticatedVehiclesRoute
   AuthenticatedSlotIdRoute: typeof AuthenticatedSlotIdRoute
 }
 
@@ -386,6 +406,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMySlotsRoute: AuthenticatedMySlotsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
+  AuthenticatedVehiclesRoute: AuthenticatedVehiclesRoute,
   AuthenticatedSlotIdRoute: AuthenticatedSlotIdRoute,
 }
 
