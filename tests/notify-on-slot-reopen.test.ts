@@ -11,6 +11,7 @@
  * at the Supabase Postgres instance with write + delete privileges on
  * public.slots, public.slot_notify, and public.notifications (e.g. the
  * `postgres` service role — NOT the read-only sandbox user). Run: `bun run test`.
+ */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "pg";
 import { randomUUID } from "node:crypto";
