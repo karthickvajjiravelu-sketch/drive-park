@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "pg";
 import { randomUUID } from "node:crypto";
 
-const client = new Client();
+const client = new Client({ ssl: { rejectUnauthorized: false } });
 
 // Fixture IDs — random per run so parallel runs don't collide.
 const ownerId = randomUUID();
