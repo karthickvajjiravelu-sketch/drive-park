@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      favorites: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          slot_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          slot_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          slot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read: boolean
+          recipient_id: string
+          reservation_id: string
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id: string
+          reservation_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id?: string
+          reservation_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -147,6 +214,7 @@ export type Database = {
           driver_id: string
           id: string
           rating: number
+          reservation_id: string | null
           slot_id: string
         }
         Insert: {
@@ -155,6 +223,7 @@ export type Database = {
           driver_id: string
           id?: string
           rating: number
+          reservation_id?: string | null
           slot_id: string
         }
         Update: {
@@ -163,9 +232,17 @@ export type Database = {
           driver_id?: string
           id?: string
           rating?: number
+          reservation_id?: string | null
           slot_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reviews_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reviews_slot_id_fkey"
             columns: ["slot_id"]
@@ -208,6 +285,7 @@ export type Database = {
         Row: {
           access_instructions: string
           approx_area: string
+          archived: boolean
           cancellation_policy: string
           cctv: boolean
           covered: boolean
@@ -233,6 +311,7 @@ export type Database = {
         Insert: {
           access_instructions?: string
           approx_area: string
+          archived?: boolean
           cancellation_policy?: string
           cctv?: boolean
           covered?: boolean
@@ -258,6 +337,7 @@ export type Database = {
         Update: {
           access_instructions?: string
           approx_area?: string
+          archived?: boolean
           cancellation_policy?: string
           cctv?: boolean
           covered?: boolean
@@ -279,6 +359,33 @@ export type Database = {
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
           width_limit_cm?: number | null
+        }
+        Relationships: []
+      }
+      support_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          subject?: string
+          user_id?: string
         }
         Relationships: []
       }
