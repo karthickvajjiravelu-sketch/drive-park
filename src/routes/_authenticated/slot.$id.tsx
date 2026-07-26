@@ -129,7 +129,7 @@ function SlotDetail() {
             try {
               if (navigator.share) await navigator.share(shareData);
               else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
-            } catch {}
+            } catch { /* user cancelled or clipboard denied */ }
           }}
             className="w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
             <Share2 className="w-4 h-4"/>
@@ -237,7 +237,7 @@ function SlotDetail() {
                 <button key={r} onClick={() => setRateType(r)}
                   className={`rounded-xl border-2 p-3 text-center text-xs ${rateType === r ? "border-primary bg-primary/10" : "border-border"}`}>
                   <div className="font-bold capitalize">{r}</div>
-                  <div className="text-muted-foreground">₹{(slot as any)[`${r}_rate`]}</div>
+                  <div className="text-muted-foreground">₹{(slot as unknown as Record<string, number>)[`${r}_rate`]}</div>
                 </button>
               ))}
             </div>

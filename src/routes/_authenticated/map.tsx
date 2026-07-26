@@ -64,7 +64,7 @@ function MapPage() {
     const rateKey = `${rate}_rate` as const;
     return slots.filter(s => {
       if (vehicle !== "all" && s.vehicle_type !== vehicle && s.vehicle_type !== "both") return false;
-      if ((s as any)[rateKey] > maxPrice) return false;
+      if ((s as unknown as Record<string, number>)[rateKey] > maxPrice) return false;
       for (const a of amenities) if (!s[a]) return false;
       return true;
     });
