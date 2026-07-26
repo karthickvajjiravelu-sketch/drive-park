@@ -4,7 +4,7 @@ import { useProfile, useNotifications } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { LogOut, Car, ChevronRight, Bell, BadgeCheck, ShieldCheck, Clock } from "lucide-react";
+import { LogOut, Car, ChevronRight, Bell, BadgeCheck, ShieldCheck, Clock, Heart, Wallet, LifeBuoy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -136,12 +136,16 @@ function ProfilePage() {
           </div>
         )}
 
-        {profile.role === "driver" && (
-          <Link to="/vehicles" className="w-full rounded-2xl bg-card border border-border py-3 px-4 flex items-center justify-between font-semibold">
-            <span className="flex items-center gap-2"><Car className="w-4 h-4"/>My Garage</span>
-            <ChevronRight className="w-4 h-4 text-muted-foreground"/>
-          </Link>
-        )}
+        <div className="rounded-2xl bg-card border border-border divide-y divide-border overflow-hidden">
+          {profile.role === "driver" && (
+            <>
+              <Row to="/vehicles" icon={<Car className="w-4 h-4"/>} label="My Garage"/>
+              <Row to="/saved" icon={<Heart className="w-4 h-4"/>} label="Saved spots"/>
+            </>
+          )}
+          <Row to="/wallet" icon={<Wallet className="w-4 h-4"/>} label="Wallet & payments"/>
+          <Row to="/help" icon={<LifeBuoy className="w-4 h-4"/>} label="Help & support"/>
+        </div>
 
         <button onClick={signOut}
           className="w-full rounded-2xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2">
@@ -149,5 +153,14 @@ function ProfilePage() {
         </button>
       </div>
     </div>
+  );
+}
+
+function Row({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link to={to} className="w-full py-3 px-4 flex items-center justify-between font-semibold">
+      <span className="flex items-center gap-2">{icon}{label}</span>
+      <ChevronRight className="w-4 h-4 text-muted-foreground"/>
+    </Link>
   );
 }

@@ -2,10 +2,11 @@ import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useSlots, type Slot } from "@/lib/queries";
+import { useSlots, useMyFavorites, type Slot } from "@/lib/queries";
 import { ClientOnly } from "@/components/ClientOnly";
-import { MapPin, List as ListIcon, Filter } from "lucide-react";
+import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-react";
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
+import { toast } from "sonner";
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
 
@@ -25,26 +26,29 @@ function haversine(a: [number, number], b: [number, number]) {
 
 function MapPage() {
   const { data: slots = [] } = useSlots();
+  const { data: favorites = [] } = useMyFavorites();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [view, setView] = useState<"map" | "list">("map");
-  const [center, setCenter] = useState<[number, number]>(CHENNAI);
+  const [origin, setOrigin] = useState<[number, number]>(CHENNAI);
+  const [destination, setDestination] = useState<{ lat: number; lng: number; label: string } | null>(null);
   const [vehicle, setVehicle] = useState<"all" | "car" | "bike" | "both">("all");
   const [rate, setRate] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [maxPrice, setMaxPrice] = useState(500);
   const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
+  const favSet = useMemo(() => new Set(favorites.map(f => f.slot_id)), [favorites]);
+
   useEffect(() => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      pos => setCenter([pos.coords.latitude, pos.coords.longitude]),
+      pos => setOrigin([pos.coords.latitude, pos.coords.longitude]),
       () => {},
       { timeout: 5000 }
     );
   }, []);
 
-  // Realtime slot updates
   useEffect(() => {
     const channel = supabase
       .channel("slots-changes")
@@ -53,6 +57,8 @@ function MapPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
+
+  const anchor: [number, number] = destination ? [destination.lat, destination.lng] : origin;
 
   const filtered = useMemo(() => {
     const rateKey = `${rate}_rate` as const;
@@ -65,8 +71,23 @@ function MapPage() {
   }, [slots, vehicle, rate, maxPrice, amenities]);
 
   const sorted = useMemo(() =>
-    [...filtered].sort((a, b) => haversine(center, [a.lat, a.lng]) - haversine(center, [b.lat, b.lng])),
-  [filtered, center]);
+    [...filtered].sort((a, b) => haversine(anchor, [a.lat, a.lng]) - haversine(anchor, [b.lat, b.lng])),
+  [filtered, anchor]);
+
+  async function toggleFav(slotId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const existing = favorites.find(f => f.slot_id === slotId);
+    if (existing) {
+      const { error } = await supabase.from("favorites").delete().eq("id", existing.id);
+      if (error) toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("favorites").insert({ driver_id: user.id, slot_id: slotId });
+      if (error) toast.error(error.message);
+      else toast.success("Saved");
+    }
+    qc.invalidateQueries({ queryKey: ["my-favorites"] });
+  }
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100dvh - 5rem)" }}>
@@ -81,6 +102,16 @@ function MapPage() {
             <div className="text-[10px] text-white/60 font-semibold uppercase">spots open</div>
           </div>
         </div>
+
+        {destination && (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-white/10 px-3 py-2 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <Navigation2 className="w-3.5 h-3.5 text-primary shrink-0"/>
+              <span className="truncate">Near <span className="font-bold">{destination.label}</span></span>
+            </div>
+            <button onClick={() => setDestination(null)} className="text-white/60 font-semibold">Clear</button>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 mt-4">
           <div className="flex-1 flex bg-white/10 rounded-full p-1">
@@ -152,16 +183,23 @@ function MapPage() {
         <div className="flex-1 min-h-[60vh] relative">
           <ClientOnly fallback={<div className="p-6 text-sm text-muted-foreground">Loading map…</div>}>
             <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading map…</div>}>
-              <SlotMap slots={sorted} center={center} onSelect={id => navigate({ to: "/slot/$id", params: { id } })}/>
+              <SlotMap
+                slots={sorted}
+                center={origin}
+                onSelect={id => navigate({ to: "/slot/$id", params: { id } })}
+                onDestinationChange={setDestination}
+              />
             </Suspense>
           </ClientOnly>
         </div>
       ) : (
         <div className="px-4 py-4 space-y-3">
           <div className="text-xs text-muted-foreground font-semibold px-1">
-            {sorted.length} {sorted.length === 1 ? "spot" : "spots"} near you
+            {sorted.length} {sorted.length === 1 ? "spot" : "spots"} {destination ? `near ${destination.label}` : "near you"}
           </div>
-          {sorted.map(s => <SlotCard key={s.id} slot={s} center={center}
+          {sorted.map(s => <SlotCard key={s.id} slot={s} anchor={anchor}
+            favorited={favSet.has(s.id)}
+            onFav={() => toggleFav(s.id)}
             onClick={() => navigate({ to: "/slot/$id", params: { id: s.id } })}/>)}
           {sorted.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No slots match your filters.</p>}
         </div>
@@ -170,39 +208,47 @@ function MapPage() {
   );
 }
 
-function SlotCard({ slot, center, onClick }: { slot: Slot; center: [number, number]; onClick: () => void }) {
-  const dist = haversine(center, [slot.lat, slot.lng]).toFixed(1);
+function SlotCard({ slot, anchor, favorited, onFav, onClick }: {
+  slot: Slot; anchor: [number, number]; favorited: boolean; onFav: () => void; onClick: () => void;
+}) {
+  const dist = haversine(anchor, [slot.lat, slot.lng]).toFixed(1);
   const full = slot.status === "full";
   return (
-    <button onClick={onClick}
-      className={`w-full card-elevated overflow-hidden text-left transition active:scale-[0.98] ${full ? "opacity-60" : ""}`}>
-      <div className="relative">
-        {slot.photos[0]
-          ? <img src={slot.photos[0]} alt="" className="w-full h-40 object-cover"/>
-          : <div className="w-full h-40 bg-muted grid place-items-center"><MapPin className="w-8 h-8 text-muted-foreground"/></div>}
-        <div className="absolute top-2 right-2 price-pill">₹{slot.hourly_rate}<span className="opacity-70 font-semibold">/hr</span></div>
-        {full && <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">FULL</div>}
-        {!full && <div className="absolute top-2 left-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN</div>}
-      </div>
-      <div className="p-3.5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="font-black truncate text-[15px]">{slot.name}</div>
-            <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3"/>{slot.approx_area} · {dist} km away
+    <div className={`card-elevated overflow-hidden transition ${full ? "opacity-60" : ""}`}>
+      <button onClick={onClick} className="w-full text-left active:scale-[0.98]">
+        <div className="relative">
+          {slot.photos[0]
+            ? <img src={slot.photos[0]} alt="" className="w-full h-40 object-cover"/>
+            : <div className="w-full h-40 bg-muted grid place-items-center"><MapPin className="w-8 h-8 text-muted-foreground"/></div>}
+          <div className="absolute top-2 right-2 price-pill">₹{slot.hourly_rate}<span className="opacity-70 font-semibold">/hr</span></div>
+          {full && <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">FULL</div>}
+          {!full && <div className="absolute top-2 left-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/95 text-[10px] font-bold"><span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/>OPEN</div>}
+        </div>
+        <div className="p-3.5">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="font-black truncate text-[15px]">{slot.name}</div>
+              <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3 h-3"/>{slot.approx_area} · {dist} km away
+              </div>
             </div>
+            {slot.rating > 0 && <div className="chip"><span className="text-primary">★</span>{slot.rating.toFixed(1)}</div>}
           </div>
-          {slot.rating > 0 && <div className="chip"><span className="text-primary">★</span>{slot.rating.toFixed(1)}</div>}
+          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+            <span className="chip capitalize">{slot.vehicle_type}</span>
+            {slotAmenities(slot).map(a => (
+              <span key={a.key} className="chip"><a.icon className="w-3 h-3"/>{a.label}</span>
+            ))}
+            <span className="chip">Daily ₹{slot.daily_rate}</span>
+          </div>
         </div>
-        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-          <span className="chip capitalize">{slot.vehicle_type}</span>
-          {slotAmenities(slot).map(a => (
-            <span key={a.key} className="chip"><a.icon className="w-3 h-3"/>{a.label}</span>
-          ))}
-          <span className="chip">Daily ₹{slot.daily_rate}</span>
-        </div>
-      </div>
-    </button>
+      </button>
+      <button onClick={onFav}
+        aria-label={favorited ? "Remove from saved" : "Save spot"}
+        className="absolute top-3 right-14 w-9 h-9 rounded-full bg-white/95 grid place-items-center shadow"
+        style={{ position: "absolute" }}>
+        <Heart className={`w-4 h-4 ${favorited ? "fill-primary text-primary" : "text-black"}`}/>
+      </button>
+    </div>
   );
 }
-

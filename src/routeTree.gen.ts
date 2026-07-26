@@ -13,19 +13,24 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedVehiclesRouteImport } from './routes/_authenticated/vehicles'
+import { Route as AuthenticatedSavedRouteImport } from './routes/_authenticated/saved'
 import { Route as AuthenticatedReservationsRouteImport } from './routes/_authenticated/reservations'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMySlotsRouteImport } from './routes/_authenticated/my-slots'
 import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedEarningsRouteImport } from './routes/_authenticated/earnings'
 import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
 import { Route as AuthenticatedAddSlotRouteImport } from './routes/_authenticated/add-slot'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
+import { Route as AuthenticatedMessagesReservationIdRouteImport } from './routes/_authenticated/messages.$reservationId'
+import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authenticated/edit-slot.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 
@@ -48,9 +53,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedVehiclesRoute = AuthenticatedVehiclesRouteImport.update({
   id: '/vehicles',
   path: '/vehicles',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSavedRoute = AuthenticatedSavedRouteImport.update({
+  id: '/saved',
+  path: '/saved',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReservationsRoute =
@@ -85,6 +100,11 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   path: '/home',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedEarningsRoute = AuthenticatedEarningsRouteImport.update({
   id: '/earnings',
   path: '/earnings',
@@ -117,6 +137,17 @@ const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
   path: '/slot/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMessagesReservationIdRoute =
+  AuthenticatedMessagesReservationIdRouteImport.update({
+    id: '/messages/$reservationId',
+    path: '/messages/$reservationId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEditSlotIdRoute = AuthenticatedEditSlotIdRouteImport.update({
+  id: '/edit-slot/$id',
+  path: '/edit-slot/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -138,15 +169,20 @@ export interface FileRoutesByFullPath {
   '/add-slot': typeof AuthenticatedAddSlotRoute
   '/bookings': typeof AuthenticatedBookingsRoute
   '/earnings': typeof AuthenticatedEarningsRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
   '/my-slots': typeof AuthenticatedMySlotsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
+  '/saved': typeof AuthenticatedSavedRoute
   '/vehicles': typeof AuthenticatedVehiclesRoute
+  '/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
+  '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRoutesByTo {
@@ -158,15 +194,20 @@ export interface FileRoutesByTo {
   '/add-slot': typeof AuthenticatedAddSlotRoute
   '/bookings': typeof AuthenticatedBookingsRoute
   '/earnings': typeof AuthenticatedEarningsRoute
+  '/help': typeof AuthenticatedHelpRoute
   '/home': typeof AuthenticatedHomeRoute
   '/map': typeof AuthenticatedMapRoute
   '/my-slots': typeof AuthenticatedMySlotsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/reservations': typeof AuthenticatedReservationsRoute
+  '/saved': typeof AuthenticatedSavedRoute
   '/vehicles': typeof AuthenticatedVehiclesRoute
+  '/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
+  '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRoutesById {
@@ -180,15 +221,20 @@ export interface FileRoutesById {
   '/_authenticated/add-slot': typeof AuthenticatedAddSlotRoute
   '/_authenticated/bookings': typeof AuthenticatedBookingsRoute
   '/_authenticated/earnings': typeof AuthenticatedEarningsRoute
+  '/_authenticated/help': typeof AuthenticatedHelpRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/my-slots': typeof AuthenticatedMySlotsRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/reservations': typeof AuthenticatedReservationsRoute
+  '/_authenticated/saved': typeof AuthenticatedSavedRoute
   '/_authenticated/vehicles': typeof AuthenticatedVehiclesRoute
+  '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
+  '/_authenticated/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
 }
 export interface FileRouteTypes {
@@ -202,15 +248,20 @@ export interface FileRouteTypes {
     | '/add-slot'
     | '/bookings'
     | '/earnings'
+    | '/help'
     | '/home'
     | '/map'
     | '/my-slots'
     | '/notifications'
     | '/profile'
     | '/reservations'
+    | '/saved'
     | '/vehicles'
+    | '/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/edit-slot/$id'
+    | '/messages/$reservationId'
     | '/slot/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -222,15 +273,20 @@ export interface FileRouteTypes {
     | '/add-slot'
     | '/bookings'
     | '/earnings'
+    | '/help'
     | '/home'
     | '/map'
     | '/my-slots'
     | '/notifications'
     | '/profile'
     | '/reservations'
+    | '/saved'
     | '/vehicles'
+    | '/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/edit-slot/$id'
+    | '/messages/$reservationId'
     | '/slot/$id'
   id:
     | '__root__'
@@ -243,15 +299,20 @@ export interface FileRouteTypes {
     | '/_authenticated/add-slot'
     | '/_authenticated/bookings'
     | '/_authenticated/earnings'
+    | '/_authenticated/help'
     | '/_authenticated/home'
     | '/_authenticated/map'
     | '/_authenticated/my-slots'
     | '/_authenticated/notifications'
     | '/_authenticated/profile'
     | '/_authenticated/reservations'
+    | '/_authenticated/saved'
     | '/_authenticated/vehicles'
+    | '/_authenticated/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/edit-slot/$id'
+    | '/_authenticated/messages/$reservationId'
     | '/_authenticated/slot/$id'
   fileRoutesById: FileRoutesById
 }
@@ -296,11 +357,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/wallet': {
+      id: '/_authenticated/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof AuthenticatedWalletRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/vehicles': {
       id: '/_authenticated/vehicles'
       path: '/vehicles'
       fullPath: '/vehicles'
       preLoaderRoute: typeof AuthenticatedVehiclesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/saved': {
+      id: '/_authenticated/saved'
+      path: '/saved'
+      fullPath: '/saved'
+      preLoaderRoute: typeof AuthenticatedSavedRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reservations': {
@@ -345,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHomeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/help': {
+      id: '/_authenticated/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthenticatedHelpRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/earnings': {
       id: '/_authenticated/earnings'
       path: '/earnings'
@@ -387,6 +469,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlotIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/messages/$reservationId': {
+      id: '/_authenticated/messages/$reservationId'
+      path: '/messages/$reservationId'
+      fullPath: '/messages/$reservationId'
+      preLoaderRoute: typeof AuthenticatedMessagesReservationIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/edit-slot/$id': {
+      id: '/_authenticated/edit-slot/$id'
+      path: '/edit-slot/$id'
+      fullPath: '/edit-slot/$id'
+      preLoaderRoute: typeof AuthenticatedEditSlotIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -408,13 +504,18 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAddSlotRoute: typeof AuthenticatedAddSlotRoute
   AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
+  AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedMySlotsRoute: typeof AuthenticatedMySlotsRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedReservationsRoute: typeof AuthenticatedReservationsRoute
+  AuthenticatedSavedRoute: typeof AuthenticatedSavedRoute
   AuthenticatedVehiclesRoute: typeof AuthenticatedVehiclesRoute
+  AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedEditSlotIdRoute: typeof AuthenticatedEditSlotIdRoute
+  AuthenticatedMessagesReservationIdRoute: typeof AuthenticatedMessagesReservationIdRoute
   AuthenticatedSlotIdRoute: typeof AuthenticatedSlotIdRoute
 }
 
@@ -422,13 +523,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAddSlotRoute: AuthenticatedAddSlotRoute,
   AuthenticatedBookingsRoute: AuthenticatedBookingsRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
+  AuthenticatedHelpRoute: AuthenticatedHelpRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedMySlotsRoute: AuthenticatedMySlotsRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedReservationsRoute: AuthenticatedReservationsRoute,
+  AuthenticatedSavedRoute: AuthenticatedSavedRoute,
   AuthenticatedVehiclesRoute: AuthenticatedVehiclesRoute,
+  AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedEditSlotIdRoute: AuthenticatedEditSlotIdRoute,
+  AuthenticatedMessagesReservationIdRoute:
+    AuthenticatedMessagesReservationIdRoute,
   AuthenticatedSlotIdRoute: AuthenticatedSlotIdRoute,
 }
 
