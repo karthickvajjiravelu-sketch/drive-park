@@ -35,7 +35,7 @@ function Landing() {
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           width={1024}
-          height={1024}
+          height={1536}
         />
         <div className="absolute inset-0 hero-scrim" />
         <div className="relative z-10 flex flex-col h-full px-6 pt-10 pb-8 text-white">
