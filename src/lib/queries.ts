@@ -137,7 +137,7 @@ export const myReservationsQuery = () => queryOptions({
       .eq("driver_id", user.id)
       .order("start_time", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as any;
+    return (data ?? []) as Array<Reservation & { slot: Slot | null }>;
   },
 });
 export const useMyReservations = () => useQuery(myReservationsQuery());
