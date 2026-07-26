@@ -68,7 +68,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Usop is a two-sided parking marketplace: drivers find nearby spots, landowners rent their space.",
       },
-      { name: "theme-color", content: "#443A78" },
+      { name: "theme-color", content: "#443A78", media: "(prefers-color-scheme: light)" },
+      { name: "theme-color", content: "#1B1730", media: "(prefers-color-scheme: dark)" },
       { property: "og:title", content: "Usop — Find & rent parking" },
       { property: "og:description", content: "Find nearby parking or rent out your space." },
       { property: "og:type", content: "website" },
