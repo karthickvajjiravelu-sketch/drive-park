@@ -25,7 +25,7 @@ function useCountdown(end: string) {
 }
 
 function MyReservations() {
-  const { data: reservations = [], isLoading } = useMyReservations();
+  const { data: reservations = [], isLoading, isError, error, refetch } = useMyReservations();
   const qc = useQueryClient();
   const [reviewing, setReviewing] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<any | null>(null);
