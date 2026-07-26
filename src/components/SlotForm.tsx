@@ -299,7 +299,7 @@ function LocationPicker({
           map,
           draggable: true,
           icon: {
-            url: pinIcon("#FFD400"),
+            url: pinIcon("#F2A522", "#241F3D"),
             scaledSize: new g.maps.Size(36, 44),
             anchor: new g.maps.Point(18, 42),
           },

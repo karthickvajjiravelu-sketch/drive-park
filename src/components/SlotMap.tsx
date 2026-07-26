@@ -57,7 +57,7 @@ export default function SlotMap({
               position: loc,
               map: mapRef.current!,
               icon: {
-                url: pinIcon("#000", "#FFD400"),
+                url: pinIcon("#443A78", "#F2A522"),
                 scaledSize: new g.maps.Size(40, 48),
                 anchor: new g.maps.Point(20, 46),
               },
@@ -98,7 +98,7 @@ export default function SlotMap({
       seen.add(s.id);
       const isFull = s.status === "full";
       const icon = {
-        url: pinIcon(isFull ? "#9ca3af" : "#FFD400"),
+        url: pinIcon(isFull ? "#E85D3D" : "#1FA35A", "#241F3D"),
         scaledSize: new g.maps.Size(36, 44),
         anchor: new g.maps.Point(18, 42),
       };
@@ -108,16 +108,16 @@ export default function SlotMap({
           position: { lat: s.lat, lng: s.lng },
           map: mapRef.current!,
           icon,
-          opacity: isFull ? 0.6 : 1,
+          opacity: isFull ? 0.65 : 1,
           title: s.name,
         });
         m.addListener("click", () => {
           infoRef.current?.setContent(
-            `<div style="font-family:Inter,sans-serif;min-width:180px">
-               <div style="font-weight:800;color:#111">${escapeHtml(s.name)}</div>
-               <div style="font-size:12px;color:#666;margin-top:2px">${escapeHtml(s.approx_area || "")}</div>
-               <div style="margin-top:6px;font-weight:700">₹${s.hourly_rate}<span style="color:#666;font-weight:500">/hr</span> · ${isFull ? "Full" : "Open"}</div>
-               <button id="usop-view-${s.id}" style="margin-top:8px;width:100%;background:#FFD400;color:#000;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer">View details</button>
+            `<div style="font-family:Inter,sans-serif;min-width:180px;color:#2A2438">
+               <div style="font-weight:800">${escapeHtml(s.name)}</div>
+               <div style="font-size:12px;color:#6b6478;margin-top:2px">${escapeHtml(s.approx_area || "")}</div>
+               <div style="margin-top:6px;font-weight:700">₹${s.hourly_rate}<span style="color:#6b6478;font-weight:500">/hr</span> · <span style="color:${isFull ? "#E85D3D" : "#1FA35A"}">${isFull ? "Full" : "Open"}</span></div>
+               <button id="usop-view-${s.id}" style="margin-top:8px;width:100%;background:#F2A522;color:#2A2438;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer">View details</button>
              </div>`,
           );
           infoRef.current?.open({ map: mapRef.current!, anchor: m! });
