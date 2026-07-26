@@ -214,7 +214,7 @@ function SlotCard({ slot, anchor, favorited, onFav, onClick }: {
   const dist = haversine(anchor, [slot.lat, slot.lng]).toFixed(1);
   const full = slot.status === "full";
   return (
-    <div className={`card-elevated overflow-hidden transition ${full ? "opacity-60" : ""}`}>
+    <div className={`relative card-elevated overflow-hidden transition ${full ? "opacity-60" : ""}`}>
       <button onClick={onClick} className="w-full text-left active:scale-[0.98]">
         <div className="relative">
           {slot.photos[0]
