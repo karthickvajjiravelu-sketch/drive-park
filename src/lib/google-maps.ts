@@ -49,7 +49,7 @@ export const USOP_MAP_STYLE: google.maps.MapTypeStyle[] = [
 ];
 
 // SVG pin as data URL
-export function pinIcon(color: string, stroke = "#000") {
+export function pinIcon(color: string, stroke = "#241F3D") {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='44' viewBox='0 0 36 44'>
     <path d='M18 2 C9 2 2 9 2 18 c0 12 16 24 16 24 s16-12 16-24 C34 9 27 2 18 2 z' fill='${color}' stroke='${stroke}' stroke-width='2'/>
     <circle cx='18' cy='17' r='6' fill='${stroke}'/>
