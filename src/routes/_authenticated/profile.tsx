@@ -200,9 +200,17 @@ function ProfilePage() {
           <Row to="/help" icon={<LifeBuoy className="w-4 h-4" />} label="Help & support" />
         </div>
 
+        <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+          <div className="flex items-center gap-2 font-bold">
+            <Palette className="w-4 h-4 text-primary" />
+            Appearance
+          </div>
+          <ThemeToggle />
+        </div>
+
         <button
           onClick={signOut}
-          className="w-full rounded-2xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2"
+          className="w-full rounded-2xl bg-foreground text-background py-3 font-semibold flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Sign out
