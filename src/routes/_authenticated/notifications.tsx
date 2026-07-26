@@ -47,7 +47,7 @@ function NotificationsPage() {
   }
 
   async function open(n: { id: string; link: string | null }) {
-    await supabase.from("notifications" as any).update({ read: true }).eq("id", n.id);
+    await supabase.from("notifications").update({ read: true }).eq("id", n.id);
     qc.invalidateQueries({ queryKey: ["notifications"] });
     if (n.link) navigate({ to: n.link });
   }
