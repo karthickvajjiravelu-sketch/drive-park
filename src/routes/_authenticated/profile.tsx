@@ -15,7 +15,9 @@ import {
   Heart,
   Wallet,
   LifeBuoy,
+  Palette,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
