@@ -57,7 +57,7 @@ export default function SlotMap({
               position: loc,
               map: mapRef.current!,
               icon: {
-                url: pinIcon("#000", "#FFD400"),
+                url: pinIcon("#443A78", "#F2A522"),
                 scaledSize: new g.maps.Size(40, 48),
                 anchor: new g.maps.Point(20, 46),
               },
