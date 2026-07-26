@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Zap, IndianRupee, ShieldCheck } from "lucide-react";
 import heroImg from "@/assets/parking-hero.jpg";
+import heroImgTall from "@/assets/parking-hero-tall.jpg";
+import heroImgWide from "@/assets/parking-hero-wide.jpg";
 
 export const Route = createFileRoute("/")({
   component: Landing,
