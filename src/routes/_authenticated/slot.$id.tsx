@@ -126,7 +126,12 @@ function SlotDetail() {
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
       toast.success("Reserved!");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
+      const msg = e instanceof Error ? e.message : "Failed";
+      if (/no_overlap|conflicting key value|exclusion/i.test(msg)) {
+        toast.error("That time is already booked. Try a different slot or time.");
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }
