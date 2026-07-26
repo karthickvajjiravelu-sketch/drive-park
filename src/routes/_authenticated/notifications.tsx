@@ -42,12 +42,12 @@ function NotificationsPage() {
   async function markAllRead() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("notifications" as any).update({ read: true }).eq("user_id", user.id).eq("read", false);
+    await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
     qc.invalidateQueries({ queryKey: ["notifications"] });
   }
 
   async function open(n: { id: string; link: string | null }) {
-    await supabase.from("notifications" as any).update({ read: true }).eq("id", n.id);
+    await supabase.from("notifications").update({ read: true }).eq("id", n.id);
     qc.invalidateQueries({ queryKey: ["notifications"] });
     if (n.link) navigate({ to: n.link });
   }

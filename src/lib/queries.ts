@@ -75,7 +75,7 @@ export const myVehiclesQuery = () => queryOptions({
   queryFn: async (): Promise<Vehicle[]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
-    const { data, error } = await supabase.from("vehicles" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("vehicles").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as unknown as Vehicle[];
   },
@@ -137,7 +137,7 @@ export const myReservationsQuery = () => queryOptions({
       .eq("driver_id", user.id)
       .order("start_time", { ascending: false });
     if (error) throw error;
-    return (data ?? []) as any;
+    return (data ?? []) as Array<Reservation & { slot: Slot | null }>;
   },
 });
 export const useMyReservations = () => useQuery(myReservationsQuery());
@@ -187,13 +187,13 @@ export const notificationsQuery = () => queryOptions({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase
-      .from("notifications" as any)
+      .from("notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw error;
-    return (data ?? []) as unknown as Notification[];
+    return (data ?? []) as Notification[];
   },
 });
 export const useNotifications = () => useQuery(notificationsQuery());

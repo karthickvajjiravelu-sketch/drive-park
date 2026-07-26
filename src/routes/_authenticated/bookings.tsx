@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/bookings")({
 });
 
 function Bookings() {
-  const { data: bookings = [], isLoading } = useOwnerBookings();
+  const { data: bookings = [], isLoading, isError, error, refetch } = useOwnerBookings();
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -21,6 +21,12 @@ function Bookings() {
   }, [qc]);
 
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (isError) return (
+    <div className="p-6 text-center space-y-3">
+      <p className="text-sm text-destructive">Couldn't load bookings. {error instanceof Error ? error.message : ""}</p>
+      <button onClick={() => refetch()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Retry</button>
+    </div>
+  );
 
   // Group by slot
   const bySlot = new Map<string, typeof bookings>();

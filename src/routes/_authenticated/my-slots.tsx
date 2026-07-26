@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/my-slots")({
 });
 
 function MySlots() {
-  const { data: slots = [], isLoading } = useMySlots();
+  const { data: slots = [], isLoading, isError, error, refetch } = useMySlots();
   const qc = useQueryClient();
 
   async function toggle(id: string, current: "open" | "full") {
@@ -21,6 +21,12 @@ function MySlots() {
   }
 
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (isError) return (
+    <div className="p-6 text-center space-y-3">
+      <p className="text-sm text-destructive">Couldn't load your slots. {error instanceof Error ? error.message : ""}</p>
+      <button onClick={() => refetch()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Retry</button>
+    </div>
+  );
 
   return (
     <div>

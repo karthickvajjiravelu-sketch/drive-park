@@ -25,7 +25,7 @@ function VehiclesPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setBusy(false); return; }
     const isFirst = vehicles.length === 0;
-    const { error } = await supabase.from("vehicles" as any).insert({
+    const { error } = await supabase.from("vehicles").insert({
       user_id: user.id,
       plate: plate.trim().toUpperCase(),
       make: make.trim() || null,
@@ -42,14 +42,14 @@ function VehiclesPage() {
   async function setDefault(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("vehicles" as any).update({ is_default: false }).eq("user_id", user.id);
-    await supabase.from("vehicles" as any).update({ is_default: true }).eq("id", id);
+    await supabase.from("vehicles").update({ is_default: false }).eq("user_id", user.id);
+    await supabase.from("vehicles").update({ is_default: true }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["my-vehicles"] });
   }
 
   async function remove(id: string) {
     if (!confirm("Remove this vehicle?")) return;
-    const { error } = await supabase.from("vehicles" as any).delete().eq("id", id);
+    const { error } = await supabase.from("vehicles").delete().eq("id", id);
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ["my-vehicles"] });
   }

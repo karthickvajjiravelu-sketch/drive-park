@@ -51,7 +51,7 @@ function ProfilePage() {
   async function requestVerification() {
     setReqBusy(true);
     const { error } = await supabase.from("profiles")
-      .update({ verification_status: "pending" } as any)
+      .update({ verification_status: "pending" })
       .eq("id", profile!.id);
     if (error) toast.error(error.message);
     else { toast.success("Verification requested"); qc.invalidateQueries({ queryKey: ["profile"] }); }
