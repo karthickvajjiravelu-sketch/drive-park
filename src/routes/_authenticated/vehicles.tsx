@@ -25,7 +25,7 @@ function VehiclesPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setBusy(false); return; }
     const isFirst = vehicles.length === 0;
-    const { error } = await supabase.from("vehicles" as any).insert({
+    const { error } = await supabase.from("vehicles").insert({
       user_id: user.id,
       plate: plate.trim().toUpperCase(),
       make: make.trim() || null,
