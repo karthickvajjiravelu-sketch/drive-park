@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMySupport } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronDown, LifeBuoy, Mail } from "lucide-react";
+import { ArrowLeft, LifeBuoy, Mail } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const Route = createFileRoute("/_authenticated/help")({
   component: HelpPage,
