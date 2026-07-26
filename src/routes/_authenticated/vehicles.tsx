@@ -42,8 +42,8 @@ function VehiclesPage() {
   async function setDefault(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("vehicles" as any).update({ is_default: false }).eq("user_id", user.id);
-    await supabase.from("vehicles" as any).update({ is_default: true }).eq("id", id);
+    await supabase.from("vehicles").update({ is_default: false }).eq("user_id", user.id);
+    await supabase.from("vehicles").update({ is_default: true }).eq("id", id);
     qc.invalidateQueries({ queryKey: ["my-vehicles"] });
   }
 
