@@ -45,24 +45,25 @@ function Landing() {
         </picture>
         <div className="absolute inset-0 hero-scrim" />
         <div className="relative z-10 flex flex-col h-full px-6 pt-10 pb-8 text-white">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-primary grid place-items-center text-primary-foreground font-black">
+          <div className="flex items-center gap-2 hero-text-shadow">
+            <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center text-accent-foreground font-black shadow-lg">
               U
             </div>
-            <span className="text-lg font-black tracking-tight">Usop</span>
+            <span className="text-lg font-black tracking-tight text-white">Usop</span>
           </div>
-          <div className="mt-auto">
-            <span className="chip chip-yellow mb-4">India&apos;s parking marketplace</span>
-            <h1 className="text-[2.6rem] leading-[1.05] font-black">
+          <div className="mt-auto hero-text-shadow">
+            <span className="chip chip-amber mb-4 shadow-md">India&apos;s parking marketplace</span>
+            <h1 className="text-[2.6rem] leading-[1.05] font-black text-white">
               Your space.
               <br />
               <span className="text-accent">Your spot.</span>
             </h1>
-            <p className="mt-3 text-white/80 text-[15px] max-w-xs">
+            <p className="mt-3 text-white text-[15px] max-w-xs">
               Book verified parking in seconds — or list your driveway and earn every month.
             </p>
           </div>
         </div>
+
       </div>
 
       <div className="px-5 -mt-8 relative z-20">
