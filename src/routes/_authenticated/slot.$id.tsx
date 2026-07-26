@@ -129,7 +129,7 @@ function SlotDetail() {
             try {
               if (navigator.share) await navigator.share(shareData);
               else { await navigator.clipboard.writeText(url); toast.success("Link copied"); }
-            } catch {}
+            } catch { /* user cancelled or clipboard denied */ }
           }}
             className="w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
             <Share2 className="w-4 h-4"/>

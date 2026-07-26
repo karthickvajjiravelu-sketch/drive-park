@@ -17,7 +17,7 @@ function loadCards(): MockCard[] {
   try {
     const raw = localStorage.getItem(MOCK_CARDS_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch { /* user cancelled or clipboard denied */ }
   const seed: MockCard[] = [
     { id: "c1", brand: "Visa", last4: "4242", exp: "08/28", primary: true },
   ];
