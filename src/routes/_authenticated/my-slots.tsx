@@ -91,7 +91,7 @@ function MySlots() {
                 </div>
                 <button
                   onClick={() => toggle(s.id, s.status)}
-                  className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${s.status === "open" ? "bg-primary text-primary-foreground" : "bg-black text-white"}`}
+                  className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${s.status === "open" ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}
                 >
                   {s.status.toUpperCase()}
                 </button>

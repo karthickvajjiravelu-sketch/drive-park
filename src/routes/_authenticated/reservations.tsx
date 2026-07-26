@@ -255,7 +255,7 @@ function ActiveCard({
         <Link
           to="/messages/$reservationId"
           params={{ reservationId: r.id }}
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+          className="rounded-xl bg-foreground text-background py-2 text-xs font-semibold flex items-center justify-center gap-1"
         >
           <MessageCircle className="w-3.5 h-3.5" />
           Message
@@ -264,7 +264,7 @@ function ActiveCard({
           href={`https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+          className="rounded-xl bg-foreground text-background py-2 text-xs font-semibold flex items-center justify-center gap-1"
         >
           <Navigation2 className="w-3.5 h-3.5" />
           Route
@@ -319,7 +319,7 @@ function HostCall({ ownerId }: { ownerId: string }) {
   return (
     <a
       href={phone ? `tel:${phone}` : undefined}
-      className={`rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1 ${!phone ? "opacity-50 pointer-events-none" : ""}`}
+      className={`rounded-xl bg-foreground text-background py-2 text-xs font-semibold flex items-center justify-center gap-1 ${!phone ? "opacity-50 pointer-events-none" : ""}`}
     >
       <Phone className="w-3.5 h-3.5" />
       Call
@@ -359,7 +359,7 @@ function UpcomingCard({
         <Link
           to="/messages/$reservationId"
           params={{ reservationId: r.id }}
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+          className="rounded-xl bg-foreground text-background py-2 text-xs font-semibold flex items-center justify-center gap-1"
         >
           <MessageCircle className="w-3.5 h-3.5" />
           Message host

@@ -323,7 +323,7 @@ function SlotCard({
             <span className="opacity-70 font-semibold">/hr</span>
           </div>
           {full && (
-            <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">
+            <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
               FULL
             </div>
           )}

@@ -12,6 +12,9 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "../components/ThemeProvider";
+import { ThemeMetaColor } from "../components/ThemeToggle";
+
 
 function NotFoundComponent() {
   return (
@@ -65,7 +68,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Usop is a two-sided parking marketplace: drivers find nearby spots, landowners rent their space.",
       },
-      { name: "theme-color", content: "#443A78" },
+      { name: "theme-color", content: "#443A78", media: "(prefers-color-scheme: light)" },
+      { name: "theme-color", content: "#1B1730", media: "(prefers-color-scheme: dark)" },
       { property: "og:title", content: "Usop — Find & rent parking" },
       { property: "og:description", content: "Find nearby parking or rent out your space." },
       { property: "og:type", content: "website" },
@@ -90,7 +94,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -105,9 +109,12 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster position="top-center" richColors />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeMetaColor />
+        <Outlet />
+        <Toaster position="top-center" richColors />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

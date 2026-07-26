@@ -192,7 +192,7 @@ function WalletPage() {
               key={c.id}
               className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-lg bg-black text-white grid place-items-center">
+              <div className="w-10 h-10 rounded-lg bg-foreground text-background grid place-items-center">
                 <CreditCard className="w-5 h-5" />
               </div>
               <div className="flex-1">

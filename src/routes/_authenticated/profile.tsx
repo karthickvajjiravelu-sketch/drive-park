@@ -15,7 +15,9 @@ import {
   Heart,
   Wallet,
   LifeBuoy,
+  Palette,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/_authenticated/profile")({
   component: ProfilePage,
@@ -103,7 +105,7 @@ function ProfilePage() {
                 {profile.role}
               </span>
               {profile.verified && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-black text-xs font-bold">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs font-bold">
                   <BadgeCheck className="w-3.5 h-3.5" />
                   Verified
                 </span>
@@ -178,7 +180,7 @@ function ProfilePage() {
                 <button
                   disabled={reqBusy}
                   onClick={requestVerification}
-                  className="mt-3 w-full rounded-xl bg-black text-white py-2.5 text-sm font-bold disabled:opacity-60"
+                  className="mt-3 w-full rounded-xl bg-foreground text-background py-2.5 text-sm font-bold disabled:opacity-60"
                 >
                   Request verification
                 </button>
@@ -198,9 +200,17 @@ function ProfilePage() {
           <Row to="/help" icon={<LifeBuoy className="w-4 h-4" />} label="Help & support" />
         </div>
 
+        <div className="rounded-2xl bg-card border border-border p-4 space-y-3">
+          <div className="flex items-center gap-2 font-bold">
+            <Palette className="w-4 h-4 text-primary" />
+            Appearance
+          </div>
+          <ThemeToggle />
+        </div>
+
         <button
           onClick={signOut}
-          className="w-full rounded-2xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2"
+          className="w-full rounded-2xl bg-foreground text-background py-3 font-semibold flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Sign out

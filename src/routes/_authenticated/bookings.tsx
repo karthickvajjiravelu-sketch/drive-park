@@ -74,7 +74,7 @@ function Bookings() {
                         b.status === "active"
                           ? "bg-primary text-primary-foreground"
                           : b.status === "completed"
-                            ? "bg-black text-white"
+                            ? "bg-foreground text-background"
                             : "bg-muted text-muted-foreground"
                       }`}
                     >
