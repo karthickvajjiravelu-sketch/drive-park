@@ -31,13 +31,13 @@ function MyReservations() {
   const { data: reservations = [], isLoading, isError, error, refetch } = useMyReservations();
   const qc = useQueryClient();
   const [reviewing, setReviewing] = useState<{ slotId: string; reservationId: string } | null>(null);
-  const [receipt, setReceipt] = useState<any | null>(null);
+  const [receipt, setReceipt] = useState<ReservationWithSlot | null>(null);
 
   const active = reservations.filter(r => r.status === "active");
   const upcoming = reservations.filter(r => r.status === "upcoming");
   const past = reservations.filter(r => r.status === "completed" || r.status === "cancelled");
 
-  async function endSession(r: any) {
+  async function endSession(r: ReservationWithSlot) {
     const start = new Date(r.start_time).getTime();
     const end = new Date(r.end_time).getTime();
     const now = Date.now();
@@ -54,7 +54,7 @@ function MyReservations() {
     else { toast.success(`Session ended · refund ₹${refund}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
   }
 
-  async function extend(r: any, minutes: number) {
+  async function extend(r: ReservationWithSlot, minutes: number) {
     const rate = r.slot?.[`${r.rate_type}_rate` as const] as number | undefined;
     const perMinute = rate ? (r.rate_type === "hourly" ? rate / 60 : r.rate_type === "daily" ? rate / (24*60) : rate / (30*24*60)) : 0;
     const extraCost = Math.round(perMinute * minutes);
@@ -66,7 +66,7 @@ function MyReservations() {
     else { toast.success(`+${minutes} min · ₹${extraCost}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
   }
 
-  async function cancel(id: string, slot: any, startTime: string) {
+  async function cancel(id: string, slot: Slot | null, startTime: string) {
     const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
     const refund = refundEligible(policy, startTime);
     const msg = refund
@@ -116,7 +116,7 @@ function MyReservations() {
                       <Star className="w-3 h-3"/>Leave review
                     </button>
                   )}
-                  <button onClick={() => setReceipt(r)}
+                  <button onClick={() => setReceipt(r as ReservationWithSlot)}
                     className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1">
                     <Receipt className="w-3 h-3"/>Receipt
                   </button>
@@ -142,7 +142,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (r: any) => void; onExtend: (r: any, minutes: number) => void }) {
+function ActiveCard({ r, onEnd, onExtend }: { r: ReservationWithSlot; onEnd: (r: ReservationWithSlot) => void; onExtend: (r: ReservationWithSlot, minutes: number) => void }) {
   const remaining = useCountdown(r.end_time);
   const slot = r.slot;
   if (!slot) return null;
@@ -194,7 +194,7 @@ function HostCall({ ownerId }: { ownerId: string }) {
   );
 }
 
-function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: any, start: string) => void }) {
+function UpcomingCard({ r, onCancel }: { r: ReservationWithSlot; onCancel: (id: string, slot: Slot | null, start: string) => void }) {
   const slot = r.slot;
   const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
   const refund = refundEligible(policy, r.start_time);
@@ -222,7 +222,7 @@ function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: an
   );
 }
 
-function ReceiptModal({ r, onClose }: { r: any; onClose: () => void }) {
+function ReceiptModal({ r, onClose }: { r: ReservationWithSlot; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   function printReceipt() {
     const html = ref.current?.innerHTML ?? "";
