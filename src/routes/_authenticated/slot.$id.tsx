@@ -71,7 +71,7 @@ function SlotDetail() {
         rate_type: rateType,
         vehicle_id: vehicle?.id ?? null,
         vehicle_plate: vehicle?.plate ?? null,
-      } as any).select("id").single();
+      }).select("id").single();
       if (error) throw error;
       setReservationId(data.id);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
