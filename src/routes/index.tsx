@@ -56,7 +56,7 @@ function Landing() {
             <h1 className="text-[2.6rem] leading-[1.05] font-black">
               Your space.
               <br />
-              <span className="text-primary">Your spot.</span>
+              <span className="text-accent">Your spot.</span>
             </h1>
             <p className="mt-3 text-white/80 text-[15px] max-w-xs">
               Book verified parking in seconds — or list your driveway and earn every month.
