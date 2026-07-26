@@ -105,7 +105,7 @@ function ProfilePage() {
                 {profile.role}
               </span>
               {profile.verified && (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-black text-xs font-bold">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-xs font-bold">
                   <BadgeCheck className="w-3.5 h-3.5" />
                   Verified
                 </span>
