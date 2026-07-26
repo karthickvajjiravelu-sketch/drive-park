@@ -62,18 +62,14 @@ function HelpPage() {
         <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
           <LifeBuoy className="w-4 h-4"/>FAQ
         </h2>
-        <div className="rounded-2xl bg-card border border-border divide-y divide-border overflow-hidden">
+        <Accordion type="single" collapsible defaultValue="faq-0" className="rounded-2xl bg-card border border-border overflow-hidden divide-y divide-border">
           {FAQS.map((f, i) => (
-            <div key={i}>
-              <button onClick={() => setOpen(open === i ? null : i)}
-                className="w-full flex items-center justify-between px-4 py-3 text-left">
-                <span className="text-sm font-semibold">{f.q}</span>
-                <ChevronDown className={`w-4 h-4 transition ${open === i ? "rotate-180" : ""}`}/>
-              </button>
-              {open === i && <div className="px-4 pb-3 text-sm text-muted-foreground">{f.a}</div>}
-            </div>
+            <AccordionItem key={i} value={`faq-${i}`} className="border-0">
+              <AccordionTrigger className="px-4 py-3 text-sm font-semibold hover:no-underline">{f.q}</AccordionTrigger>
+              <AccordionContent className="px-4 pb-3 text-sm text-muted-foreground">{f.a}</AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
 
         <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
           <Mail className="w-4 h-4"/>Contact support
