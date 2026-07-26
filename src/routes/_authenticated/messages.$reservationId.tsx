@@ -27,12 +27,22 @@ function MessagesPage() {
 
   useEffect(() => {
     if (!reservationId) return;
-    const ch = supabase.channel(`msg-${reservationId}`)
-      .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `reservation_id=eq.${reservationId}` },
-        () => qc.invalidateQueries({ queryKey: ["messages", reservationId] }))
+    const ch = supabase
+      .channel(`msg-${reservationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `reservation_id=eq.${reservationId}`,
+        },
+        () => qc.invalidateQueries({ queryKey: ["messages", reservationId] }),
+      )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [reservationId, qc]);
 
   useEffect(() => {
@@ -52,7 +62,10 @@ function MessagesPage() {
     const body = text.trim().slice(0, 1000);
     setText("");
     const { error } = await supabase.from("messages").insert({
-      reservation_id: reservationId, sender_id: me, recipient_id: recipientId, body,
+      reservation_id: reservationId,
+      sender_id: me,
+      recipient_id: recipientId,
+      body,
     });
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ["messages", reservationId] });
@@ -61,15 +74,22 @@ function MessagesPage() {
   return (
     <div className="flex flex-col" style={{ minHeight: "100dvh" }}>
       <div className="bg-[var(--surface-dark)] text-white px-4 pt-6 pb-4 flex items-center gap-3">
-        <button onClick={() => navigate({ to: "/reservations" })}
-          className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"><ArrowLeft className="w-5 h-5"/></button>
+        <button
+          onClick={() => navigate({ to: "/reservations" })}
+          className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
         <div className="min-w-0 flex-1">
           <div className="font-black truncate">{isDriver ? hostName : "Driver"}</div>
           <div className="text-xs text-white/60 truncate">{slot?.name}</div>
         </div>
         {isDriver && hostPhone && (
-          <a href={`tel:${hostPhone}`} className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center">
-            <Phone className="w-5 h-5"/>
+          <a
+            href={`tel:${hostPhone}`}
+            className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center"
+          >
+            <Phone className="w-5 h-5" />
           </a>
         )}
       </div>
@@ -80,24 +100,44 @@ function MessagesPage() {
             {isDriver ? "Send your host a message to coordinate arrival." : "No messages yet."}
           </p>
         )}
-        {messages.map(m => {
+        {messages.map((m) => {
           const mine = m.sender_id === me;
           return (
-            <div key={m.id} className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-primary text-primary-foreground ml-auto" : "bg-card border border-border"}`}>
+            <div
+              key={m.id}
+              className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-primary text-primary-foreground ml-auto" : "bg-card border border-border"}`}
+            >
               <div className="whitespace-pre-wrap break-words">{m.body}</div>
-              <div className={`mt-0.5 text-[9px] ${mine ? "text-black/60" : "text-muted-foreground"}`}>{new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+              <div
+                className={`mt-0.5 text-[9px] ${mine ? "text-black/60" : "text-muted-foreground"}`}
+              >
+                {new Date(m.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
             </div>
           );
         })}
       </div>
 
-      <form onSubmit={send} className="border-t border-border bg-background p-3 flex items-center gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <input value={text} onChange={e => setText(e.target.value)}
-          placeholder="Type a message" maxLength={1000}
-          className="flex-1 rounded-full border border-input bg-background px-4 py-2.5 text-sm"/>
-        <button type="submit" disabled={!text.trim()}
-          className="w-11 h-11 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50">
-          <Send className="w-5 h-5"/>
+      <form
+        onSubmit={send}
+        className="border-t border-border bg-background p-3 flex items-center gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      >
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type a message"
+          maxLength={1000}
+          className="flex-1 rounded-full border border-input bg-background px-4 py-2.5 text-sm"
+        />
+        <button
+          type="submit"
+          disabled={!text.trim()}
+          className="w-11 h-11 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"
+        >
+          <Send className="w-5 h-5" />
         </button>
       </form>
     </div>

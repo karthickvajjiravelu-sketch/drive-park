@@ -17,7 +17,12 @@ export default defineTool({
     slot_id: z.string().uuid(),
     status: z.enum(["open", "full"]),
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
   handler: async ({ slot_id, status }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
@@ -30,7 +35,11 @@ export default defineTool({
       .select("id,name,status")
       .maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data) return { content: [{ type: "text", text: "Slot not found or not owned by you" }], isError: true };
+    if (!data)
+      return {
+        content: [{ type: "text", text: "Slot not found or not owned by you" }],
+        isError: true,
+      };
     return {
       content: [{ type: "text", text: `Slot ${data.name} is now ${data.status}.` }],
       structuredContent: { slot: data },

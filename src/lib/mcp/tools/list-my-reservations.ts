@@ -23,7 +23,9 @@ export default defineTool({
     }
     let q = supabaseForUser(ctx)
       .from("reservations")
-      .select("id,slot_id,start_time,end_time,status,total_price,rate_type,slot:slots(name,approx_area)")
+      .select(
+        "id,slot_id,start_time,end_time,status,total_price,rate_type,slot:slots(name,approx_area)",
+      )
       .eq("driver_id", ctx.getUserId()!)
       .order("start_time", { ascending: false });
     if (status) q = q.eq("status", status);

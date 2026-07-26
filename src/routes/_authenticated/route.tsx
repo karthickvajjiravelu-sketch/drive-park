@@ -31,7 +31,11 @@ function Shell() {
   }, [router, qc]);
 
   if (isLoading || !profile) {
-    return <div className="mobile-shell flex items-center justify-center"><div className="text-sm text-muted-foreground">Loading…</div></div>;
+    return (
+      <div className="mobile-shell flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
   }
 
   return (

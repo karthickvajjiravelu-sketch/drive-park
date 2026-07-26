@@ -10,9 +10,15 @@ type AuthorizationDetails = {
 };
 
 type OAuthApi = {
-  getAuthorizationDetails: (id: string) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
-  approveAuthorization: (id: string) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
-  denyAuthorization: (id: string) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
+  getAuthorizationDetails: (
+    id: string,
+  ) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
+  approveAuthorization: (
+    id: string,
+  ) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
+  denyAuthorization: (
+    id: string,
+  ) => Promise<{ data: AuthorizationDetails | null; error: Error | null }>;
 };
 
 function oauth(): OAuthApi {
@@ -44,7 +50,9 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   errorComponent: ({ error }) => (
     <main className="mobile-shell p-6">
       <h1 className="text-xl font-bold">Authorization error</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{String((error as Error)?.message ?? error)}</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {String((error as Error)?.message ?? error)}
+      </p>
     </main>
   ),
 });
@@ -61,9 +69,17 @@ function Consent() {
     const { data, error } = approve
       ? await oauth().approveAuthorization(authorization_id)
       : await oauth().denyAuthorization(authorization_id);
-    if (error) { setBusy(false); setError(error.message); return; }
+    if (error) {
+      setBusy(false);
+      setError(error.message);
+      return;
+    }
     const target = data?.redirect_url ?? data?.redirect_to;
-    if (!target) { setBusy(false); setError("No redirect returned by the authorization server."); return; }
+    if (!target) {
+      setBusy(false);
+      setError("No redirect returned by the authorization server.");
+      return;
+    }
     window.location.href = target;
   }
 
@@ -74,7 +90,8 @@ function Consent() {
       <div className="bg-[var(--surface-dark)] text-white px-6 pt-12 pb-8 rounded-b-3xl">
         <h1 className="text-2xl font-black">Connect {clientName} to Usop</h1>
         <p className="mt-2 text-sm text-white/70">
-          This lets {clientName} use Usop as you — browse slots, view your reservations, and manage your own listings.
+          This lets {clientName} use Usop as you — browse slots, view your reservations, and manage
+          your own listings.
         </p>
       </div>
 
@@ -82,11 +99,16 @@ function Consent() {
         <div className="rounded-2xl border border-border p-4 text-sm">
           <div className="font-semibold">You are signing in as yourself.</div>
           <div className="text-muted-foreground mt-1">
-            {clientName} will only be able to do what your Usop account allows. Your data stays scoped to you.
+            {clientName} will only be able to do what your Usop account allows. Your data stays
+            scoped to you.
           </div>
         </div>
 
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           disabled={busy}
