@@ -6,6 +6,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Phone, Navigation2, MapPin, ShieldCheck, Receipt, X, Printer, Car, MessageCircle, Star } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
+import type { Reservation, Slot } from "@/lib/queries";
+
+type ReservationWithSlot = Reservation & { slot: Slot | null };
 
 export const Route = createFileRoute("/_authenticated/reservations")({
   component: MyReservations,
