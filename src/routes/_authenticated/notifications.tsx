@@ -42,7 +42,7 @@ function NotificationsPage() {
   async function markAllRead() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("notifications" as any).update({ read: true }).eq("user_id", user.id).eq("read", false);
+    await supabase.from("notifications").update({ read: true }).eq("user_id", user.id).eq("read", false);
     qc.invalidateQueries({ queryKey: ["notifications"] });
   }
 
