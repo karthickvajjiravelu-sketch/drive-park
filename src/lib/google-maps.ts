@@ -7,13 +7,14 @@ let loaderPromise: Promise<typeof google> | null = null;
 
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
-  if ((window as any).google?.maps?.Map) return Promise.resolve((window as any).google);
+  const w = window as unknown as { google?: typeof google; [k: string]: unknown };
+  if (w.google?.maps?.Map) return Promise.resolve(w.google);
   if (loaderPromise) return loaderPromise;
 
   loaderPromise = new Promise((resolve, reject) => {
     if (!KEY) return reject(new Error("Missing Google Maps browser key"));
     const cbName = "__usopInitMap";
-    (window as any)[cbName] = () => resolve((window as any).google);
+    w[cbName] = () => resolve(w.google as typeof google);
     const s = document.createElement("script");
     const params = new URLSearchParams({
       key: KEY,
