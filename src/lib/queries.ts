@@ -187,13 +187,13 @@ export const notificationsQuery = () => queryOptions({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
     const { data, error } = await supabase
-      .from("notifications" as any)
+      .from("notifications")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
     if (error) throw error;
-    return (data ?? []) as unknown as Notification[];
+    return (data ?? []) as Notification[];
   },
 });
 export const useNotifications = () => useQuery(notificationsQuery());
