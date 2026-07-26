@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { useSlot, useMyVehicles, useOwnerProfile } from "@/lib/queries";
+import { useState, useEffect, useMemo } from "react";
+import { useSlot, useMyVehicles, useOwnerProfile, useReviews, useMyFavorites } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Star, Car, Ruler, MapPin, Navigation2, Share2, ShieldCheck, BadgeCheck, Heart, Phone, MessageCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 
@@ -19,6 +19,8 @@ function SlotDetail() {
   const { data: slot, isLoading } = useSlot(id);
   const { data: vehicles = [] } = useMyVehicles();
   const { data: owner } = useOwnerProfile(slot?.owner_id ?? "");
+  const { data: reviews = [] } = useReviews(id);
+  const { data: favorites = [] } = useMyFavorites();
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
   const [vehicleId, setVehicleId] = useState<string>("");
@@ -28,6 +30,8 @@ function SlotDetail() {
   });
   const [reservationId, setReservationId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const favorited = useMemo(() => favorites.some(f => f.slot_id === id), [favorites, id]);
 
   useEffect(() => {
     const channel = supabase.channel(`slot-${id}`)
@@ -50,6 +54,20 @@ function SlotDetail() {
   const total = rate * duration;
   const booked = !!reservationId;
   const isFull = slot.status === "full";
+
+  async function toggleFav() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const existing = favorites.find(f => f.slot_id === id);
+    if (existing) {
+      const { error } = await supabase.from("favorites").delete().eq("id", existing.id);
+      if (error) toast.error(error.message);
+    } else {
+      const { error } = await supabase.from("favorites").insert({ driver_id: user.id, slot_id: id });
+      if (error) toast.error(error.message); else toast.success("Saved");
+    }
+    qc.invalidateQueries({ queryKey: ["my-favorites"] });
+  }
 
   async function reserve() {
     setBusy(true);
@@ -101,6 +119,10 @@ function SlotDetail() {
           <ArrowLeft className="w-5 h-5"/>
         </button>
         <div className="absolute top-4 right-4 flex items-center gap-2">
+          <button onClick={toggleFav} aria-label={favorited ? "Unsave" : "Save"}
+            className="w-10 h-10 rounded-full bg-black/60 backdrop-blur grid place-items-center text-white">
+            <Heart className={`w-4 h-4 ${favorited ? "fill-primary text-primary" : ""}`}/>
+          </button>
           <button onClick={async () => {
             const url = `${window.location.origin}/slot/${slot!.id}`;
             const shareData = { title: slot!.name, text: `Parking at ${slot!.approx_area}`, url };
@@ -127,7 +149,7 @@ function SlotDetail() {
           </h1>
           <div className="flex items-center gap-3 mt-1 text-sm">
             <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/>{slot.approx_area}</span>
-            {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)}</span>}
+            {slot.rating > 0 && <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 fill-primary text-primary"/>{slot.rating.toFixed(1)} · {reviews.length}</span>}
           </div>
         </div>
       </div>
@@ -161,7 +183,6 @@ function SlotDetail() {
           </div>
         </div>
 
-
         {booked ? (
           <div className="mt-6 rounded-2xl bg-primary/10 border-2 border-primary p-5 text-center">
             <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/70">Reservation confirmed</div>
@@ -177,14 +198,32 @@ function SlotDetail() {
                 <div className="text-xs font-semibold text-muted-foreground uppercase">Access</div>
                 <div>{slot.access_instructions || "None"}</div>
               </div>
+              {owner && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase">Host</div>
+                  <div className="font-semibold">{owner.name || "Host"}</div>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {owner?.phone && (
+                <a href={`tel:${owner.phone}`}
+                  className="rounded-xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2 text-sm">
+                  <Phone className="w-4 h-4"/>Call host
+                </a>
+              )}
+              <Link to="/messages/$reservationId" params={{ reservationId: reservationId! }}
+                className={`rounded-xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2 text-sm ${owner?.phone ? "" : "col-span-2"}`}>
+                <MessageCircle className="w-4 h-4"/>Message
+              </Link>
             </div>
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
               target="_blank" rel="noreferrer"
-              className="mt-4 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2">
+              className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2">
               <Navigation2 className="w-4 h-4"/>Directions
             </a>
-            <Link to="/reservations" className="mt-2 inline-block w-full rounded-xl bg-black text-white py-3 font-semibold">View my bookings</Link>
+            <Link to="/reservations" className="mt-2 inline-block w-full rounded-xl bg-muted py-3 font-semibold">View my bookings</Link>
           </div>
         ) : isFull ? (
           <button onClick={notifyMe}
@@ -245,6 +284,30 @@ function SlotDetail() {
             </button>
           </div>
         )}
+
+        <div className="mt-8">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">Reviews</h2>
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No reviews yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {reviews.slice(0, 5).map(r => (
+                <div key={r.id} className="rounded-xl bg-card border border-border p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold">{r.driver?.name || "Driver"}</div>
+                    <div className="text-xs flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3 h-3 ${i < r.rating ? "fill-primary text-primary" : "text-muted-foreground"}`}/>
+                      ))}
+                    </div>
+                  </div>
+                  {r.comment && <p className="mt-1 text-sm">{r.comment}</p>}
+                  <div className="mt-1 text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

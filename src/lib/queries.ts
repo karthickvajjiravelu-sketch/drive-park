@@ -46,6 +46,7 @@ export type Slot = {
   height_limit_cm: number | null;
   width_limit_cm: number | null;
   cancellation_policy: "flexible" | "moderate" | "strict";
+  archived: boolean;
 };
 
 export type Vehicle = {
@@ -68,6 +69,35 @@ export type Reservation = {
   rate_type: "hourly" | "daily" | "monthly";
   vehicle_id: string | null;
   vehicle_plate: string | null;
+};
+
+export type Review = {
+  id: string;
+  slot_id: string;
+  driver_id: string;
+  rating: number;
+  comment: string;
+  reservation_id: string | null;
+  created_at: string;
+};
+
+export type Message = {
+  id: string;
+  reservation_id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+};
+
+export type SupportRequest = {
+  id: string;
+  user_id: string;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
 };
 
 export const myVehiclesQuery = () => queryOptions({
@@ -97,7 +127,7 @@ export const useProfile = () => useQuery(profileQuery());
 export const slotsQuery = () => queryOptions({
   queryKey: ["slots"],
   queryFn: async (): Promise<Slot[]> => {
-    const { data, error } = await supabase.from("slots").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("slots").select("*").eq("archived", false).order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as Slot[];
   },
@@ -147,7 +177,6 @@ export const ownerBookingsQuery = () => queryOptions({
   queryFn: async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
-    // Get owner's slot IDs
     const { data: slots } = await supabase.from("slots").select("id, name").eq("owner_id", user.id);
     const slotIds = (slots ?? []).map(s => s.id);
     if (slotIds.length === 0) return [];
@@ -157,7 +186,6 @@ export const ownerBookingsQuery = () => queryOptions({
       .in("slot_id", slotIds)
       .order("start_time", { ascending: false });
     if (error) throw error;
-    // Fetch driver profiles
     const driverIds = [...new Set((reservations ?? []).map(r => r.driver_id))];
     const { data: drivers } = await supabase.from("profiles").select("user_id, name, phone").in("user_id", driverIds);
     const driverMap = new Map((drivers ?? []).map(d => [d.user_id, d]));
@@ -173,10 +201,19 @@ export const useOwnerBookings = () => useQuery(ownerBookingsQuery());
 
 export const reviewsQuery = (slotId: string) => queryOptions({
   queryKey: ["reviews", slotId],
-  queryFn: async () => {
-    const { data, error } = await supabase.from("reviews").select("*").eq("slot_id", slotId).order("created_at", { ascending: false });
+  queryFn: async (): Promise<Array<Review & { driver: Pick<Profile, "name"> | null }>> => {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("slot_id", slotId)
+      .order("created_at", { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    const rows = (data ?? []) as Review[];
+    const driverIds = [...new Set(rows.map(r => r.driver_id))];
+    if (driverIds.length === 0) return rows.map(r => ({ ...r, driver: null }));
+    const { data: drivers } = await supabase.from("profiles").select("user_id, name").in("user_id", driverIds);
+    const m = new Map((drivers ?? []).map(d => [d.user_id, { name: d.name }]));
+    return rows.map(r => ({ ...r, driver: m.get(r.driver_id) ?? null }));
   },
 });
 export const useReviews = (slotId: string) => useQuery(reviewsQuery(slotId));
@@ -201,6 +238,7 @@ export const useNotifications = () => useQuery(notificationsQuery());
 export const ownerProfileQuery = (ownerId: string) => queryOptions({
   queryKey: ["owner-profile", ownerId],
   queryFn: async (): Promise<Profile | null> => {
+    if (!ownerId) return null;
     const { data, error } = await supabase.from("profiles").select("*").eq("user_id", ownerId).maybeSingle();
     if (error) throw error;
     return data as Profile | null;
@@ -208,3 +246,68 @@ export const ownerProfileQuery = (ownerId: string) => queryOptions({
 });
 export const useOwnerProfile = (ownerId: string) => useQuery(ownerProfileQuery(ownerId));
 
+// Favorites
+export const myFavoritesQuery = () => queryOptions({
+  queryKey: ["my-favorites"],
+  queryFn: async (): Promise<Array<{ id: string; slot_id: string; slot: Slot | null }>> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("favorites")
+      .select("id, slot_id, slot:slots(*)")
+      .eq("driver_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as unknown as Array<{ id: string; slot_id: string; slot: Slot | null }>;
+  },
+});
+export const useMyFavorites = () => useQuery(myFavoritesQuery());
+
+// Messages for a reservation
+export const messagesQuery = (reservationId: string) => queryOptions({
+  queryKey: ["messages", reservationId],
+  queryFn: async (): Promise<Message[]> => {
+    if (!reservationId) return [];
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("reservation_id", reservationId)
+      .order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Message[];
+  },
+});
+export const useMessages = (reservationId: string) => useQuery(messagesQuery(reservationId));
+
+// Support requests
+export const mySupportQuery = () => queryOptions({
+  queryKey: ["my-support"],
+  queryFn: async (): Promise<SupportRequest[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const { data, error } = await supabase
+      .from("support_requests")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as SupportRequest[];
+  },
+});
+export const useMySupport = () => useQuery(mySupportQuery());
+
+// Reservation detail (used by messages page)
+export const reservationQuery = (id: string) => queryOptions({
+  queryKey: ["reservation", id],
+  queryFn: async () => {
+    if (!id) return null;
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("*, slot:slots(*)")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return data as (Reservation & { slot: Slot | null }) | null;
+  },
+});
+export const useReservation = (id: string) => useQuery(reservationQuery(id));

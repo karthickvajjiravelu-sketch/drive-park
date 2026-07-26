@@ -7,19 +7,21 @@ export default function SlotMap({
   slots,
   center,
   onSelect,
+  onDestinationChange,
 }: {
   slots: Slot[];
   center: [number, number];
   onSelect: (id: string) => void;
+  onDestinationChange?: (loc: { lat: number; lng: number; label: string }) => void;
 }) {
   const mapEl = useRef<HTMLDivElement>(null);
   const searchEl = useRef<HTMLInputElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, google.maps.Marker>>(new Map());
+  const destMarkerRef = useRef<google.maps.Marker | null>(null);
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Init map once
   useEffect(() => {
     let cancelled = false;
     loadGoogleMaps().then((g) => {
@@ -35,19 +37,25 @@ export default function SlotMap({
       });
       infoRef.current = new g.maps.InfoWindow();
 
-      // Places Autocomplete on the search input
       if (searchEl.current && g.maps.places?.Autocomplete) {
         const ac = new g.maps.places.Autocomplete(searchEl.current, {
-          fields: ["geometry", "name"],
+          fields: ["geometry", "name", "formatted_address"],
         });
         ac.bindTo("bounds", mapRef.current);
         ac.addListener("place_changed", () => {
           const p = ac.getPlace();
+          const loc = p.geometry?.location;
+          if (!loc) return;
           if (p.geometry?.viewport) mapRef.current!.fitBounds(p.geometry.viewport);
-          else if (p.geometry?.location) {
-            mapRef.current!.setCenter(p.geometry.location);
-            mapRef.current!.setZoom(15);
-          }
+          else { mapRef.current!.setCenter(loc); mapRef.current!.setZoom(15); }
+          if (destMarkerRef.current) destMarkerRef.current.setMap(null);
+          destMarkerRef.current = new g.maps.Marker({
+            position: loc, map: mapRef.current!,
+            icon: { url: pinIcon("#000", "#FFD400"), scaledSize: new g.maps.Size(40, 48), anchor: new g.maps.Point(20, 46) },
+            title: p.name || "Destination",
+            zIndex: 999,
+          });
+          onDestinationChange?.({ lat: loc.lat(), lng: loc.lng(), label: p.name || p.formatted_address || "Destination" });
         });
       }
       setReady(true);
@@ -56,7 +64,6 @@ export default function SlotMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Recenter when driver center changes (only until user pans)
   const centeredOnce = useRef(false);
   useEffect(() => {
     if (!mapRef.current || centeredOnce.current) return;
@@ -64,7 +71,6 @@ export default function SlotMap({
     centeredOnce.current = true;
   }, [center]);
 
-  // Sync markers
   useEffect(() => {
     if (!ready || !mapRef.current || !(window as any).google) return;
     const g = (window as any).google as typeof google;
@@ -110,7 +116,6 @@ export default function SlotMap({
       }
     });
 
-    // Remove stale
     existing.forEach((m, id) => {
       if (!seen.has(id)) { m.setMap(null); existing.delete(id); }
     });

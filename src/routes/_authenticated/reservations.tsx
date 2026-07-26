@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { useMyReservations } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, Navigation2, MapPin, ShieldCheck, Receipt, X, Printer, Car } from "lucide-react";
+import { Phone, Navigation2, MapPin, ShieldCheck, Receipt, X, Printer, Car, MessageCircle, Star } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
 
 export const Route = createFileRoute("/_authenticated/reservations")({
@@ -27,7 +27,7 @@ function useCountdown(end: string) {
 function MyReservations() {
   const { data: reservations = [], isLoading, isError, error, refetch } = useMyReservations();
   const qc = useQueryClient();
-  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState<{ slotId: string; reservationId: string } | null>(null);
   const [receipt, setReceipt] = useState<any | null>(null);
 
   const active = reservations.filter(r => r.status === "active");
@@ -84,7 +84,7 @@ function MyReservations() {
   );
 
   return (
-    <div>
+    <div className="pb-24">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-4">
         <h1 className="text-2xl font-black">My Bookings</h1>
       </div>
@@ -106,11 +106,11 @@ function MyReservations() {
                 <div className="font-semibold">{r.slot?.name ?? "Slot"}</div>
                 <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()} · ₹{r.total_price}</div>
                 {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
-                <div className="mt-2 flex gap-2">
-                  {r.status === "completed" && (
-                    <button onClick={() => setReviewing(r.slot_id)}
-                      className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg">
-                      Leave review
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  {r.status === "completed" && new Date(r.end_time).getTime() <= Date.now() && (
+                    <button onClick={() => setReviewing({ slotId: r.slot_id, reservationId: r.id })}
+                      className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg flex items-center gap-1">
+                      <Star className="w-3 h-3"/>Leave review
                     </button>
                   )}
                   <button onClick={() => setReceipt(r)}
@@ -124,7 +124,7 @@ function MyReservations() {
         )}
         {reservations.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No bookings yet.</p>}
       </div>
-      {reviewing && <ReviewModal slotId={reviewing} onClose={() => setReviewing(null)}/>}
+      {reviewing && <ReviewModal slotId={reviewing.slotId} reservationId={reviewing.reservationId} onClose={() => setReviewing(null)}/>}
       {receipt && <ReceiptModal r={receipt} onClose={() => setReceipt(null)}/>}
     </div>
   );
@@ -157,10 +157,12 @@ function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (r: any) => void; o
         </div>
       </div>
       {slot.access_instructions && <div className="mt-2 text-xs bg-white/50 rounded-lg p-2">{slot.access_instructions}</div>}
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <a href={`tel:0000000000`} className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><Phone className="w-3.5 h-3.5"/>Call</a>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <HostCall ownerId={slot.owner_id}/>
+        <Link to="/messages/$reservationId" params={{ reservationId: r.id }}
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><MessageCircle className="w-3.5 h-3.5"/>Message</Link>
         <a href={`https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`} target="_blank" rel="noreferrer"
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><Navigation2 className="w-3.5 h-3.5"/>Directions</a>
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><Navigation2 className="w-3.5 h-3.5"/>Route</a>
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2">
         <button onClick={() => onExtend(r, 15)} className="rounded-xl border border-black py-2 text-xs font-semibold">+15 min</button>
@@ -169,6 +171,23 @@ function ActiveCard({ r, onEnd, onExtend }: { r: any; onEnd: (r: any) => void; o
       </div>
       <button onClick={() => onEnd(r)} className="mt-2 w-full rounded-xl bg-destructive text-destructive-foreground py-2 text-xs font-semibold">End session (prorated)</button>
     </div>
+  );
+}
+
+function HostCall({ ownerId }: { ownerId: string }) {
+  const [phone, setPhone] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from("profiles").select("phone").eq("user_id", ownerId).maybeSingle().then(({ data }) => {
+      if (!cancelled) setPhone(data?.phone ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [ownerId]);
+  return (
+    <a href={phone ? `tel:${phone}` : undefined}
+      className={`rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1 ${!phone ? "opacity-50 pointer-events-none" : ""}`}>
+      <Phone className="w-3.5 h-3.5"/>Call
+    </a>
   );
 }
 
@@ -186,10 +205,16 @@ function UpcomingCard({ r, onCancel }: { r: any; onCancel: (id: string, slot: an
         <ShieldCheck className="w-3 h-3"/>
         <span className="capitalize">{POLICY_META[policy].label}</span> · {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
       </div>
-      <button onClick={() => onCancel(r.id, slot, r.start_time)}
-        className="mt-3 w-full rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold">
-        Cancel booking
-      </button>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Link to="/messages/$reservationId" params={{ reservationId: r.id }}
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1">
+          <MessageCircle className="w-3.5 h-3.5"/>Message host
+        </Link>
+        <button onClick={() => onCancel(r.id, slot, r.start_time)}
+          className="rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold">
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }
@@ -242,17 +267,29 @@ function ReceiptModal({ r, onClose }: { r: any; onClose: () => void }) {
   );
 }
 
-function ReviewModal({ slotId, onClose }: { slotId: string; onClose: () => void }) {
+function ReviewModal({ slotId, reservationId, onClose }: { slotId: string; reservationId: string; onClose: () => void }) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
 
   async function submit() {
+    setBusy(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { error } = await supabase.from("reviews").insert({ slot_id: slotId, driver_id: user.id, rating, comment });
-    if (error) toast.error(error.message);
-    else { toast.success("Review posted"); qc.invalidateQueries(); onClose(); }
+    if (!user) { setBusy(false); return; }
+    const { error } = await supabase.from("reviews").insert({
+      slot_id: slotId, driver_id: user.id, rating, comment: comment.trim(), reservation_id: reservationId,
+    });
+    setBusy(false);
+    if (error) {
+      if (error.code === "23505") toast.error("You've already reviewed this booking.");
+      else toast.error(error.message);
+    } else {
+      toast.success("Review posted");
+      qc.invalidateQueries({ queryKey: ["reviews", slotId] });
+      qc.invalidateQueries({ queryKey: ["slot", slotId] });
+      onClose();
+    }
   }
 
   return (
@@ -264,11 +301,13 @@ function ReviewModal({ slotId, onClose }: { slotId: string; onClose: () => void 
             <button key={n} onClick={() => setRating(n)} className={`text-3xl ${n <= rating ? "text-primary" : "text-muted"}`}>★</button>
           ))}
         </div>
-        <textarea value={comment} onChange={e => setComment(e.target.value)}
+        <textarea value={comment} onChange={e => setComment(e.target.value)} maxLength={500}
           placeholder="Optional comment" className="w-full border border-input rounded-xl p-3 text-sm"/>
         <div className="flex gap-2 mt-3">
           <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2 text-sm font-semibold">Cancel</button>
-          <button onClick={submit} className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground">Post</button>
+          <button disabled={busy} onClick={submit} className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground disabled:opacity-60">
+            {busy ? "…" : "Post"}
+          </button>
         </div>
       </div>
     </div>
