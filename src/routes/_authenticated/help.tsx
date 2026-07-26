@@ -23,7 +23,6 @@ const FAQS = [
 
 function HelpPage() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState<number | null>(0);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
