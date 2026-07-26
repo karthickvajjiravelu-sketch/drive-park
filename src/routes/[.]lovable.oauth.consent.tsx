@@ -120,7 +120,7 @@ function Consent() {
         <button
           disabled={busy}
           onClick={() => decide(false)}
-          className="w-full rounded-2xl bg-black text-white py-3 font-semibold disabled:opacity-60"
+          className="w-full rounded-2xl bg-foreground text-background py-3 font-semibold disabled:opacity-60"
         >
           Cancel connection
         </button>

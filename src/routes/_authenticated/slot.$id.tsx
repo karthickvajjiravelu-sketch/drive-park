@@ -191,7 +191,7 @@ function SlotDetail() {
             <Share2 className="w-4 h-4" />
           </button>
           {isFull ? (
-            <span className="px-3 py-1 rounded-full bg-black text-white text-[10px] font-black tracking-wider">
+            <span className="px-3 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
               FULL
             </span>
           ) : (
@@ -299,7 +299,7 @@ function SlotDetail() {
               {owner?.phone && (
                 <a
                   href={`tel:${owner.phone}`}
-                  className="rounded-xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2 text-sm"
+                  className="rounded-xl bg-foreground text-background py-3 font-semibold flex items-center justify-center gap-2 text-sm"
                 >
                   <Phone className="w-4 h-4" />
                   Call host
@@ -308,7 +308,7 @@ function SlotDetail() {
               <Link
                 to="/messages/$reservationId"
                 params={{ reservationId: reservationId! }}
-                className={`rounded-xl bg-black text-white py-3 font-semibold flex items-center justify-center gap-2 text-sm ${owner?.phone ? "" : "col-span-2"}`}
+                className={`rounded-xl bg-foreground text-background py-3 font-semibold flex items-center justify-center gap-2 text-sm ${owner?.phone ? "" : "col-span-2"}`}
               >
                 <MessageCircle className="w-4 h-4" />
                 Message
@@ -333,7 +333,7 @@ function SlotDetail() {
         ) : isFull ? (
           <button
             onClick={notifyMe}
-            className="mt-6 w-full rounded-2xl bg-black text-white py-4 font-bold"
+            className="mt-6 w-full rounded-2xl bg-foreground text-background py-4 font-bold"
           >
             Notify me when open
           </button>
