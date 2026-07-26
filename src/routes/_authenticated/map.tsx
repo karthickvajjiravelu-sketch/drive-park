@@ -67,7 +67,10 @@ function MapPage() {
     };
   }, [qc]);
 
-  const anchor: [number, number] = destination ? [destination.lat, destination.lng] : origin;
+  const anchor = useMemo<[number, number]>(
+    () => (destination ? [destination.lat, destination.lng] : origin),
+    [destination, origin],
+  );
 
   const filtered = useMemo(() => {
     const rateKey = `${rate}_rate` as const;
