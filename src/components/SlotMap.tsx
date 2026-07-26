@@ -72,8 +72,8 @@ export default function SlotMap({
   }, [center]);
 
   useEffect(() => {
-    if (!ready || !mapRef.current || !(window as any).google) return;
-    const g = (window as any).google as typeof google;
+    if (!ready || !mapRef.current || !(window as unknown as { google?: typeof google }).google) return;
+    const g = (window as unknown as { google: typeof google }).google;
     const existing = markersRef.current;
     const seen = new Set<string>();
 
