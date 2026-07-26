@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Zap, IndianRupee, ShieldCheck } from "lucide-react";
 import heroImg from "@/assets/parking-hero.jpg";
+import heroImgTall from "@/assets/parking-hero-tall.jpg";
+import heroImgWide from "@/assets/parking-hero-wide.jpg";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -30,13 +32,17 @@ function Landing() {
   return (
     <div className="mobile-shell">
       <div className="relative h-[62vh] min-h-[480px] overflow-hidden">
-        <img
-          src={heroImg}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          width={1024}
-          height={1536}
-        />
+        <picture>
+          <source media="(min-width: 1024px)" srcSet={heroImgWide} />
+          <source media="(min-width: 768px)" srcSet={heroImg} />
+          <img
+            src={heroImgTall}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            width={1024}
+            height={1920}
+          />
+        </picture>
         <div className="absolute inset-0 hero-scrim" />
         <div className="relative z-10 flex flex-col h-full px-6 pt-10 pb-8 text-white">
           <div className="flex items-center gap-2">
