@@ -69,42 +69,65 @@ function AuthPage() {
     }
   }
 
-
   return (
     <div className="mobile-shell">
       <div className="bg-[var(--surface-dark)] text-white px-6 pt-12 pb-8 rounded-b-3xl">
-        <Link to="/" className="text-white/60 text-sm">← Back</Link>
-        <h1 className="mt-4 text-3xl font-black">{mode === "signup" ? "Create your Usop account" : "Welcome back"}</h1>
+        <Link to="/" className="text-white/60 text-sm">
+          ← Back
+        </Link>
+        <h1 className="mt-4 text-3xl font-black">
+          {mode === "signup" ? "Create your Usop account" : "Welcome back"}
+        </h1>
       </div>
 
       <form onSubmit={submit} className="px-6 py-6 space-y-4">
         {mode === "signup" && (
           <>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setRole("driver")}
-                className={`rounded-2xl border-2 p-4 text-left transition ${role === "driver" ? "border-primary bg-primary/10" : "border-border"}`}>
+              <button
+                type="button"
+                onClick={() => setRole("driver")}
+                className={`rounded-2xl border-2 p-4 text-left transition ${role === "driver" ? "border-primary bg-primary/10" : "border-border"}`}
+              >
                 <div className="font-bold">Driver</div>
                 <div className="text-xs text-muted-foreground">Find parking</div>
               </button>
-              <button type="button" onClick={() => setRole("landowner")}
-                className={`rounded-2xl border-2 p-4 text-left transition ${role === "landowner" ? "border-primary bg-primary/10" : "border-border"}`}>
+              <button
+                type="button"
+                onClick={() => setRole("landowner")}
+                className={`rounded-2xl border-2 p-4 text-left transition ${role === "landowner" ? "border-primary bg-primary/10" : "border-border"}`}
+              >
                 <div className="font-bold">Landowner</div>
                 <div className="text-xs text-muted-foreground">Rent your space</div>
               </button>
             </div>
             <Field label="Name" value={name} onChange={setName} required />
-            <Field label="Phone" value={phone} onChange={setPhone} type="tel" required pattern="[0-9]{10}" title="Enter a 10-digit phone number" />
+            <Field
+              label="Phone"
+              value={phone}
+              onChange={setPhone}
+              type="tel"
+              required
+              pattern="[0-9]{10}"
+              title="Enter a 10-digit phone number"
+            />
           </>
         )}
         <Field label="Email" type="email" value={email} onChange={setEmail} required />
         <Field label="Password" type="password" value={password} onChange={setPassword} required />
 
-        <button disabled={loading} className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60">
+        <button
+          disabled={loading}
+          className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
+        >
           {loading ? "…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
 
-        <button type="button" onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-          className="w-full text-sm text-muted-foreground py-2">
+        <button
+          type="button"
+          onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+          className="w-full text-sm text-muted-foreground py-2"
+        >
           {mode === "signup" ? "Have an account? Sign in" : "New here? Create account"}
         </button>
       </form>
@@ -112,16 +135,36 @@ function AuthPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", required, pattern, title }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; required?: boolean; pattern?: string; title?: string;
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required,
+  pattern,
+  title,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  required?: boolean;
+  pattern?: string;
+  title?: string;
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {label}
+      </span>
       <input
         className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-        type={type} value={value} onChange={e => onChange(e.target.value)} required={required}
-        pattern={pattern} title={title}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        pattern={pattern}
+        title={title}
       />
     </label>
   );

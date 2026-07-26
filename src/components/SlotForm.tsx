@@ -34,17 +34,23 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
     disabled_access: initial?.disabled_access ?? false,
     height_limit_cm: initial?.height_limit_cm != null ? String(initial.height_limit_cm) : "",
     width_limit_cm: initial?.width_limit_cm != null ? String(initial.width_limit_cm) : "",
-    cancellation_policy: (initial?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict",
+    cancellation_policy: (initial?.cancellation_policy ?? "moderate") as
+      | "flexible"
+      | "moderate"
+      | "strict",
   });
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
       const payload = {
         name: form.name,
@@ -67,7 +73,9 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         cancellation_policy: form.cancellation_policy,
       };
       if (mode.kind === "create") {
-        const { error } = await supabase.from("slots").insert({ ...payload, owner_id: user.id, status: "open" });
+        const { error } = await supabase
+          .from("slots")
+          .insert({ ...payload, owner_id: user.id, status: "open" });
         if (error) throw error;
         toast.success("Slot added");
       } else {
@@ -81,22 +89,29 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
       navigate({ to: "/my-slots" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <form onSubmit={save} className="px-5 py-4 space-y-3">
-      <Field label="Name" value={form.name} onChange={set("name")} required/>
+      <Field label="Name" value={form.name} onChange={set("name")} required />
 
       <div>
         <span className="text-xs font-semibold text-muted-foreground uppercase">Location</span>
-        <div className="mt-1 rounded-2xl overflow-hidden border border-border" style={{ height: 300 }}>
-          <ClientOnly fallback={<div className="p-4 text-sm text-muted-foreground">Loading map…</div>}>
+        <div
+          className="mt-1 rounded-2xl overflow-hidden border border-border"
+          style={{ height: 300 }}
+        >
+          <ClientOnly
+            fallback={<div className="p-4 text-sm text-muted-foreground">Loading map…</div>}
+          >
             <LocationPicker
               lat={form.lat}
               lng={form.lng}
               onChange={(loc) =>
-                setForm(f => ({
+                setForm((f) => ({
                   ...f,
                   lat: loc.lat,
                   lng: loc.lng,
@@ -107,41 +122,89 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
             />
           </ClientOnly>
         </div>
-        <p className="mt-1 text-[11px] text-muted-foreground">Search or drag the pin. Address & area auto-fill.</p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Search or drag the pin. Address & area auto-fill.
+        </p>
       </div>
 
-      <Field label="Approx area (public)" value={form.approx_area} onChange={set("approx_area")} required placeholder="e.g. Near T Nagar signal"/>
-      <Field label="Full address (revealed after booking)" value={form.full_address} onChange={set("full_address")} required/>
+      <Field
+        label="Approx area (public)"
+        value={form.approx_area}
+        onChange={set("approx_area")}
+        required
+        placeholder="e.g. Near T Nagar signal"
+      />
+      <Field
+        label="Full address (revealed after booking)"
+        value={form.full_address}
+        onChange={set("full_address")}
+        required
+      />
 
       <div>
         <span className="text-xs font-semibold text-muted-foreground uppercase">Vehicle type</span>
         <div className="grid grid-cols-3 gap-2 mt-1">
-          {(["car","bike","both"] as const).map(v => (
-            <button key={v} type="button" onClick={() => setForm(f => ({...f, vehicle_type: v}))}
-              className={`rounded-xl border-2 py-2 text-xs capitalize font-semibold ${form.vehicle_type === v ? "border-primary bg-primary/10" : "border-border"}`}>{v}</button>
+          {(["car", "bike", "both"] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, vehicle_type: v }))}
+              className={`rounded-xl border-2 py-2 text-xs capitalize font-semibold ${form.vehicle_type === v ? "border-primary bg-primary/10" : "border-border"}`}
+            >
+              {v}
+            </button>
           ))}
         </div>
       </div>
-      <Field label="Vehicle size limit" value={form.vehicle_size_limit} onChange={set("vehicle_size_limit")} placeholder="e.g. Sedan / SUV"/>
+      <Field
+        label="Vehicle size limit"
+        value={form.vehicle_size_limit}
+        onChange={set("vehicle_size_limit")}
+        placeholder="e.g. Sedan / SUV"
+      />
       <div className="grid grid-cols-3 gap-2">
-        <Field label="₹/hour" value={form.hourly_rate} onChange={set("hourly_rate")} type="number"/>
-        <Field label="₹/day" value={form.daily_rate} onChange={set("daily_rate")} type="number"/>
-        <Field label="₹/month" value={form.monthly_rate} onChange={set("monthly_rate")} type="number"/>
+        <Field
+          label="₹/hour"
+          value={form.hourly_rate}
+          onChange={set("hourly_rate")}
+          type="number"
+        />
+        <Field label="₹/day" value={form.daily_rate} onChange={set("daily_rate")} type="number" />
+        <Field
+          label="₹/month"
+          value={form.monthly_rate}
+          onChange={set("monthly_rate")}
+          type="number"
+        />
       </div>
-      <Field label="Access instructions" value={form.access_instructions} onChange={set("access_instructions")}/>
-      <Field label="Photo URL" value={form.photo_url} onChange={set("photo_url")} placeholder="https://…"/>
+      <Field
+        label="Access instructions"
+        value={form.access_instructions}
+        onChange={set("access_instructions")}
+      />
+      <Field
+        label="Photo URL"
+        value={form.photo_url}
+        onChange={set("photo_url")}
+        placeholder="https://…"
+      />
 
       <div>
         <span className="text-xs font-semibold text-muted-foreground uppercase">Amenities</span>
         <div className="grid grid-cols-3 gap-2 mt-1">
-          {([
-            ["covered","Covered"],
-            ["cctv","CCTV"],
-            ["disabled_access","Accessible"],
-          ] as const).map(([k, label]) => (
-            <button key={k} type="button"
-              onClick={() => setForm(f => ({ ...f, [k]: !f[k] }))}
-              className={`rounded-xl border-2 py-2 text-xs font-semibold ${form[k] ? "border-primary bg-primary/10" : "border-border"}`}>
+          {(
+            [
+              ["covered", "Covered"],
+              ["cctv", "CCTV"],
+              ["disabled_access", "Accessible"],
+            ] as const
+          ).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, [k]: !f[k] }))}
+              className={`rounded-xl border-2 py-2 text-xs font-semibold ${form[k] ? "border-primary bg-primary/10" : "border-border"}`}
+            >
               {label}
             </button>
           ))}
@@ -149,17 +212,34 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Height limit (cm)" value={form.height_limit_cm} onChange={set("height_limit_cm")} type="number" placeholder="e.g. 200"/>
-        <Field label="Width limit (cm)" value={form.width_limit_cm} onChange={set("width_limit_cm")} type="number" placeholder="e.g. 180"/>
+        <Field
+          label="Height limit (cm)"
+          value={form.height_limit_cm}
+          onChange={set("height_limit_cm")}
+          type="number"
+          placeholder="e.g. 200"
+        />
+        <Field
+          label="Width limit (cm)"
+          value={form.width_limit_cm}
+          onChange={set("width_limit_cm")}
+          type="number"
+          placeholder="e.g. 180"
+        />
       </div>
 
       <div>
-        <span className="text-xs font-semibold text-muted-foreground uppercase">Cancellation policy</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase">
+          Cancellation policy
+        </span>
         <div className="grid grid-cols-3 gap-2 mt-1">
-          {(["flexible","moderate","strict"] as const).map(p => (
-            <button key={p} type="button"
-              onClick={() => setForm(f => ({ ...f, cancellation_policy: p }))}
-              className={`rounded-xl border-2 py-2 text-xs capitalize font-semibold ${form.cancellation_policy === p ? "border-primary bg-primary/10" : "border-border"}`}>
+          {(["flexible", "moderate", "strict"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, cancellation_policy: p }))}
+              className={`rounded-xl border-2 py-2 text-xs capitalize font-semibold ${form.cancellation_policy === p ? "border-primary bg-primary/10" : "border-border"}`}
+            >
               {p}
             </button>
           ))}
@@ -171,7 +251,10 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         </p>
       </div>
 
-      <button disabled={busy} className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60">
+      <button
+        disabled={busy}
+        className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
+      >
         {busy ? "…" : mode.kind === "create" ? "Save slot" : "Update slot"}
       </button>
     </form>
@@ -179,9 +262,12 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
 }
 
 function LocationPicker({
-  lat, lng, onChange,
+  lat,
+  lng,
+  onChange,
 }: {
-  lat: number; lng: number;
+  lat: number;
+  lng: number;
   onChange: (loc: { lat: number; lng: number; address?: string; area?: string }) => void;
 }) {
   const mapEl = useRef<HTMLDivElement>(null);
@@ -192,67 +278,90 @@ function LocationPicker({
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps().then((g) => {
-      if (cancelled || !mapEl.current) return;
-      const center = { lat, lng };
-      const map = new g.maps.Map(mapEl.current, {
-        center, zoom: 15, styles: USOP_MAP_STYLE,
-        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy", clickableIcons: false,
-      });
-      mapRef.current = map;
-      geocoderRef.current = new g.maps.Geocoder();
+    loadGoogleMaps()
+      .then((g) => {
+        if (cancelled || !mapEl.current) return;
+        const center = { lat, lng };
+        const map = new g.maps.Map(mapEl.current, {
+          center,
+          zoom: 15,
+          styles: USOP_MAP_STYLE,
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+        });
+        mapRef.current = map;
+        geocoderRef.current = new g.maps.Geocoder();
 
-      const marker = new g.maps.Marker({
-        position: center, map, draggable: true,
-        icon: { url: pinIcon("#FFD400"), scaledSize: new g.maps.Size(36, 44), anchor: new g.maps.Point(18, 42) },
-      });
-      markerRef.current = marker;
+        const marker = new g.maps.Marker({
+          position: center,
+          map,
+          draggable: true,
+          icon: {
+            url: pinIcon("#FFD400"),
+            scaledSize: new g.maps.Size(36, 44),
+            anchor: new g.maps.Point(18, 42),
+          },
+        });
+        markerRef.current = marker;
 
-      const commit = (pos: google.maps.LatLng) => {
-        const p = { lat: pos.lat(), lng: pos.lng() };
-        geocoderRef.current!.geocode({ location: p }, (results, status) => {
-          if (status === "OK" && results?.[0]) {
-            const r = results[0];
-            const area =
-              r.address_components?.find((c) => c.types.includes("sublocality") || c.types.includes("neighborhood"))?.long_name ||
-              r.address_components?.find((c) => c.types.includes("locality"))?.long_name;
-            onChange({ ...p, address: r.formatted_address, area });
-          } else {
-            onChange(p);
+        const commit = (pos: google.maps.LatLng) => {
+          const p = { lat: pos.lat(), lng: pos.lng() };
+          geocoderRef.current!.geocode({ location: p }, (results, status) => {
+            if (status === "OK" && results?.[0]) {
+              const r = results[0];
+              const area =
+                r.address_components?.find(
+                  (c) => c.types.includes("sublocality") || c.types.includes("neighborhood"),
+                )?.long_name ||
+                r.address_components?.find((c) => c.types.includes("locality"))?.long_name;
+              onChange({ ...p, address: r.formatted_address, area });
+            } else {
+              onChange(p);
+            }
+          });
+        };
+
+        marker.addListener("dragend", () => {
+          const pos = marker.getPosition();
+          if (pos) {
+            map.panTo(pos);
+            commit(pos);
           }
         });
-      };
-
-      marker.addListener("dragend", () => {
-        const pos = marker.getPosition();
-        if (pos) { map.panTo(pos); commit(pos); }
-      });
-      map.addListener("click", (e: google.maps.MapMouseEvent) => {
-        if (!e.latLng) return;
-        marker.setPosition(e.latLng);
-        commit(e.latLng);
-      });
-
-      if (inputEl.current && g.maps.places?.Autocomplete) {
-        const ac = new g.maps.places.Autocomplete(inputEl.current, {
-          fields: ["geometry", "formatted_address", "address_components", "name"],
+        map.addListener("click", (e: google.maps.MapMouseEvent) => {
+          if (!e.latLng) return;
+          marker.setPosition(e.latLng);
+          commit(e.latLng);
         });
-        ac.bindTo("bounds", map);
-        ac.addListener("place_changed", () => {
-          const p = ac.getPlace();
-          const loc = p.geometry?.location;
-          if (!loc) return;
-          map.setCenter(loc); map.setZoom(16);
-          marker.setPosition(loc);
-          const area =
-            p.address_components?.find((c) => c.types.includes("sublocality") || c.types.includes("neighborhood"))?.long_name ||
-            p.address_components?.find((c) => c.types.includes("locality"))?.long_name ||
-            p.name;
-          onChange({ lat: loc.lat(), lng: loc.lng(), address: p.formatted_address, area });
-        });
-      }
-    }).catch(() => {});
-    return () => { cancelled = true; };
+
+        if (inputEl.current && g.maps.places?.Autocomplete) {
+          const ac = new g.maps.places.Autocomplete(inputEl.current, {
+            fields: ["geometry", "formatted_address", "address_components", "name"],
+          });
+          ac.bindTo("bounds", map);
+          ac.addListener("place_changed", () => {
+            const p = ac.getPlace();
+            const loc = p.geometry?.location;
+            if (!loc) return;
+            map.setCenter(loc);
+            map.setZoom(16);
+            marker.setPosition(loc);
+            const area =
+              p.address_components?.find(
+                (c) => c.types.includes("sublocality") || c.types.includes("neighborhood"),
+              )?.long_name ||
+              p.address_components?.find((c) => c.types.includes("locality"))?.long_name ||
+              p.name;
+            onChange({ lat: loc.lat(), lng: loc.lng(), address: p.formatted_address, area });
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -273,11 +382,17 @@ function LocationPicker({
   );
 }
 
-function Field({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({
+  label,
+  ...props
+}: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <label className="block">
       <span className="text-xs font-semibold text-muted-foreground uppercase">{label}</span>
-      <input {...props} className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2.5"/>
+      <input
+        {...props}
+        className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2.5"
+      />
     </label>
   );
 }

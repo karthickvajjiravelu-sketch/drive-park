@@ -11,7 +11,8 @@ function supabaseForUser(ctx: ToolContext) {
 export default defineTool({
   name: "list_my_slots",
   title: "List my parking slots",
-  description: "List parking slots owned by the signed-in landowner, including current open/full status.",
+  description:
+    "List parking slots owned by the signed-in landowner, including current open/full status.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async (_input, ctx) => {

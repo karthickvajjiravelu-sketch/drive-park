@@ -24,43 +24,59 @@ export default function SlotMap({
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps().then((g) => {
-      if (cancelled || !mapEl.current) return;
-      mapRef.current = new g.maps.Map(mapEl.current, {
-        center: { lat: center[0], lng: center[1] },
-        zoom: 14,
-        styles: USOP_MAP_STYLE,
-        disableDefaultUI: true,
-        zoomControl: true,
-        gestureHandling: "greedy",
-        clickableIcons: false,
-      });
-      infoRef.current = new g.maps.InfoWindow();
+    loadGoogleMaps()
+      .then((g) => {
+        if (cancelled || !mapEl.current) return;
+        mapRef.current = new g.maps.Map(mapEl.current, {
+          center: { lat: center[0], lng: center[1] },
+          zoom: 14,
+          styles: USOP_MAP_STYLE,
+          disableDefaultUI: true,
+          zoomControl: true,
+          gestureHandling: "greedy",
+          clickableIcons: false,
+        });
+        infoRef.current = new g.maps.InfoWindow();
 
-      if (searchEl.current && g.maps.places?.Autocomplete) {
-        const ac = new g.maps.places.Autocomplete(searchEl.current, {
-          fields: ["geometry", "name", "formatted_address"],
-        });
-        ac.bindTo("bounds", mapRef.current);
-        ac.addListener("place_changed", () => {
-          const p = ac.getPlace();
-          const loc = p.geometry?.location;
-          if (!loc) return;
-          if (p.geometry?.viewport) mapRef.current!.fitBounds(p.geometry.viewport);
-          else { mapRef.current!.setCenter(loc); mapRef.current!.setZoom(15); }
-          if (destMarkerRef.current) destMarkerRef.current.setMap(null);
-          destMarkerRef.current = new g.maps.Marker({
-            position: loc, map: mapRef.current!,
-            icon: { url: pinIcon("#000", "#FFD400"), scaledSize: new g.maps.Size(40, 48), anchor: new g.maps.Point(20, 46) },
-            title: p.name || "Destination",
-            zIndex: 999,
+        if (searchEl.current && g.maps.places?.Autocomplete) {
+          const ac = new g.maps.places.Autocomplete(searchEl.current, {
+            fields: ["geometry", "name", "formatted_address"],
           });
-          onDestinationChange?.({ lat: loc.lat(), lng: loc.lng(), label: p.name || p.formatted_address || "Destination" });
-        });
-      }
-      setReady(true);
-    }).catch(() => {});
-    return () => { cancelled = true; };
+          ac.bindTo("bounds", mapRef.current);
+          ac.addListener("place_changed", () => {
+            const p = ac.getPlace();
+            const loc = p.geometry?.location;
+            if (!loc) return;
+            if (p.geometry?.viewport) mapRef.current!.fitBounds(p.geometry.viewport);
+            else {
+              mapRef.current!.setCenter(loc);
+              mapRef.current!.setZoom(15);
+            }
+            if (destMarkerRef.current) destMarkerRef.current.setMap(null);
+            destMarkerRef.current = new g.maps.Marker({
+              position: loc,
+              map: mapRef.current!,
+              icon: {
+                url: pinIcon("#000", "#FFD400"),
+                scaledSize: new g.maps.Size(40, 48),
+                anchor: new g.maps.Point(20, 46),
+              },
+              title: p.name || "Destination",
+              zIndex: 999,
+            });
+            onDestinationChange?.({
+              lat: loc.lat(),
+              lng: loc.lng(),
+              label: p.name || p.formatted_address || "Destination",
+            });
+          });
+        }
+        setReady(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,7 +88,8 @@ export default function SlotMap({
   }, [center]);
 
   useEffect(() => {
-    if (!ready || !mapRef.current || !(window as unknown as { google?: typeof google }).google) return;
+    if (!ready || !mapRef.current || !(window as unknown as { google?: typeof google }).google)
+      return;
     const g = (window as unknown as { google: typeof google }).google;
     const existing = markersRef.current;
     const seen = new Set<string>();
@@ -101,11 +118,13 @@ export default function SlotMap({
                <div style="font-size:12px;color:#666;margin-top:2px">${escapeHtml(s.approx_area || "")}</div>
                <div style="margin-top:6px;font-weight:700">₹${s.hourly_rate}<span style="color:#666;font-weight:500">/hr</span> · ${isFull ? "Full" : "Open"}</div>
                <button id="usop-view-${s.id}" style="margin-top:8px;width:100%;background:#FFD400;color:#000;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer">View details</button>
-             </div>`
+             </div>`,
           );
           infoRef.current?.open({ map: mapRef.current!, anchor: m! });
           g.maps.event.addListenerOnce(infoRef.current!, "domready", () => {
-            document.getElementById(`usop-view-${s.id}`)?.addEventListener("click", () => onSelect(s.id));
+            document
+              .getElementById(`usop-view-${s.id}`)
+              ?.addEventListener("click", () => onSelect(s.id));
           });
         });
         existing.set(s.id, m);
@@ -117,7 +136,10 @@ export default function SlotMap({
     });
 
     existing.forEach((m, id) => {
-      if (!seen.has(id)) { m.setMap(null); existing.delete(id); }
+      if (!seen.has(id)) {
+        m.setMap(null);
+        existing.delete(id);
+      }
     });
   }, [slots, ready, onSelect]);
 
@@ -139,5 +161,8 @@ export default function SlotMap({
 }
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 }

@@ -3,17 +3,18 @@ import { Map, Calendar, User, LayoutGrid, ClipboardList } from "lucide-react";
 import type { Profile } from "@/lib/queries";
 
 export function BottomTabs({ role }: { role: Profile["role"] }) {
-  const items = role === "driver"
-    ? [
-        { to: "/map", icon: Map, label: "Map" },
-        { to: "/reservations", icon: Calendar, label: "Bookings" },
-        { to: "/profile", icon: User, label: "Profile" },
-      ]
-    : [
-        { to: "/my-slots", icon: LayoutGrid, label: "My Slots" },
-        { to: "/bookings", icon: ClipboardList, label: "Bookings" },
-        { to: "/profile", icon: User, label: "Profile" },
-      ];
+  const items =
+    role === "driver"
+      ? [
+          { to: "/map", icon: Map, label: "Map" },
+          { to: "/reservations", icon: Calendar, label: "Bookings" },
+          { to: "/profile", icon: User, label: "Profile" },
+        ]
+      : [
+          { to: "/my-slots", icon: LayoutGrid, label: "My Slots" },
+          { to: "/bookings", icon: ClipboardList, label: "Bookings" },
+          { to: "/profile", icon: User, label: "Profile" },
+        ];
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[var(--surface-dark)] text-white z-50">

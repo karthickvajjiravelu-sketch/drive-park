@@ -4,7 +4,18 @@ import { useMyReservations } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Phone, Navigation2, MapPin, ShieldCheck, Receipt, X, Printer, Car, MessageCircle, Star } from "lucide-react";
+import {
+  Phone,
+  Navigation2,
+  MapPin,
+  ShieldCheck,
+  Receipt,
+  X,
+  Printer,
+  Car,
+  MessageCircle,
+  Star,
+} from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
 import type { Reservation, Slot } from "@/lib/queries";
 
@@ -30,12 +41,14 @@ function useCountdown(end: string) {
 function MyReservations() {
   const { data: reservations = [], isLoading, isError, error, refetch } = useMyReservations();
   const qc = useQueryClient();
-  const [reviewing, setReviewing] = useState<{ slotId: string; reservationId: string } | null>(null);
+  const [reviewing, setReviewing] = useState<{ slotId: string; reservationId: string } | null>(
+    null,
+  );
   const [receipt, setReceipt] = useState<ReservationWithSlot | null>(null);
 
-  const active = reservations.filter(r => r.status === "active");
-  const upcoming = reservations.filter(r => r.status === "upcoming");
-  const past = reservations.filter(r => r.status === "completed" || r.status === "cancelled");
+  const active = reservations.filter((r) => r.status === "active");
+  const upcoming = reservations.filter((r) => r.status === "upcoming");
+  const past = reservations.filter((r) => r.status === "completed" || r.status === "cancelled");
 
   async function endSession(r: ReservationWithSlot) {
     const start = new Date(r.start_time).getTime();
@@ -47,23 +60,41 @@ function MyReservations() {
     const finalPrice = Math.round(r.total_price * usedRatio);
     const refund = r.total_price - finalPrice;
     if (!confirm(`End session now? You'll be charged ₹${finalPrice} (refund ₹${refund}).`)) return;
-    const { error } = await supabase.from("reservations")
-      .update({ status: "completed", end_time: new Date(now).toISOString(), total_price: finalPrice })
+    const { error } = await supabase
+      .from("reservations")
+      .update({
+        status: "completed",
+        end_time: new Date(now).toISOString(),
+        total_price: finalPrice,
+      })
       .eq("id", r.id);
     if (error) toast.error(error.message);
-    else { toast.success(`Session ended · refund ₹${refund}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+    else {
+      toast.success(`Session ended · refund ₹${refund}`);
+      qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    }
   }
 
   async function extend(r: ReservationWithSlot, minutes: number) {
     const rate = r.slot?.[`${r.rate_type}_rate` as const] as number | undefined;
-    const perMinute = rate ? (r.rate_type === "hourly" ? rate / 60 : r.rate_type === "daily" ? rate / (24*60) : rate / (30*24*60)) : 0;
+    const perMinute = rate
+      ? r.rate_type === "hourly"
+        ? rate / 60
+        : r.rate_type === "daily"
+          ? rate / (24 * 60)
+          : rate / (30 * 24 * 60)
+      : 0;
     const extraCost = Math.round(perMinute * minutes);
     const newEnd = new Date(new Date(r.end_time).getTime() + minutes * 60e3).toISOString();
-    const { error } = await supabase.from("reservations")
+    const { error } = await supabase
+      .from("reservations")
       .update({ end_time: newEnd, total_price: r.total_price + extraCost })
       .eq("id", r.id);
     if (error) toast.error(error.message);
-    else { toast.success(`+${minutes} min · ₹${extraCost}`); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+    else {
+      toast.success(`+${minutes} min · ₹${extraCost}`);
+      qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    }
   }
 
   async function cancel(id: string, slot: Slot | null, startTime: string) {
@@ -73,18 +104,32 @@ function MyReservations() {
       ? `Cancel this booking? You'll get a full refund (${POLICY_META[policy].label} policy).`
       : `Cancel this booking? No refund per ${POLICY_META[policy].label} policy (${POLICY_META[policy].hoursBefore}h notice required).`;
     if (!confirm(msg)) return;
-    const { error } = await supabase.from("reservations").update({ status: "cancelled" }).eq("id", id);
+    const { error } = await supabase
+      .from("reservations")
+      .update({ status: "cancelled" })
+      .eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success(refund ? "Cancelled — refund issued" : "Cancelled"); qc.invalidateQueries({ queryKey: ["my-reservations"] }); }
+    else {
+      toast.success(refund ? "Cancelled — refund issued" : "Cancelled");
+      qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    }
   }
 
   if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
-  if (isError) return (
-    <div className="p-6 text-center space-y-3">
-      <p className="text-sm text-destructive">Couldn't load bookings. {error instanceof Error ? error.message : ""}</p>
-      <button onClick={() => refetch()} className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">Retry</button>
-    </div>
-  );
+  if (isError)
+    return (
+      <div className="p-6 text-center space-y-3">
+        <p className="text-sm text-destructive">
+          Couldn't load bookings. {error instanceof Error ? error.message : ""}
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+        >
+          Retry
+        </button>
+      </div>
+    );
 
   return (
     <div className="pb-24">
@@ -94,41 +139,66 @@ function MyReservations() {
       <div className="px-4 py-4 space-y-6">
         {active.length > 0 && (
           <Section title="Active">
-            {active.map(r => <ActiveCard key={r.id} r={r} onEnd={endSession} onExtend={extend}/>)}
+            {active.map((r) => (
+              <ActiveCard key={r.id} r={r} onEnd={endSession} onExtend={extend} />
+            ))}
           </Section>
         )}
         {upcoming.length > 0 && (
           <Section title="Upcoming">
-            {upcoming.map(r => <UpcomingCard key={r.id} r={r} onCancel={cancel}/>)}
+            {upcoming.map((r) => (
+              <UpcomingCard key={r.id} r={r} onCancel={cancel} />
+            ))}
           </Section>
         )}
         {past.length > 0 && (
           <Section title="Past">
-            {past.map(r => (
+            {past.map((r) => (
               <div key={r.id} className="rounded-2xl bg-card border border-border p-4">
                 <div className="font-semibold">{r.slot?.name ?? "Slot"}</div>
-                <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()} · ₹{r.total_price}</div>
-                {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
+                <div className="text-xs text-muted-foreground">
+                  {new Date(r.start_time).toLocaleString()} · ₹{r.total_price}
+                </div>
+                {r.vehicle_plate && (
+                  <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground">
+                    <Car className="w-3 h-3" />
+                    {r.vehicle_plate}
+                  </div>
+                )}
                 <div className="mt-2 flex gap-2 flex-wrap">
                   {r.status === "completed" && new Date(r.end_time).getTime() <= Date.now() && (
-                    <button onClick={() => setReviewing({ slotId: r.slot_id, reservationId: r.id })}
-                      className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg flex items-center gap-1">
-                      <Star className="w-3 h-3"/>Leave review
+                    <button
+                      onClick={() => setReviewing({ slotId: r.slot_id, reservationId: r.id })}
+                      className="text-xs font-semibold text-primary-foreground bg-primary px-3 py-1.5 rounded-lg flex items-center gap-1"
+                    >
+                      <Star className="w-3 h-3" />
+                      Leave review
                     </button>
                   )}
-                  <button onClick={() => setReceipt(r as ReservationWithSlot)}
-                    className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1">
-                    <Receipt className="w-3 h-3"/>Receipt
+                  <button
+                    onClick={() => setReceipt(r as ReservationWithSlot)}
+                    className="text-xs font-semibold border border-border px-3 py-1.5 rounded-lg flex items-center gap-1"
+                  >
+                    <Receipt className="w-3 h-3" />
+                    Receipt
                   </button>
                 </div>
               </div>
             ))}
           </Section>
         )}
-        {reservations.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No bookings yet.</p>}
+        {reservations.length === 0 && (
+          <p className="text-center text-sm text-muted-foreground py-8">No bookings yet.</p>
+        )}
       </div>
-      {reviewing && <ReviewModal slotId={reviewing.slotId} reservationId={reviewing.reservationId} onClose={() => setReviewing(null)}/>}
-      {receipt && <ReceiptModal r={receipt} onClose={() => setReceipt(null)}/>}
+      {reviewing && (
+        <ReviewModal
+          slotId={reviewing.slotId}
+          reservationId={reviewing.reservationId}
+          onClose={() => setReviewing(null)}
+        />
+      )}
+      {receipt && <ReceiptModal r={receipt} onClose={() => setReceipt(null)} />}
     </div>
   );
 }
@@ -136,13 +206,23 @@ function MyReservations() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">{title}</h2>
+      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+        {title}
+      </h2>
       <div className="space-y-3">{children}</div>
     </div>
   );
 }
 
-function ActiveCard({ r, onEnd, onExtend }: { r: ReservationWithSlot; onEnd: (r: ReservationWithSlot) => void; onExtend: (r: ReservationWithSlot, minutes: number) => void }) {
+function ActiveCard({
+  r,
+  onEnd,
+  onExtend,
+}: {
+  r: ReservationWithSlot;
+  onEnd: (r: ReservationWithSlot) => void;
+  onExtend: (r: ReservationWithSlot, minutes: number) => void;
+}) {
   const remaining = useCountdown(r.end_time);
   const slot = r.slot;
   if (!slot) return null;
@@ -151,28 +231,71 @@ function ActiveCard({ r, onEnd, onExtend }: { r: ReservationWithSlot; onEnd: (r:
       <div className="flex items-start justify-between">
         <div className="min-w-0">
           <div className="font-bold">{slot.name}</div>
-          <div className="text-xs flex items-center gap-1 text-muted-foreground"><MapPin className="w-3 h-3"/>{slot.full_address}</div>
-          {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 font-semibold"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
+          <div className="text-xs flex items-center gap-1 text-muted-foreground">
+            <MapPin className="w-3 h-3" />
+            {slot.full_address}
+          </div>
+          {r.vehicle_plate && (
+            <div className="mt-1 text-[11px] flex items-center gap-1 font-semibold">
+              <Car className="w-3 h-3" />
+              {r.vehicle_plate}
+            </div>
+          )}
         </div>
         <div className="text-right shrink-0">
           <div className="text-[10px] uppercase text-muted-foreground">Ends in</div>
           <div className="font-mono font-bold text-sm">{remaining}</div>
         </div>
       </div>
-      {slot.access_instructions && <div className="mt-2 text-xs bg-white/50 rounded-lg p-2">{slot.access_instructions}</div>}
+      {slot.access_instructions && (
+        <div className="mt-2 text-xs bg-white/50 rounded-lg p-2">{slot.access_instructions}</div>
+      )}
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <HostCall ownerId={slot.owner_id}/>
-        <Link to="/messages/$reservationId" params={{ reservationId: r.id }}
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><MessageCircle className="w-3.5 h-3.5"/>Message</Link>
-        <a href={`https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`} target="_blank" rel="noreferrer"
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"><Navigation2 className="w-3.5 h-3.5"/>Route</a>
+        <HostCall ownerId={slot.owner_id} />
+        <Link
+          to="/messages/$reservationId"
+          params={{ reservationId: r.id }}
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Message
+        </Link>
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${slot.lat},${slot.lng}`}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+        >
+          <Navigation2 className="w-3.5 h-3.5" />
+          Route
+        </a>
       </div>
       <div className="mt-2 grid grid-cols-3 gap-2">
-        <button onClick={() => onExtend(r, 15)} className="rounded-xl border border-black py-2 text-xs font-semibold">+15 min</button>
-        <button onClick={() => onExtend(r, 30)} className="rounded-xl border border-black py-2 text-xs font-semibold">+30 min</button>
-        <button onClick={() => onExtend(r, 60)} className="rounded-xl border border-black py-2 text-xs font-semibold">+1 hr</button>
+        <button
+          onClick={() => onExtend(r, 15)}
+          className="rounded-xl border border-black py-2 text-xs font-semibold"
+        >
+          +15 min
+        </button>
+        <button
+          onClick={() => onExtend(r, 30)}
+          className="rounded-xl border border-black py-2 text-xs font-semibold"
+        >
+          +30 min
+        </button>
+        <button
+          onClick={() => onExtend(r, 60)}
+          className="rounded-xl border border-black py-2 text-xs font-semibold"
+        >
+          +1 hr
+        </button>
       </div>
-      <button onClick={() => onEnd(r)} className="mt-2 w-full rounded-xl bg-destructive text-destructive-foreground py-2 text-xs font-semibold">End session (prorated)</button>
+      <button
+        onClick={() => onEnd(r)}
+        className="mt-2 w-full rounded-xl bg-destructive text-destructive-foreground py-2 text-xs font-semibold"
+      >
+        End session (prorated)
+      </button>
     </div>
   );
 }
@@ -181,20 +304,36 @@ function HostCall({ ownerId }: { ownerId: string }) {
   const [phone, setPhone] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    supabase.from("profiles").select("phone").eq("user_id", ownerId).maybeSingle().then(({ data }) => {
-      if (!cancelled) setPhone(data?.phone ?? null);
-    });
-    return () => { cancelled = true; };
+    supabase
+      .from("profiles")
+      .select("phone")
+      .eq("user_id", ownerId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setPhone(data?.phone ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [ownerId]);
   return (
-    <a href={phone ? `tel:${phone}` : undefined}
-      className={`rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1 ${!phone ? "opacity-50 pointer-events-none" : ""}`}>
-      <Phone className="w-3.5 h-3.5"/>Call
+    <a
+      href={phone ? `tel:${phone}` : undefined}
+      className={`rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1 ${!phone ? "opacity-50 pointer-events-none" : ""}`}
+    >
+      <Phone className="w-3.5 h-3.5" />
+      Call
     </a>
   );
 }
 
-function UpcomingCard({ r, onCancel }: { r: ReservationWithSlot; onCancel: (id: string, slot: Slot | null, start: string) => void }) {
+function UpcomingCard({
+  r,
+  onCancel,
+}: {
+  r: ReservationWithSlot;
+  onCancel: (id: string, slot: Slot | null, start: string) => void;
+}) {
   const slot = r.slot;
   const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
   const refund = refundEligible(policy, r.start_time);
@@ -202,19 +341,33 @@ function UpcomingCard({ r, onCancel }: { r: ReservationWithSlot; onCancel: (id: 
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="font-bold">{slot?.name}</div>
       <div className="text-xs text-muted-foreground">{new Date(r.start_time).toLocaleString()}</div>
-      <div className="mt-1 text-sm font-semibold">₹{r.total_price} · {r.rate_type}</div>
-      {r.vehicle_plate && <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground"><Car className="w-3 h-3"/>{r.vehicle_plate}</div>}
+      <div className="mt-1 text-sm font-semibold">
+        ₹{r.total_price} · {r.rate_type}
+      </div>
+      {r.vehicle_plate && (
+        <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground">
+          <Car className="w-3 h-3" />
+          {r.vehicle_plate}
+        </div>
+      )}
       <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-        <ShieldCheck className="w-3 h-3"/>
-        <span className="capitalize">{POLICY_META[policy].label}</span> · {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
+        <ShieldCheck className="w-3 h-3" />
+        <span className="capitalize">{POLICY_META[policy].label}</span> ·{" "}
+        {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Link to="/messages/$reservationId" params={{ reservationId: r.id }}
-          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1">
-          <MessageCircle className="w-3.5 h-3.5"/>Message host
+        <Link
+          to="/messages/$reservationId"
+          params={{ reservationId: r.id }}
+          className="rounded-xl bg-black text-white py-2 text-xs font-semibold flex items-center justify-center gap-1"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          Message host
         </Link>
-        <button onClick={() => onCancel(r.id, slot, r.start_time)}
-          className="rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold">
+        <button
+          onClick={() => onCancel(r.id, slot, r.start_time)}
+          className="rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold"
+        >
           Cancel
         </button>
       </div>
@@ -228,41 +381,66 @@ function ReceiptModal({ r, onClose }: { r: ReservationWithSlot; onClose: () => v
     const html = ref.current?.innerHTML ?? "";
     const w = window.open("", "_blank", "width=420,height=640");
     if (!w) return;
-    w.document.write(`<html><head><title>Receipt ${r.id.slice(0,8)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:12px 0}dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}dt{color:#666}strong{font-size:20px}</style></head><body>${html}</body></html>`);
+    w.document.write(
+      `<html><head><title>Receipt ${r.id.slice(0, 8)}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 8px}hr{border:0;border-top:1px dashed #999;margin:12px 0}dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}dt{color:#666}strong{font-size:20px}</style></head><body>${html}</body></html>`,
+    );
     w.document.close();
     w.focus();
     setTimeout(() => w.print(), 100);
   }
   return (
     <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-card rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 pt-4">
           <h3 className="font-black text-lg">Receipt</h3>
-          <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-full bg-muted"><X className="w-4 h-4"/></button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 grid place-items-center rounded-full bg-muted"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
         <div ref={ref} className="px-5 py-3 text-sm">
           <h1 className="text-lg font-black">Usop Parking</h1>
-          <div className="text-xs text-muted-foreground">Receipt #{r.id.slice(0,8).toUpperCase()}</div>
-          <hr className="my-3 border-dashed border-border"/>
+          <div className="text-xs text-muted-foreground">
+            Receipt #{r.id.slice(0, 8).toUpperCase()}
+          </div>
+          <hr className="my-3 border-dashed border-border" />
           <dl className="grid grid-cols-[auto,1fr] gap-y-1.5 gap-x-3">
-            <dt className="text-muted-foreground">Slot</dt><dd className="font-semibold">{r.slot?.name ?? "—"}</dd>
-            <dt className="text-muted-foreground">Address</dt><dd>{r.slot?.full_address ?? r.slot?.approx_area ?? "—"}</dd>
-            <dt className="text-muted-foreground">Vehicle</dt><dd className="font-mono">{r.vehicle_plate ?? "—"}</dd>
-            <dt className="text-muted-foreground">Start</dt><dd>{new Date(r.start_time).toLocaleString()}</dd>
-            <dt className="text-muted-foreground">End</dt><dd>{new Date(r.end_time).toLocaleString()}</dd>
-            <dt className="text-muted-foreground">Rate</dt><dd className="capitalize">{r.rate_type}</dd>
-            <dt className="text-muted-foreground">Status</dt><dd className="capitalize">{r.status}</dd>
+            <dt className="text-muted-foreground">Slot</dt>
+            <dd className="font-semibold">{r.slot?.name ?? "—"}</dd>
+            <dt className="text-muted-foreground">Address</dt>
+            <dd>{r.slot?.full_address ?? r.slot?.approx_area ?? "—"}</dd>
+            <dt className="text-muted-foreground">Vehicle</dt>
+            <dd className="font-mono">{r.vehicle_plate ?? "—"}</dd>
+            <dt className="text-muted-foreground">Start</dt>
+            <dd>{new Date(r.start_time).toLocaleString()}</dd>
+            <dt className="text-muted-foreground">End</dt>
+            <dd>{new Date(r.end_time).toLocaleString()}</dd>
+            <dt className="text-muted-foreground">Rate</dt>
+            <dd className="capitalize">{r.rate_type}</dd>
+            <dt className="text-muted-foreground">Status</dt>
+            <dd className="capitalize">{r.status}</dd>
           </dl>
-          <hr className="my-3 border-dashed border-border"/>
+          <hr className="my-3 border-dashed border-border" />
           <div className="flex items-baseline justify-between">
             <span className="text-muted-foreground">Total paid</span>
             <strong className="text-xl font-black">₹{r.total_price}</strong>
           </div>
-          <div className="mt-4 text-[10px] text-muted-foreground text-center">Thank you for parking with Usop</div>
+          <div className="mt-4 text-[10px] text-muted-foreground text-center">
+            Thank you for parking with Usop
+          </div>
         </div>
         <div className="px-5 pb-5">
-          <button onClick={printReceipt} className="w-full rounded-xl bg-primary py-2.5 font-bold text-primary-foreground flex items-center justify-center gap-2">
-            <Printer className="w-4 h-4"/>Print / Save PDF
+          <button
+            onClick={printReceipt}
+            className="w-full rounded-xl bg-primary py-2.5 font-bold text-primary-foreground flex items-center justify-center gap-2"
+          >
+            <Printer className="w-4 h-4" />
+            Print / Save PDF
           </button>
         </div>
       </div>
@@ -270,7 +448,15 @@ function ReceiptModal({ r, onClose }: { r: ReservationWithSlot; onClose: () => v
   );
 }
 
-function ReviewModal({ slotId, reservationId, onClose }: { slotId: string; reservationId: string; onClose: () => void }) {
+function ReviewModal({
+  slotId,
+  reservationId,
+  onClose,
+}: {
+  slotId: string;
+  reservationId: string;
+  onClose: () => void;
+}) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState(false);
@@ -278,10 +464,19 @@ function ReviewModal({ slotId, reservationId, onClose }: { slotId: string; reser
 
   async function submit() {
     setBusy(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setBusy(false); return; }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setBusy(false);
+      return;
+    }
     const { error } = await supabase.from("reviews").insert({
-      slot_id: slotId, driver_id: user.id, rating, comment: comment.trim(), reservation_id: reservationId,
+      slot_id: slotId,
+      driver_id: user.id,
+      rating,
+      comment: comment.trim(),
+      reservation_id: reservationId,
     });
     setBusy(false);
     if (error) {
@@ -297,18 +492,38 @@ function ReviewModal({ slotId, reservationId, onClose }: { slotId: string; reser
 
   return (
     <div className="fixed inset-0 bg-black/60 grid place-items-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl p-5 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+      <div className="bg-card rounded-2xl p-5 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-bold text-lg">Rate this spot</h3>
         <div className="flex gap-1 my-3">
-          {[1,2,3,4,5].map(n => (
-            <button key={n} onClick={() => setRating(n)} className={`text-3xl ${n <= rating ? "text-primary" : "text-muted"}`}>★</button>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              onClick={() => setRating(n)}
+              className={`text-3xl ${n <= rating ? "text-primary" : "text-muted"}`}
+            >
+              ★
+            </button>
           ))}
         </div>
-        <textarea value={comment} onChange={e => setComment(e.target.value)} maxLength={500}
-          placeholder="Optional comment" className="w-full border border-input rounded-xl p-3 text-sm"/>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          maxLength={500}
+          placeholder="Optional comment"
+          className="w-full border border-input rounded-xl p-3 text-sm"
+        />
         <div className="flex gap-2 mt-3">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2 text-sm font-semibold">Cancel</button>
-          <button disabled={busy} onClick={submit} className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground disabled:opacity-60">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-xl border border-border py-2 text-sm font-semibold"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={busy}
+            onClick={submit}
+            className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground disabled:opacity-60"
+          >
             {busy ? "…" : "Post"}
           </button>
         </div>
