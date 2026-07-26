@@ -180,7 +180,7 @@ function ProfilePage() {
                 <button
                   disabled={reqBusy}
                   onClick={requestVerification}
-                  className="mt-3 w-full rounded-xl bg-black text-white py-2.5 text-sm font-bold disabled:opacity-60"
+                  className="mt-3 w-full rounded-xl bg-foreground text-background py-2.5 text-sm font-bold disabled:opacity-60"
                 >
                   Request verification
                 </button>
