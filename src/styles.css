@@ -122,8 +122,8 @@
   border: 1px solid var(--color-border);
 }
 .price-pill {
-  background: var(--color-primary);
-  color: var(--color-primary-foreground);
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
   font-weight: 800;
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
@@ -136,7 +136,8 @@
   background: var(--color-muted); font-size: 0.7rem; font-weight: 600;
 }
 .chip-dark { background: rgba(255,255,255,0.12); color: white; }
-.chip-yellow { background: var(--color-primary); color: var(--color-primary-foreground); }
-.hero-scrim { background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.8) 100%); }
+.chip-amber { background: var(--color-accent); color: var(--color-accent-foreground); }
+.chip-yellow { background: var(--color-accent); color: var(--color-accent-foreground); }
+.hero-scrim { background: linear-gradient(180deg, transparent 35%, color-mix(in oklab, var(--surface-dark) 85%, transparent) 100%); }
 .mobile-shell { box-shadow: 0 0 40px rgba(0,0,0,0.06); }
 
