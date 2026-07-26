@@ -75,7 +75,7 @@ export const myVehiclesQuery = () => queryOptions({
   queryFn: async (): Promise<Vehicle[]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
-    const { data, error } = await supabase.from("vehicles" as any).select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("vehicles").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []) as unknown as Vehicle[];
   },
