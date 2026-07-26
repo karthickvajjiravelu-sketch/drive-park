@@ -49,7 +49,7 @@ function VehiclesPage() {
 
   async function remove(id: string) {
     if (!confirm("Remove this vehicle?")) return;
-    const { error } = await supabase.from("vehicles" as any).delete().eq("id", id);
+    const { error } = await supabase.from("vehicles").delete().eq("id", id);
     if (error) toast.error(error.message);
     else qc.invalidateQueries({ queryKey: ["my-vehicles"] });
   }
