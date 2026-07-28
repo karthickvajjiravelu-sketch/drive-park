@@ -406,6 +406,24 @@ export type LotOccupancy = {
   occupied_slots: number;
 };
 
+export const lotOccupancyQuery = () =>
+  queryOptions({
+    queryKey: ["lot-occupancy"],
+    queryFn: async (): Promise<Record<string, LotOccupancy>> => {
+      const { data, error } = await supabase
+        .from("parking_lots")
+        .select("id, tier, total_slots, occupied_slots");
+      if (error) throw error;
+      const map: Record<string, LotOccupancy> = {};
+      for (const lot of data ?? []) map[lot.id] = lot as LotOccupancy;
+      return map;
+    },
+    staleTime: 60_000,
+  });
+export const useLotOccupancy = () => useQuery(lotOccupancyQuery());
+
+
+
 export const myPaymentMethodsQuery = () =>
   queryOptions({
     queryKey: ["my-payment-methods"],
