@@ -1,79 +1,56 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { useMyReservations } from "@/lib/queries";
-import { ArrowLeft, CreditCard, Wallet as WalletIcon, Plus, Check } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMyReservations, useMyPaymentMethods } from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, CreditCard, Wallet as WalletIcon, Check, Smartphone, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/wallet")({
   component: WalletPage,
+  head: () => ({
+    meta: [
+      { title: "Wallet & Payment Methods | Usop" },
+      {
+        name: "description",
+        content: "Manage your saved UPI and card payment methods, credits and parking transactions on Usop.",
+      },
+      { property: "og:title", content: "Wallet & Payment Methods | Usop" },
+      {
+        property: "og:description",
+        content: "Manage saved UPI and card methods, credits and parking transactions.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
 });
-
-type MockCard = { id: string; brand: string; last4: string; exp: string; primary: boolean };
-
-const MOCK_CARDS_KEY = "usop-mock-cards";
-
-function loadCards(): MockCard[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(MOCK_CARDS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* user cancelled or clipboard denied */
-  }
-  const seed: MockCard[] = [
-    { id: "c1", brand: "Visa", last4: "4242", exp: "08/28", primary: true },
-  ];
-  localStorage.setItem(MOCK_CARDS_KEY, JSON.stringify(seed));
-  return seed;
-}
-
-function saveCards(cards: MockCard[]) {
-  localStorage.setItem(MOCK_CARDS_KEY, JSON.stringify(cards));
-}
 
 function WalletPage() {
   const navigate = useNavigate();
-  const [cards, setCards] = useState<MockCard[]>(() => loadCards());
-  const [adding, setAdding] = useState(false);
-  const [num, setNum] = useState("");
-  const [exp, setExp] = useState("");
+  const qc = useQueryClient();
   const { data: reservations = [] } = useMyReservations();
+  const { data: methods = [] } = useMyPaymentMethods();
 
   const totalSpent = reservations
     .filter((r) => r.status !== "cancelled")
     .reduce((s, r) => s + Number(r.total_price || 0), 0);
   const wallet = Math.max(0, 500 - (totalSpent % 500));
 
-  function addCard(e: React.FormEvent) {
-    e.preventDefault();
-    const digits = num.replace(/\D/g, "");
-    if (digits.length < 12) {
-      toast.error("Enter a valid card number");
-      return;
-    }
-    const brand = /^4/.test(digits) ? "Visa" : /^5/.test(digits) ? "Mastercard" : "Card";
-    const next = [
-      ...cards,
-      { id: crypto.randomUUID(), brand, last4: digits.slice(-4), exp, primary: cards.length === 0 },
-    ];
-    setCards(next);
-    saveCards(next);
-    setNum("");
-    setExp("");
-    setAdding(false);
-    toast.success("Card added (mock)");
-  }
-  function makePrimary(id: string) {
-    const next = cards.map((c) => ({ ...c, primary: c.id === id }));
-    setCards(next);
-    saveCards(next);
-  }
-  function remove(id: string) {
-    const next = cards.filter((c) => c.id !== id);
-    if (next.length && !next.some((c) => c.primary)) next[0].primary = true;
-    setCards(next);
-    saveCards(next);
-  }
+  const refresh = () => qc.invalidateQueries({ queryKey: ["my-payment-methods"] });
+
+  const makeDefault = async (id: string) => {
+    const { error } = await supabase.from("payment_methods").update({ is_default: true }).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Default payment method updated");
+    refresh();
+  };
+
+  const remove = async (id: string) => {
+    const { error } = await supabase.from("payment_methods").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Payment method removed");
+    refresh();
+  };
 
   return (
     <div className="pb-24">
@@ -82,6 +59,7 @@ function WalletPage() {
           <button
             onClick={() => navigate({ to: "/profile" })}
             className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"
+            aria-label="Back to profile"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -94,7 +72,7 @@ function WalletPage() {
           </div>
           <div className="mt-2 text-4xl font-black">₹{wallet}</div>
           <div className="mt-1 text-xs opacity-70">
-            Mock balance · earn credits from cancellations & referrals
+            Credits earned from cancellations &amp; referrals
           </div>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-white/80">
@@ -110,112 +88,59 @@ function WalletPage() {
       </div>
 
       <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-            Payment methods
-          </h2>
-          {!adding && (
-            <button
-              onClick={() => setAdding(true)}
-              className="text-xs font-bold text-primary-foreground bg-primary px-3 py-1.5 rounded-full flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add
-            </button>
-          )}
+        <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
+          Payment methods
+        </h2>
+
+        <div className="rounded-2xl border border-border bg-card p-3 flex items-start gap-2 text-xs mb-3">
+          <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-muted-foreground">
+            Cards and UPI IDs are saved securely by our payment gateway when you check out — Usop
+            only stores a token, never your card number or CVV.
+          </p>
         </div>
 
-        {adding && (
-          <form
-            onSubmit={addCard}
-            className="rounded-2xl bg-card border border-border p-4 space-y-3 mb-3"
-          >
-            <label className="block">
-              <span className="text-xs font-semibold text-muted-foreground uppercase">
-                Card number
-              </span>
-              <input
-                value={num}
-                onChange={(e) =>
-                  setNum(
-                    e.target.value
-                      .replace(/\D/g, "")
-                      .replace(/(\d{4})(?=\d)/g, "$1 ")
-                      .slice(0, 19),
-                  )
-                }
-                inputMode="numeric"
-                placeholder="4242 4242 4242 4242"
-                className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2.5 font-mono"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-muted-foreground uppercase">
-                Expiry (MM/YY)
-              </span>
-              <input
-                value={exp}
-                onChange={(e) => setExp(e.target.value)}
-                placeholder="08/28"
-                className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2.5"
-              />
-            </label>
-            <p className="text-[10px] text-muted-foreground">
-              Demo only — no real charges. Cards saved locally.
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setAdding(false)}
-                className="flex-1 rounded-xl border border-border py-2 text-sm font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 rounded-xl bg-primary py-2 text-sm font-bold text-primary-foreground"
-              >
-                Save card
-              </button>
-            </div>
-          </form>
-        )}
-
         <div className="space-y-2">
-          {cards.length === 0 && !adding && (
+          {methods.length === 0 && (
             <p className="text-center text-sm text-muted-foreground py-6">
-              No payment methods yet.
+              No saved methods yet. Pay for a booking and choose “save for later” to add one.
             </p>
           )}
-          {cards.map((c) => (
+          {methods.map((m) => (
             <div
-              key={c.id}
+              key={m.id}
               className="rounded-2xl bg-card border border-border p-3 flex items-center gap-3"
             >
               <div className="w-10 h-10 rounded-lg bg-foreground text-background grid place-items-center">
-                <CreditCard className="w-5 h-5" />
+                {m.method === "upi" ? (
+                  <Smartphone className="w-5 h-5" />
+                ) : (
+                  <CreditCard className="w-5 h-5" />
+                )}
               </div>
-              <div className="flex-1">
-                <div className="font-bold text-sm">
-                  {c.brand} •••• {c.last4}
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm truncate">
+                  {m.method === "upi"
+                    ? m.last4 || "UPI"
+                    : `${m.network || "Card"} •••• ${m.last4 || "____"}`}
                 </div>
-                <div className="text-xs text-muted-foreground">Exp {c.exp || "—"}</div>
+                <div className="text-xs text-muted-foreground capitalize">{m.method}</div>
               </div>
-              {c.primary ? (
+              {m.is_default ? (
                 <span className="text-[10px] font-black uppercase text-primary-foreground bg-primary px-2 py-1 rounded-full flex items-center gap-1">
                   <Check className="w-3 h-3" />
-                  Primary
+                  Default
                 </span>
               ) : (
                 <button
-                  onClick={() => makePrimary(c.id)}
+                  onClick={() => makeDefault(m.id)}
                   className="text-[10px] font-bold text-muted-foreground uppercase"
                 >
-                  Set primary
+                  Set default
                 </button>
               )}
               <button
-                onClick={() => remove(c.id)}
+                onClick={() => remove(m.id)}
                 className="text-[10px] font-bold text-destructive uppercase"
               >
                 Remove

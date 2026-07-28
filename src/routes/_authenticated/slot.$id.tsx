@@ -25,6 +25,8 @@ import { calculatePrice, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { PriceBreakdownCard, DemandBadge } from "@/components/PriceBreakdownCard";
 import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
+import { PayNowButton } from "@/components/PayNowButton";
+
 
 export const Route = createFileRoute("/_authenticated/slot/$id")({
   component: SlotDetail,
@@ -355,6 +357,12 @@ function SlotDetail() {
                 Message
               </Link>
             </div>
+            <PayNowButton
+              reservationId={reservationId!}
+              amount={breakdown?.grandTotal ?? total}
+              slotName={slot.name}
+            />
+
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
               target="_blank"
