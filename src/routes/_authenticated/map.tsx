@@ -2,7 +2,9 @@ import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useSlots, useMyFavorites, type Slot } from "@/lib/queries";
+import { useSlots, useMyFavorites, useLotOccupancy, type Slot } from "@/lib/queries";
+import { demandFromOccupancy, occupancyPercent, type DemandLevel } from "@/lib/pricing";
+import { DemandBadge } from "@/components/PriceBreakdownCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-react";
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
@@ -29,6 +31,13 @@ function haversine(a: [number, number], b: [number, number]) {
 function MapPage() {
   const { data: slots = [] } = useSlots();
   const { data: favorites = [] } = useMyFavorites();
+  const { data: lots = {} } = useLotOccupancy();
+
+  const demandFor = (s: Slot): DemandLevel | undefined => {
+    const lot = s.lot_id ? lots[s.lot_id] : undefined;
+    if (!lot || !lot.total_slots) return undefined;
+    return demandFromOccupancy(occupancyPercent(lot.occupied_slots, lot.total_slots)).level;
+  };
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [view, setView] = useState<"map" | "list">("map");
