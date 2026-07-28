@@ -8,12 +8,36 @@ import {
   nameSchema,
   phoneSchema,
   emailSchema,
+  otpSchema,
   formatName,
   formatDigits,
   validate,
+  checkOtpThrottle,
+  type OtpAttempt,
 } from "@/lib/validation";
 
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+
+const OTP_STORE_KEY = "usop.otp.attempts";
+
+function readOtpAttempts(): OtpAttempt[] {
+  try {
+    const raw = localStorage.getItem(OTP_STORE_KEY);
+    return raw ? (JSON.parse(raw) as OtpAttempt[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordOtpAttempt(identifier: string) {
+  try {
+    const next = [...readOtpAttempts(), { phone: identifier, at: Date.now() }].slice(-20);
+    localStorage.setItem(OTP_STORE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -37,6 +61,7 @@ function AuthPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">(search.mode ?? "signin");
+  const [method, setMethod] = useState<"password" | "otp">("password");
   const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -44,20 +69,59 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<"driver" | "landowner">("driver");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const nextPath = sanitizeNext(search.next);
+  const otpMode = mode === "signin" && method === "otp";
 
-  const formValid =
-    validate(emailSchema, email) === null &&
-    validate(passwordSchema, password) === null &&
-    (mode === "signin" ||
-      (validate(nameSchema, name) === null && validate(phoneSchema, phone) === null));
+  const formValid = otpMode
+    ? validate(emailSchema, email) === null &&
+      (!otpSent || validate(otpSchema, otp) === null)
+    : validate(emailSchema, email) === null &&
+      validate(passwordSchema, password) === null &&
+      (mode === "signin" ||
+        (validate(nameSchema, name) === null && validate(phoneSchema, phone) === null));
+
+  function goNext() {
+    if (nextPath) window.location.href = nextPath;
+    else navigate({ to: "/home" });
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
+      if (otpMode) {
+        if (!otpSent) {
+          const throttle = checkOtpThrottle(readOtpAttempts(), email, Date.now());
+          if (!throttle.allowed) {
+            toast.error(
+              throttle.reason === "cooldown"
+                ? `Please wait ${Math.ceil(throttle.retryInMs / 1000)}s before requesting another code`
+                : "Too many code requests. Try again later.",
+            );
+            return;
+          }
+
+          const { error } = await supabase.auth.signInWithOtp({
+            email,
+            options: { shouldCreateUser: false },
+          });
+          if (error) throw error;
+          recordOtpAttempt(email);
+          setOtpSent(true);
+          toast.success("We emailed you a 6-digit code");
+        } else {
+          const { error } = await supabase.auth.verifyOtp({
+            email,
+            token: otp,
+            type: "email",
+          });
+          if (error) throw error;
+          goNext();
+        }
+      } else if (mode === "signup") {
         const emailRedirectTo = nextPath
           ? `${window.location.origin}${nextPath}`
           : window.location.origin;
@@ -71,13 +135,11 @@ function AuthPage() {
         });
         if (error) throw error;
         toast.success("Account created");
-        if (nextPath) window.location.href = nextPath;
-        else navigate({ to: "/home" });
+        goNext();
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (nextPath) window.location.href = nextPath;
-        else navigate({ to: "/home" });
+        goNext();
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Auth failed");
@@ -85,6 +147,7 @@ function AuthPage() {
       setLoading(false);
     }
   }
+
 
   return (
     <div className="mobile-shell">
@@ -98,6 +161,29 @@ function AuthPage() {
       </div>
 
       <form onSubmit={submit} className="px-6 py-6 space-y-4">
+        {mode === "signin" && (
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+            {(["password", "otp"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMethod(m);
+                  setOtpSent(false);
+                  setOtp("");
+                }}
+                className={`rounded-xl py-2 text-sm font-semibold transition ${
+                  method === m
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {m === "password" ? "Email & password" : "Email code"}
+              </button>
+            ))}
+          </div>
+        )}
+
         {mode === "signup" && (
           <>
             <div className="grid grid-cols-2 gap-2">
@@ -146,29 +232,67 @@ function AuthPage() {
           schema={emailSchema}
           required
         />
-        <ValidatedField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          schema={passwordSchema}
-          required
-        />
+        {!otpMode && (
+          <ValidatedField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            schema={passwordSchema}
+            required
+          />
+        )}
+        {otpMode && otpSent && (
+          <ValidatedField
+            label="6-digit code"
+            value={otp}
+            onChange={(v) => setOtp(formatDigits(v, 6))}
+            schema={otpSchema}
+            inputMode="numeric"
+            required
+          />
+        )}
 
         <button
           disabled={loading || !formValid}
           className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
         >
-          {loading ? "…" : mode === "signup" ? "Create account" : "Sign in"}
+          {loading
+            ? "…"
+            : mode === "signup"
+              ? "Create account"
+              : otpMode
+                ? otpSent
+                  ? "Verify code"
+                  : "Send code"
+                : "Sign in"}
         </button>
+
+        {otpMode && otpSent && (
+          <button
+            type="button"
+            onClick={() => {
+              setOtpSent(false);
+              setOtp("");
+            }}
+            className="w-full text-sm text-muted-foreground py-1"
+          >
+            Use a different email
+          </button>
+        )}
 
         <button
           type="button"
-          onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+          onClick={() => {
+            setMode(mode === "signup" ? "signin" : "signup");
+            setOtpSent(false);
+            setOtp("");
+          }}
           className="w-full text-sm text-muted-foreground py-2"
         >
           {mode === "signup" ? "Have an account? Sign in" : "New here? Create account"}
         </button>
+
       </form>
     </div>
   );
