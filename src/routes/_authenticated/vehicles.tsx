@@ -114,7 +114,7 @@ function VehiclesPage() {
                 label="Make / model"
                 value={make}
                 onChange={setMake}
-                schema={vehicleModelSchema}
+                schema={make ? vehicleModelSchema : undefined}
                 placeholder="Swift VXI"
               />
               <ValidatedField label="Colour" value={colour} onChange={setColour} />
