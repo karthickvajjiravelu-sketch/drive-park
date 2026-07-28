@@ -25,6 +25,9 @@ export type Notification = {
 
 export type Slot = {
   id: string;
+  slot_type: Database["public"]["Enums"]["slot_type"];
+  base_rate: number;
+  lot_id: string | null;
   owner_id: string;
   name: string;
   approx_area: string;
