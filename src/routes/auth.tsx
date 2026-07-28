@@ -8,12 +8,36 @@ import {
   nameSchema,
   phoneSchema,
   emailSchema,
+  otpSchema,
   formatName,
   formatDigits,
   validate,
+  checkOtpThrottle,
+  type OtpAttempt,
 } from "@/lib/validation";
 
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+
+const OTP_STORE_KEY = "usop.otp.attempts";
+
+function readOtpAttempts(): OtpAttempt[] {
+  try {
+    const raw = localStorage.getItem(OTP_STORE_KEY);
+    return raw ? (JSON.parse(raw) as OtpAttempt[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordOtpAttempt(identifier: string) {
+  try {
+    const next = [...readOtpAttempts(), { phone: identifier, at: Date.now() }].slice(-20);
+    localStorage.setItem(OTP_STORE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
