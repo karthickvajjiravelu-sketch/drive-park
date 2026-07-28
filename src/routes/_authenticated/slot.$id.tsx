@@ -18,7 +18,12 @@ import {
   Phone,
   MessageCircle,
 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getPricingContext } from "@/lib/pricing.functions";
+import { calculatePrice, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
+import { PriceBreakdownCard, DemandBadge } from "@/components/PriceBreakdownCard";
+import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 
 export const Route = createFileRoute("/_authenticated/slot/$id")({
@@ -43,6 +48,14 @@ function SlotDetail() {
   });
   const [reservationId, setReservationId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [priceEpoch, setPriceEpoch] = useState(0);
+
+  const fetchPricingContext = useServerFn(getPricingContext);
+  const { data: pricing, refetch: refetchPricing } = useQuery({
+    queryKey: ["pricing-context", id],
+    queryFn: () => fetchPricingContext({ data: { slotId: id } }),
+    refetchInterval: 5 * 60 * 1000,
+  });
 
   const favorited = useMemo(() => favorites.some((f) => f.slot_id === id), [favorites, id]);
 
@@ -70,7 +83,29 @@ function SlotDetail() {
   if (!slot) return <div className="p-6">Slot not found</div>;
 
   const rate = slot[`${rateType}_rate` as const] as number;
-  const total = rate * duration;
+  const durationError = rateType === "hourly" ? validate(durationSchema, duration) : null;
+  const breakdown =
+    rateType === "hourly" && pricing && !durationError
+      ? calculatePrice({
+          slotType: pricing.slotType,
+          baseRate: pricing.baseRate,
+          tier: pricing.tier,
+          occupiedSlots: pricing.occupiedSlots,
+          totalSlots: pricing.totalSlots,
+          startTime: new Date(startTime),
+          durationHours: duration,
+          holidayDates: pricing.holidayDates,
+        })
+      : null;
+  void priceEpoch;
+  const total = breakdown ? breakdown.grandTotal : rate * duration;
+
+  async function refreshPrice() {
+    const previous = breakdown?.grandTotal;
+    await refetchPricing();
+    setPriceEpoch((n) => n + 1);
+    if (previous !== undefined) toast.info("Price lock expired — price refreshed");
+  }
   const booked = !!reservationId;
   const isFull = slot.status === "full";
 
@@ -116,6 +151,12 @@ function SlotDetail() {
           status,
           total_price: total,
           rate_type: rateType,
+          price_breakdown: breakdown ? JSON.parse(JSON.stringify(breakdown)) : null,
+          base_rate: breakdown?.baseRate ?? rate,
+          final_price_per_hour: breakdown?.finalPricePerHour ?? null,
+          subtotal_amount: breakdown?.subtotal ?? total,
+          gst_amount: breakdown?.gst ?? null,
+          grand_total: breakdown?.grandTotal ?? total,
           vehicle_id: vehicle?.id ?? null,
           vehicle_plate: vehicle?.plate ?? null,
         })
@@ -369,12 +410,19 @@ function SlotDetail() {
               </span>
               <input
                 type="number"
-                min={1}
+                min={rateType === "hourly" ? 0.5 : 1}
+                step={rateType === "hourly" ? 0.5 : 1}
                 max={rateType === "monthly" ? 12 : rateType === "daily" ? 30 : 24}
                 value={duration}
-                onChange={(e) => setDuration(+e.target.value || 1)}
-                className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2"
+                onChange={(e) => setDuration(+e.target.value || (rateType === "hourly" ? 0.5 : 1))}
+                aria-invalid={!!durationError}
+                className={`mt-1 w-full rounded-xl border bg-background px-3 py-2 ${durationError ? "border-destructive" : "border-input"}`}
               />
+              {durationError && (
+                <span className="mt-1 block text-xs font-medium text-destructive">
+                  {MESSAGES.duration}
+                </span>
+              )}
             </label>
             <div>
               <span className="text-xs font-semibold text-muted-foreground uppercase">Vehicle</span>
@@ -411,12 +459,20 @@ function SlotDetail() {
                 </div>
               )}
             </div>
-            <div className="flex items-baseline justify-between rounded-xl bg-muted p-4">
-              <span className="text-sm text-muted-foreground">Total</span>
-              <span className="text-2xl font-black">₹{total}</span>
-            </div>
+            {breakdown ? (
+              <PriceBreakdownCard
+                breakdown={breakdown}
+                slotTypeLabel={SLOT_TYPE_LABELS[pricing!.slotType as SlotType]}
+                onLockExpired={refreshPrice}
+              />
+            ) : (
+              <div className="flex items-baseline justify-between rounded-xl bg-muted p-4">
+                <span className="text-sm text-muted-foreground">Total</span>
+                <span className="text-2xl font-black">₹{total}</span>
+              </div>
+            )}
             <button
-              disabled={busy}
+              disabled={busy || !!durationError}
               onClick={reserve}
               className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
             >
