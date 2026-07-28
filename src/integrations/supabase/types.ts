@@ -114,6 +114,43 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          verification_note: string | null
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      
       parking_lots: {
         Row: {
           created_at: string
@@ -153,42 +190,6 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          phone: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: string
-          verification_note: string | null
-          verification_status: Database["public"]["Enums"]["verification_status"]
-          verified: boolean
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name?: string
-          phone?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id: string
-          verification_note?: string | null
-          verification_status?: Database["public"]["Enums"]["verification_status"]
-          verified?: boolean
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          phone?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id?: string
-          verification_note?: string | null
-          verification_status?: Database["public"]["Enums"]["verification_status"]
-          verified?: boolean
-        }
-        Relationships: []
-      }
       public_holidays: {
         Row: {
           created_at: string
@@ -213,60 +214,141 @@ export type Database = {
         }
         Relationships: []
       }
-      reservations: {
+      payment_methods: {
         Row: {
-          base_rate: number | null
+          created_at: string
+          id: string
+          is_default: boolean
+          last4: string | null
+          method: string
+          network: string | null
+          razorpay_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          method: string
+          network?: string | null
+          razorpay_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          method?: string
+          network?: string | null
+          razorpay_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount_paise: number
+          created_at: string
+          currency: string
+          gateway_response: Json | null
+          id: string
+          payment_method_id: string | null
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          reservation_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paise: number
+          created_at?: string
+          currency?: string
+          gateway_response?: Json | null
+          id?: string
+          payment_method_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          reservation_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paise?: number
+          created_at?: string
+          currency?: string
+          gateway_response?: Json | null
+          id?: string
+          payment_method_id?: string | null
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          reservation_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+reservations: {
+        Row: {
           created_at: string
           driver_id: string
           end_time: string
-          final_price_per_hour: number | null
-          grand_total: number | null
-          gst_amount: number | null
           id: string
-          price_breakdown: Json | null
           rate_type: Database["public"]["Enums"]["rate_type"]
           slot_id: string
           start_time: string
           status: Database["public"]["Enums"]["reservation_status"]
-          subtotal_amount: number | null
           total_price: number
           vehicle_id: string | null
           vehicle_plate: string | null
         }
         Insert: {
-          base_rate?: number | null
           created_at?: string
           driver_id: string
           end_time: string
-          final_price_per_hour?: number | null
-          grand_total?: number | null
-          gst_amount?: number | null
           id?: string
-          price_breakdown?: Json | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
           slot_id: string
           start_time: string
           status?: Database["public"]["Enums"]["reservation_status"]
-          subtotal_amount?: number | null
           total_price?: number
           vehicle_id?: string | null
           vehicle_plate?: string | null
         }
         Update: {
-          base_rate?: number | null
           created_at?: string
           driver_id?: string
           end_time?: string
-          final_price_per_hour?: number | null
-          grand_total?: number | null
-          gst_amount?: number | null
           id?: string
-          price_breakdown?: Json | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
           slot_id?: string
           start_time?: string
           status?: Database["public"]["Enums"]["reservation_status"]
-          subtotal_amount?: number | null
           total_price?: number
           vehicle_id?: string | null
           vehicle_plate?: string | null
@@ -364,10 +446,12 @@ export type Database = {
       }
       slots: {
         Row: {
+          slot_type: Database["public"]["Enums"]["slot_type"]
+          base_rate: number
+          lot_id: string | null
           access_instructions: string
           approx_area: string
           archived: boolean
-          base_rate: number
           cancellation_policy: string
           cctv: boolean
           covered: boolean
@@ -378,26 +462,25 @@ export type Database = {
           height_limit_cm: number | null
           hourly_rate: number
           id: string
-          is_available: boolean
           lat: number
           lng: number
-          lot_id: string | null
           monthly_rate: number
           name: string
           owner_id: string
           photos: string[]
           rating: number
-          slot_type: Database["public"]["Enums"]["slot_type"]
           status: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit: string
           vehicle_type: Database["public"]["Enums"]["vehicle_type"]
           width_limit_cm: number | null
         }
         Insert: {
+          slot_type?: Database["public"]["Enums"]["slot_type"]
+          base_rate?: number
+          lot_id?: string | null
           access_instructions?: string
           approx_area: string
           archived?: boolean
-          base_rate?: number
           cancellation_policy?: string
           cctv?: boolean
           covered?: boolean
@@ -408,26 +491,25 @@ export type Database = {
           height_limit_cm?: number | null
           hourly_rate?: number
           id?: string
-          is_available?: boolean
           lat: number
           lng: number
-          lot_id?: string | null
           monthly_rate?: number
           name: string
           owner_id: string
           photos?: string[]
           rating?: number
-          slot_type?: Database["public"]["Enums"]["slot_type"]
           status?: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
           width_limit_cm?: number | null
         }
         Update: {
+          slot_type?: Database["public"]["Enums"]["slot_type"]
+          base_rate?: number
+          lot_id?: string | null
           access_instructions?: string
           approx_area?: string
           archived?: boolean
-          base_rate?: number
           cancellation_policy?: string
           cctv?: boolean
           covered?: boolean
@@ -438,30 +520,19 @@ export type Database = {
           height_limit_cm?: number | null
           hourly_rate?: number
           id?: string
-          is_available?: boolean
           lat?: number
           lng?: number
-          lot_id?: string | null
           monthly_rate?: number
           name?: string
           owner_id?: string
           photos?: string[]
           rating?: number
-          slot_type?: Database["public"]["Enums"]["slot_type"]
           status?: Database["public"]["Enums"]["slot_status"]
           vehicle_size_limit?: string
           vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
           width_limit_cm?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "slots_lot_id_fkey"
-            columns: ["lot_id"]
-            isOneToOne: false
-            referencedRelation: "parking_lots"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       support_requests: {
         Row: {
@@ -486,27 +557,6 @@ export type Database = {
           message?: string
           status?: string
           subject?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -546,28 +596,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
-      lot_tier: "T1" | "T2" | "T3" | "T4"
       rate_type: "hourly" | "daily" | "monthly"
       reservation_status: "upcoming" | "active" | "completed" | "cancelled"
       slot_status: "open" | "full"
-      slot_type:
-        | "standard_car"
-        | "compact_car"
-        | "suv"
-        | "two_wheeler"
-        | "ev"
-        | "premium_covered"
-        | "valet_handicapped"
       user_role: "driver" | "landowner"
       vehicle_type: "car" | "bike" | "both"
       verification_status: "unverified" | "pending" | "approved" | "rejected"
@@ -698,20 +732,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
-      lot_tier: ["T1", "T2", "T3", "T4"],
       rate_type: ["hourly", "daily", "monthly"],
       reservation_status: ["upcoming", "active", "completed", "cancelled"],
       slot_status: ["open", "full"],
-      slot_type: [
-        "standard_car",
-        "compact_car",
-        "suv",
-        "two_wheeler",
-        "ev",
-        "premium_covered",
-        "valet_handicapped",
-      ],
       user_role: ["driver", "landowner"],
       vehicle_type: ["car", "bike", "both"],
       verification_status: ["unverified", "pending", "approved", "rejected"],

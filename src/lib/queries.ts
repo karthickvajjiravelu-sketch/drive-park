@@ -104,6 +104,30 @@ export type SupportRequest = {
   created_at: string;
 };
 
+export type PaymentMethod = {
+  id: string;
+  user_id: string;
+  method: "card" | "upi";
+  razorpay_token: string | null;
+  network: string | null;
+  last4: string | null;
+  is_default: boolean;
+  created_at: string;
+};
+
+export type Payment = {
+  id: string;
+  reservation_id: string;
+  user_id: string;
+  payment_method_id: string | null;
+  amount_paise: number;
+  currency: string;
+  razorpay_order_id: string | null;
+  razorpay_payment_id: string | null;
+  status: "created" | "authorized" | "captured" | "failed" | "refunded";
+  created_at: string;
+};
+
 export const myVehiclesQuery = () =>
   queryOptions({
     queryKey: ["my-vehicles"],
