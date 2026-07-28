@@ -406,16 +406,40 @@ export type LotOccupancy = {
   occupied_slots: number;
 };
 
-export const useLotOccupancy = () =>
-  useQuery({
-    queryKey: ["lot-occupancy"],
-    queryFn: async (): Promise<Record<string, LotOccupancy>> => {
+export const myPaymentMethodsQuery = () =>
+  queryOptions({
+    queryKey: ["my-payment-methods"],
+    queryFn: async (): Promise<PaymentMethod[]> => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
       const { data, error } = await supabase
-        .from("parking_lots")
-        .select("id, tier, total_slots, occupied_slots");
+        .from("payment_methods")
+        .select("id, user_id, method, razorpay_token, network, last4, is_default, created_at")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return Object.fromEntries((data ?? []).map((l) => [l.id, l as LotOccupancy]));
+      return (data ?? []) as unknown as PaymentMethod[];
     },
-    // Demand is recalculated at least every 5 minutes.
-    refetchInterval: 5 * 60 * 1000,
   });
+export const useMyPaymentMethods = () => useQuery(myPaymentMethodsQuery());
+
+export const reservationPaymentStatusQuery = (reservationId: string) =>
+  queryOptions({
+    queryKey: ["reservation-payment", reservationId],
+    queryFn: async (): Promise<Payment | null> => {
+      if (!reservationId) return null;
+      const { data, error } = await supabase
+        .from("payments")
+        .select("id, reservation_id, user_id, payment_method_id, amount_paise, currency, razorpay_order_id, razorpay_payment_id, status, created_at")
+        .eq("reservation_id", reservationId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as unknown as Payment | null;
+    },
+  });
+export const useReservationPaymentStatus = (reservationId: string) => useQuery(reservationPaymentStatusQuery(reservationId));
