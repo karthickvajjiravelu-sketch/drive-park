@@ -161,6 +161,29 @@ function AuthPage() {
       </div>
 
       <form onSubmit={submit} className="px-6 py-6 space-y-4">
+        {mode === "signin" && (
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-muted p-1">
+            {(["password", "otp"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMethod(m);
+                  setOtpSent(false);
+                  setOtp("");
+                }}
+                className={`rounded-xl py-2 text-sm font-semibold transition ${
+                  method === m
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {m === "password" ? "Email & password" : "Email code"}
+              </button>
+            ))}
+          </div>
+        )}
+
         {mode === "signup" && (
           <>
             <div className="grid grid-cols-2 gap-2">
@@ -209,29 +232,67 @@ function AuthPage() {
           schema={emailSchema}
           required
         />
-        <ValidatedField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          schema={passwordSchema}
-          required
-        />
+        {!otpMode && (
+          <ValidatedField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            schema={passwordSchema}
+            required
+          />
+        )}
+        {otpMode && otpSent && (
+          <ValidatedField
+            label="6-digit code"
+            value={otp}
+            onChange={(v) => setOtp(formatDigits(v, 6))}
+            schema={otpSchema}
+            inputMode="numeric"
+            required
+          />
+        )}
 
         <button
           disabled={loading || !formValid}
           className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
         >
-          {loading ? "…" : mode === "signup" ? "Create account" : "Sign in"}
+          {loading
+            ? "…"
+            : mode === "signup"
+              ? "Create account"
+              : otpMode
+                ? otpSent
+                  ? "Verify code"
+                  : "Send code"
+                : "Sign in"}
         </button>
+
+        {otpMode && otpSent && (
+          <button
+            type="button"
+            onClick={() => {
+              setOtpSent(false);
+              setOtp("");
+            }}
+            className="w-full text-sm text-muted-foreground py-1"
+          >
+            Use a different email
+          </button>
+        )}
 
         <button
           type="button"
-          onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
+          onClick={() => {
+            setMode(mode === "signup" ? "signin" : "signup");
+            setOtpSent(false);
+            setOtp("");
+          }}
           className="w-full text-sm text-muted-foreground py-2"
         >
           {mode === "signup" ? "Have an account? Sign in" : "New here? Create account"}
         </button>
+
       </form>
     </div>
   );
