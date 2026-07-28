@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useProfile, useNotifications } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { ValidatedField } from "@/components/ValidatedField";
+import { nameSchema, phoneSchema, formatName, formatDigits, validate } from "@/lib/validation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
