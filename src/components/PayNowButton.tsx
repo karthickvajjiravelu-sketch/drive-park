@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { CreditCard, Check, Loader2 } from "lucide-react";
 import { useRazorpay } from "@/lib/razorpay";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
-import { reservationPaymentStatusQuery, useMyProfile } from "@/lib/queries";
+import { reservationPaymentStatusQuery, useProfile } from "@/lib/queries";
 
 type Props = {
   reservationId: string;
@@ -16,7 +16,7 @@ type Props = {
 export function PayNowButton({ reservationId, amount, slotName }: Props) {
   const qc = useQueryClient();
   const { ready, open } = useRazorpay();
-  const { data: profile } = useMyProfile();
+  const { data: profile } = useProfile();
   const [busy, setBusy] = useState(false);
 
   const createOrder = useServerFn(createRazorpayOrder);
