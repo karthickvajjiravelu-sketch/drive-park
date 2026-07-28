@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Star } from "lucide-react";
+import { ValidatedField } from "@/components/ValidatedField";
+import { vehicleNumberSchema, vehicleModelSchema, formatPlate, validate } from "@/lib/validation";
 
 export const Route = createFileRoute("/_authenticated/vehicles")({
   component: VehiclesPage,
@@ -19,11 +21,15 @@ function VehiclesPage() {
   const [colour, setColour] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const plateValid = validate(vehicleNumberSchema, plate) === null;
+  const modelValid = !make || validate(vehicleModelSchema, make) === null;
+
   async function addVehicle() {
-    if (!plate.trim()) {
-      toast.error("Plate required");
+    if (!plateValid) {
+      toast.error("Enter a valid vehicle number (e.g., TN01AB1234)");
       return;
     }
+
     setBusy(true);
     const {
       data: { user },
@@ -89,28 +95,27 @@ function VehiclesPage() {
       <div className="px-4 py-4 space-y-3">
         {adding && (
           <div className="rounded-2xl bg-card border border-border p-4 space-y-2">
-            <input
+            <ValidatedField
+              label="Vehicle number"
               value={plate}
-              onChange={(e) => setPlate(e.target.value)}
-              placeholder="Plate (e.g. TN01AB1234)"
-              className="w-full rounded-xl border border-input bg-background px-3 py-2 uppercase"
+              onChange={setPlate}
+              schema={vehicleNumberSchema}
+              format={formatPlate}
+              placeholder="TN01AB1234"
+              inputMode="text"
             />
             <div className="grid grid-cols-2 gap-2">
-              <input
+              <ValidatedField
+                label="Make / model"
                 value={make}
-                onChange={(e) => setMake(e.target.value)}
-                placeholder="Make/model"
-                className="rounded-xl border border-input bg-background px-3 py-2"
+                onChange={setMake}
+                schema={make ? vehicleModelSchema : undefined}
+                placeholder="Swift VXI"
               />
-              <input
-                value={colour}
-                onChange={(e) => setColour(e.target.value)}
-                placeholder="Colour"
-                className="rounded-xl border border-input bg-background px-3 py-2"
-              />
+              <ValidatedField label="Colour" value={colour} onChange={setColour} />
             </div>
             <button
-              disabled={busy}
+              disabled={busy || !plateValid || !modelValid}
               onClick={addVehicle}
               className="w-full rounded-xl bg-primary py-2.5 font-bold text-primary-foreground disabled:opacity-60"
             >
@@ -118,6 +123,7 @@ function VehiclesPage() {
             </button>
           </div>
         )}
+
         {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
         {vehicles.map((v) => (
           <div

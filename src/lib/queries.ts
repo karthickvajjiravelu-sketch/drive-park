@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
 export type Profile = {
   id: string;
@@ -25,6 +26,9 @@ export type Notification = {
 
 export type Slot = {
   id: string;
+  slot_type: Database["public"]["Enums"]["slot_type"];
+  base_rate: number;
+  lot_id: string | null;
   owner_id: string;
   name: string;
   approx_area: string;

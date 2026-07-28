@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useProfile, useNotifications } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { ValidatedField } from "@/components/ValidatedField";
+import { nameSchema, phoneSchema, formatName, formatDigits, validate } from "@/lib/validation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -127,27 +129,26 @@ function ProfilePage() {
       </div>
 
       <div className="px-5 py-4 space-y-4">
-        <label className="block">
-          <span className="text-xs font-semibold text-muted-foreground uppercase">Name</span>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-3"
-          />
-        </label>
-        <label className="block">
-          <span className="text-xs font-semibold text-muted-foreground uppercase">Phone</span>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            pattern="[0-9]{10}"
-            title="Enter a 10-digit phone number"
-            className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-3"
-          />
-        </label>
+        <ValidatedField
+          label="Name"
+          value={name}
+          onChange={setName}
+          schema={nameSchema}
+          format={formatName}
+        />
+        <ValidatedField
+          label="Phone"
+          type="tel"
+          inputMode="numeric"
+          value={phone}
+          onChange={(v) => setPhone(formatDigits(v, 10))}
+          formatOnBlur={(v) => formatDigits(v, 10)}
+          schema={phoneSchema}
+        />
         <button
-          disabled={saving}
+          disabled={
+            saving || validate(nameSchema, name) !== null || validate(phoneSchema, phone) !== null
+          }
           onClick={save}
           className="w-full rounded-2xl bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60"
         >
