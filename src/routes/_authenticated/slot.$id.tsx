@@ -380,6 +380,27 @@ function SlotDetail() {
           </button>
         ) : (
           <div className="mt-6 space-y-3">
+            {pricing && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {SLOT_TYPE_LABELS[pricing.slotType as SlotType]}
+                  {pricing.lotName ? ` · ${pricing.lotName}` : ""}
+                </span>
+                <DemandBadge
+                  level={
+                    calculatePrice({
+                      slotType: pricing.slotType,
+                      baseRate: pricing.baseRate,
+                      tier: pricing.tier,
+                      occupiedSlots: pricing.occupiedSlots,
+                      totalSlots: pricing.totalSlots,
+                      startTime: new Date(),
+                      durationHours: 1,
+                    }).demandLevel
+                  }
+                />
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2">
               {(["hourly", "daily", "monthly"] as const).map((r) => (
                 <button
