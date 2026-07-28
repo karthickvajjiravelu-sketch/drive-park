@@ -94,11 +94,16 @@ function AuthPage() {
     try {
       if (otpMode) {
         if (!otpSent) {
-          const throttle = checkOtpThrottle(readOtpAttempts(email), Date.now());
+          const throttle = checkOtpThrottle(readOtpAttempts(), email, Date.now());
           if (!throttle.allowed) {
-            toast.error(throttle.reason);
+            toast.error(
+              throttle.reason === "cooldown"
+                ? `Please wait ${Math.ceil(throttle.retryInMs / 1000)}s before requesting another code`
+                : "Too many code requests. Try again later.",
+            );
             return;
           }
+
           const { error } = await supabase.auth.signInWithOtp({
             email,
             options: { shouldCreateUser: false },
