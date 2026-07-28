@@ -5,6 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Star } from "lucide-react";
+import { ValidatedField } from "@/components/ValidatedField";
+import {
+  vehicleNumberSchema,
+  vehicleModelSchema,
+  formatPlate,
+  validate,
+} from "@/lib/validation";
 
 export const Route = createFileRoute("/_authenticated/vehicles")({
   component: VehiclesPage,
@@ -19,11 +26,15 @@ function VehiclesPage() {
   const [colour, setColour] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const plateValid = validate(vehicleNumberSchema, plate) === null;
+  const modelValid = !make || validate(vehicleModelSchema, make) === null;
+
   async function addVehicle() {
-    if (!plate.trim()) {
-      toast.error("Plate required");
+    if (!plateValid) {
+      toast.error("Enter a valid vehicle number (e.g., TN01AB1234)");
       return;
     }
+
     setBusy(true);
     const {
       data: { user },
