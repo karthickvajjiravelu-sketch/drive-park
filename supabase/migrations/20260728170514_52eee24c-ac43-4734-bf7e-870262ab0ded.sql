@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.ensure_single_default_payment_method() FROM PUBLIC, anon, authenticated;
