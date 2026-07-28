@@ -25,6 +25,8 @@ import { calculatePrice, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { PriceBreakdownCard, DemandBadge } from "@/components/PriceBreakdownCard";
 import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
+import { PayNowButton } from "@/components/PayNowButton";
+
 
 export const Route = createFileRoute("/_authenticated/slot/$id")({
   component: SlotDetail,
