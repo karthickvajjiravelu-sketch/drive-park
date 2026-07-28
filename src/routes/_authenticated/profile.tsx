@@ -147,16 +147,13 @@ function ProfilePage() {
         />
         <button
           disabled={
-            saving ||
-            validate(nameSchema, name) !== null ||
-            validate(phoneSchema, phone) !== null
+            saving || validate(nameSchema, name) !== null || validate(phoneSchema, phone) !== null
           }
           onClick={save}
           className="w-full rounded-2xl bg-primary py-3 font-bold text-primary-foreground disabled:opacity-60"
         >
           Save
         </button>
-
 
         {profile.role === "landowner" && (
           <div className="rounded-2xl border border-border p-4">

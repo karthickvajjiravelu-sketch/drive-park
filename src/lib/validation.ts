@@ -8,7 +8,7 @@ export const PATTERNS = {
   name: /^[a-zA-Z\s]{2,50}$/,
   email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   vehicleNumber: /^[A-Z]{2}[-\s]?\d{1,2}[-\s]?[A-Z]{1,3}[-\s]?\d{4}$/,
-  vehicleModel: /^[a-zA-Z0-9\s\-]{2,30}$/,
+  vehicleModel: /^[a-zA-Z0-9\s-]{2,30}$/,
 } as const;
 
 export const MESSAGES = {
@@ -27,12 +27,8 @@ export const otpSchema = z.string().regex(PATTERNS.otp, MESSAGES.otp);
 export const nameSchema = z.string().regex(PATTERNS.name, MESSAGES.name);
 export const emailSchema = z.string().regex(PATTERNS.email, MESSAGES.email);
 export const optionalEmailSchema = z.union([z.literal(""), emailSchema]);
-export const vehicleNumberSchema = z
-  .string()
-  .regex(PATTERNS.vehicleNumber, MESSAGES.vehicleNumber);
-export const vehicleModelSchema = z
-  .string()
-  .regex(PATTERNS.vehicleModel, MESSAGES.vehicleModel);
+export const vehicleNumberSchema = z.string().regex(PATTERNS.vehicleNumber, MESSAGES.vehicleNumber);
+export const vehicleModelSchema = z.string().regex(PATTERNS.vehicleModel, MESSAGES.vehicleModel);
 export const locationSchema = z.string().min(3, MESSAGES.location);
 export const durationSchema = z
   .number()

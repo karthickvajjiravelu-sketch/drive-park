@@ -12,7 +12,7 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const current = mounted ? theme ?? "system" : "system";
+  const current = mounted ? (theme ?? "system") : "system";
 
   return (
     <div

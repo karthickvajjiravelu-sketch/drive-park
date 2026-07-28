@@ -162,7 +162,6 @@ function AuthPage() {
           {loading ? "…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
 
-
         <button
           type="button"
           onClick={() => setMode(mode === "signup" ? "signin" : "signup")}

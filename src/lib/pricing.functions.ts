@@ -19,9 +19,7 @@ export type PricingContext = {
  */
 export const getPricingContext = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { slotId: string }) =>
-    z.object({ slotId: z.string().uuid() }).parse(data),
-  )
+  .inputValidator((data: { slotId: string }) => z.object({ slotId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<PricingContext> => {
     const { data: slot, error } = await context.supabase
       .from("slots")

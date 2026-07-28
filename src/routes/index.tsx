@@ -63,7 +63,6 @@ function Landing() {
             </p>
           </div>
         </div>
-
       </div>
 
       <div className="px-5 -mt-8 relative z-20">

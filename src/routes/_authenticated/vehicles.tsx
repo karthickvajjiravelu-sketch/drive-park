@@ -6,12 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Trash2, Star } from "lucide-react";
 import { ValidatedField } from "@/components/ValidatedField";
-import {
-  vehicleNumberSchema,
-  vehicleModelSchema,
-  formatPlate,
-  validate,
-} from "@/lib/validation";
+import { vehicleNumberSchema, vehicleModelSchema, formatPlate, validate } from "@/lib/validation";
 
 export const Route = createFileRoute("/_authenticated/vehicles")({
   component: VehiclesPage,
