@@ -355,6 +355,12 @@ function SlotDetail() {
                 Message
               </Link>
             </div>
+            <PayNowButton
+              reservationId={reservationId!}
+              amount={breakdown?.grandTotal ?? total}
+              slotName={slot.name}
+            />
+
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
               target="_blank"
