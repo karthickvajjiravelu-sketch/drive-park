@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClientOnly } from "@/components/ClientOnly";
 import { loadGoogleMaps, USOP_MAP_STYLE, pinIcon } from "@/lib/google-maps";
 import type { Slot } from "@/lib/queries";
+import { BASE_RATES, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 
 const CHENNAI = { lat: 13.05, lng: 80.24 };
 
@@ -34,6 +35,8 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
     disabled_access: initial?.disabled_access ?? false,
     height_limit_cm: initial?.height_limit_cm != null ? String(initial.height_limit_cm) : "",
     width_limit_cm: initial?.width_limit_cm != null ? String(initial.width_limit_cm) : "",
+    slot_type: (initial?.slot_type ?? "standard_car") as SlotType,
+    base_rate: String(initial?.base_rate ?? BASE_RATES.standard_car),
     cancellation_policy: (initial?.cancellation_policy ?? "moderate") as
       | "flexible"
       | "moderate"
@@ -71,6 +74,8 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         height_limit_cm: form.height_limit_cm ? parseInt(form.height_limit_cm) : null,
         width_limit_cm: form.width_limit_cm ? parseInt(form.width_limit_cm) : null,
         cancellation_policy: form.cancellation_policy,
+        slot_type: form.slot_type,
+        base_rate: parseFloat(form.base_rate) || BASE_RATES[form.slot_type],
       };
       if (mode.kind === "create") {
         const { error } = await supabase
@@ -156,6 +161,31 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
           ))}
         </div>
       </div>
+      <div>
+        <span className="text-xs font-semibold text-muted-foreground uppercase">
+          Slot type (drives dynamic pricing)
+        </span>
+        <select
+          value={form.slot_type}
+          onChange={(e) => {
+            const st = e.target.value as SlotType;
+            setForm((f) => ({ ...f, slot_type: st, base_rate: String(BASE_RATES[st]) }));
+          }}
+          className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-3 text-base"
+        >
+          {(Object.keys(SLOT_TYPE_LABELS) as SlotType[]).map((k) => (
+            <option key={k} value={k}>
+              {SLOT_TYPE_LABELS[k]} — ₹{BASE_RATES[k]}/hr base
+            </option>
+          ))}
+        </select>
+      </div>
+      <Field
+        label="Base rate (₹/hour)"
+        value={form.base_rate}
+        onChange={set("base_rate")}
+        type="number"
+      />
       <Field
         label="Vehicle size limit"
         value={form.vehicle_size_limit}
