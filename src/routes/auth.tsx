@@ -3,6 +3,17 @@ import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ValidatedField } from "@/components/ValidatedField";
+import {
+  nameSchema,
+  phoneSchema,
+  emailSchema,
+  formatName,
+  formatDigits,
+  validate,
+} from "@/lib/validation";
+
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -35,6 +46,12 @@ function AuthPage() {
   const [role, setRole] = useState<"driver" | "landowner">("driver");
 
   const nextPath = sanitizeNext(search.next);
+
+  const formValid =
+    validate(emailSchema, email) === null &&
+    validate(passwordSchema, password) === null &&
+    (mode === "signin" ||
+      (validate(nameSchema, name) === null && validate(phoneSchema, phone) === null));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -155,40 +172,5 @@ function AuthPage() {
         </button>
       </form>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  required,
-  pattern,
-  title,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  required?: boolean;
-  pattern?: string;
-  title?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {label}
-      </span>
-      <input
-        className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-3 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        pattern={pattern}
-        title={title}
-      />
-    </label>
   );
 }
