@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Slot } from "@/lib/queries";
 import { loadGoogleMaps, USOP_MAP_STYLE, pinIcon } from "@/lib/google-maps";
 import { Search } from "lucide-react";
+import { locationSchema, validate } from "@/lib/validation";
 
 export default function SlotMap({
   slots,
@@ -20,6 +21,7 @@ export default function SlotMap({
   const markersRef = useRef<Map<string, google.maps.Marker>>(new Map());
   const destMarkerRef = useRef<google.maps.Marker | null>(null);
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -152,9 +154,19 @@ export default function SlotMap({
           <input
             ref={searchEl}
             placeholder="Search a destination"
+            aria-invalid={!!searchError}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchError(v.length === 0 ? null : validate(locationSchema, v));
+            }}
             className="flex-1 outline-none text-sm bg-transparent"
           />
         </div>
+        {searchError && (
+          <p className="mt-1 ml-3 text-xs font-semibold text-destructive drop-shadow">
+            {searchError}
+          </p>
+        )}
       </div>
     </div>
   );
