@@ -101,27 +101,50 @@ function AuthPage() {
                 <div className="text-xs text-muted-foreground">Rent your space</div>
               </button>
             </div>
-            <Field label="Name" value={name} onChange={setName} required />
-            <Field
+            <ValidatedField
+              label="Name"
+              value={name}
+              onChange={setName}
+              schema={nameSchema}
+              format={formatName}
+              required
+            />
+            <ValidatedField
               label="Phone"
               value={phone}
-              onChange={setPhone}
+              onChange={(v) => setPhone(formatDigits(v, 10))}
+              schema={phoneSchema}
               type="tel"
+              inputMode="numeric"
+              formatOnBlur={(v) => formatDigits(v, 10)}
               required
-              pattern="[0-9]{10}"
-              title="Enter a 10-digit phone number"
             />
           </>
         )}
-        <Field label="Email" type="email" value={email} onChange={setEmail} required />
-        <Field label="Password" type="password" value={password} onChange={setPassword} required />
+        <ValidatedField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          schema={emailSchema}
+          required
+        />
+        <ValidatedField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={setPassword}
+          schema={passwordSchema}
+          required
+        />
 
         <button
-          disabled={loading}
+          disabled={loading || !formValid}
           className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
         >
           {loading ? "…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
+
 
         <button
           type="button"
