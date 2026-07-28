@@ -374,3 +374,24 @@ export const reservationQuery = (id: string) =>
     },
   });
 export const useReservation = (id: string) => useQuery(reservationQuery(id));
+
+export type LotOccupancy = {
+  id: string;
+  tier: Database["public"]["Enums"]["lot_tier"];
+  total_slots: number;
+  occupied_slots: number;
+};
+
+export const useLotOccupancy = () =>
+  useQuery({
+    queryKey: ["lot-occupancy"],
+    queryFn: async (): Promise<Record<string, LotOccupancy>> => {
+      const { data, error } = await supabase
+        .from("parking_lots")
+        .select("id, tier, total_slots, occupied_slots");
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map((l) => [l.id, l as LotOccupancy]));
+    },
+    // Demand is recalculated at least every 5 minutes.
+    refetchInterval: 5 * 60 * 1000,
+  });
