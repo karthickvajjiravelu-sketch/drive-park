@@ -271,6 +271,7 @@ function MapPage() {
           </div>
           {sorted.map((s) => (
             <SlotCard
+              demand={demandFor(s)}
               key={s.id}
               slot={s}
               anchor={anchor}
@@ -291,12 +292,14 @@ function MapPage() {
 }
 
 function SlotCard({
+  demand,
   slot,
   anchor,
   favorited,
   onFav,
   onClick,
 }: {
+  demand?: DemandLevel;
   slot: Slot;
   anchor: [number, number];
   favorited: boolean;
@@ -325,6 +328,11 @@ function SlotCard({
           {full && (
             <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
               FULL
+            </div>
+          )}
+          {!full && demand && (
+            <div className="absolute bottom-2 left-2">
+              <DemandBadge level={demand} />
             </div>
           )}
           {!full && (

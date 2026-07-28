@@ -377,7 +377,7 @@ export const useReservation = (id: string) => useQuery(reservationQuery(id));
 
 export type LotOccupancy = {
   id: string;
-  tier: Database["public"]["Enums"]["location_tier"];
+  tier: Database["public"]["Enums"]["lot_tier"];
   total_slots: number;
   occupied_slots: number;
 };
