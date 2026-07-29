@@ -51,7 +51,10 @@ function SlotDetail() {
   const { data: vehicles = [] } = useMyVehicles();
   const { data: owner } = useOwnerProfile(slot?.owner_id ?? "");
   const { data: reviews = [] } = useReviews(id);
+  const { data: myProfile } = useProfile();
+  const { data: hours = [] } = useSlotAvailability(id);
   const { data: favorites = [] } = useMyFavorites();
+
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
   const [vehicleId, setVehicleId] = useState<string>("");
