@@ -284,6 +284,32 @@ function AuthPage() {
           />
         )}
 
+        {mode === "signin" && !otpMode && (
+          <button
+            type="button"
+            onClick={forgotPassword}
+            className="block text-sm font-semibold text-primary"
+          >
+            Forgot password?
+          </button>
+        )}
+
+        {mode === "signup" && (
+          <label className="flex items-start gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={tos}
+              onChange={(e) => setTos(e.target.checked)}
+              className="mt-0.5 accent-primary"
+            />
+            <span>
+              I agree to the Usop Terms of Service and Privacy Policy, and understand parking is at
+              my own risk.
+            </span>
+          </label>
+        )}
+
+
         <button
           disabled={loading || !formValid}
           className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
