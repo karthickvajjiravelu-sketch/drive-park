@@ -215,6 +215,32 @@ function MapPage() {
             </div>
             <div>
               <div className="text-white/60 font-semibold uppercase text-[10px] mb-1.5">
+                Space type
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {(Object.keys(SLOT_TYPE_LABELS) as SlotType[]).map((k) => {
+                  const on = slotTypes.has(k);
+                  return (
+                    <button
+                      key={k}
+                      onClick={() =>
+                        setSlotTypes((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(k)) next.delete(k);
+                          else next.add(k);
+                          return next;
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-full font-semibold ${on ? "bg-primary text-primary-foreground" : "bg-white/10"}`}
+                    >
+                      {SLOT_TYPE_LABELS[k]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <div className="text-white/60 font-semibold uppercase text-[10px] mb-1.5">
                 Amenities
               </div>
               <div className="flex gap-1.5 flex-wrap">
