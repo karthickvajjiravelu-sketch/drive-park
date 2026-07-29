@@ -200,6 +200,9 @@ export type Database = {
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
+          refund_reason: string | null
+          refunded_amount_paise: number
+          refunded_at: string | null
           reservation_id: string
           status: string
           updated_at: string
@@ -215,6 +218,9 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_reason?: string | null
+          refunded_amount_paise?: number
+          refunded_at?: string | null
           reservation_id: string
           status?: string
           updated_at?: string
@@ -230,6 +236,9 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_reason?: string | null
+          refunded_amount_paise?: number
+          refunded_at?: string | null
           reservation_id?: string
           status?: string
           updated_at?: string
@@ -259,6 +268,9 @@ export type Database = {
           name: string
           phone: string
           role: Database["public"]["Enums"]["user_role"]
+          suspended: boolean
+          suspended_at: string | null
+          suspended_reason: string | null
           user_id: string
           verification_note: string | null
           verification_status: Database["public"]["Enums"]["verification_status"]
@@ -270,6 +282,9 @@ export type Database = {
           name?: string
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_reason?: string | null
           user_id: string
           verification_note?: string | null
           verification_status?: Database["public"]["Enums"]["verification_status"]
@@ -281,12 +296,107 @@ export type Database = {
           name?: string
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
+          suspended?: boolean
+          suspended_at?: string | null
+          suspended_reason?: string | null
           user_id?: string
           verification_note?: string | null
           verification_status?: Database["public"]["Enums"]["verification_status"]
           verified?: boolean
         }
         Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          max_discount: number | null
+          min_spend: number
+          per_user_limit: number
+          starts_at: string
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_spend?: number
+          per_user_limit?: number
+          starts_at?: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          max_discount?: number | null
+          min_spend?: number
+          per_user_limit?: number
+          starts_at?: string
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          created_at: string
+          discount_amount: number
+          id: string
+          promo_id: string
+          reservation_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          promo_id: string
+          reservation_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_amount?: number
+          id?: string
+          promo_id?: string
+          reservation_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       public_holidays: {
         Row: {
@@ -316,6 +426,7 @@ export type Database = {
         Row: {
           base_rate: number | null
           created_at: string
+          discount_amount: number
           driver_id: string
           end_time: string
           final_price_per_hour: number | null
@@ -323,6 +434,7 @@ export type Database = {
           gst_amount: number | null
           id: string
           price_breakdown: Json | null
+          promo_code: string | null
           rate_type: Database["public"]["Enums"]["rate_type"]
           slot_id: string
           start_time: string
@@ -335,6 +447,7 @@ export type Database = {
         Insert: {
           base_rate?: number | null
           created_at?: string
+          discount_amount?: number
           driver_id: string
           end_time: string
           final_price_per_hour?: number | null
@@ -342,6 +455,7 @@ export type Database = {
           gst_amount?: number | null
           id?: string
           price_breakdown?: Json | null
+          promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
           slot_id: string
           start_time: string
@@ -354,6 +468,7 @@ export type Database = {
         Update: {
           base_rate?: number | null
           created_at?: string
+          discount_amount?: number
           driver_id?: string
           end_time?: string
           final_price_per_hour?: number | null
@@ -361,6 +476,7 @@ export type Database = {
           gst_amount?: number | null
           id?: string
           price_breakdown?: Json | null
+          promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
           slot_id?: string
           start_time?: string
@@ -392,10 +508,14 @@ export type Database = {
           comment: string
           created_at: string
           driver_id: string
+          hidden: boolean
           id: string
+          moderation_note: string | null
           owner_reply: string | null
           owner_reply_at: string | null
           rating: number
+          report_count: number
+          reported: boolean
           reservation_id: string | null
           slot_id: string
         }
@@ -403,10 +523,14 @@ export type Database = {
           comment?: string
           created_at?: string
           driver_id: string
+          hidden?: boolean
           id?: string
+          moderation_note?: string | null
           owner_reply?: string | null
           owner_reply_at?: string | null
           rating: number
+          report_count?: number
+          reported?: boolean
           reservation_id?: string | null
           slot_id: string
         }
@@ -414,10 +538,14 @@ export type Database = {
           comment?: string
           created_at?: string
           driver_id?: string
+          hidden?: boolean
           id?: string
+          moderation_note?: string | null
           owner_reply?: string | null
           owner_reply_at?: string | null
           rating?: number
+          report_count?: number
+          reported?: boolean
           reservation_id?: string | null
           slot_id?: string
         }
@@ -508,6 +636,9 @@ export type Database = {
       slots: {
         Row: {
           access_instructions: string
+          approval_note: string | null
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          approved_at: string | null
           approx_area: string
           archived: boolean
           base_rate: number
@@ -538,6 +669,9 @@ export type Database = {
         }
         Insert: {
           access_instructions?: string
+          approval_note?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
           approx_area: string
           archived?: boolean
           base_rate?: number
@@ -568,6 +702,9 @@ export type Database = {
         }
         Update: {
           access_instructions?: string
+          approval_note?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          approved_at?: string | null
           approx_area?: string
           archived?: boolean
           base_rate?: number
@@ -608,25 +745,34 @@ export type Database = {
       }
       support_requests: {
         Row: {
+          admin_note: string | null
+          category: string
           created_at: string
           id: string
           message: string
+          resolved_at: string | null
           status: string
           subject: string
           user_id: string
         }
         Insert: {
+          admin_note?: string | null
+          category?: string
           created_at?: string
           id?: string
           message: string
+          resolved_at?: string | null
           status?: string
           subject: string
           user_id: string
         }
         Update: {
+          admin_note?: string | null
+          category?: string
           created_at?: string
           id?: string
           message?: string
+          resolved_at?: string | null
           status?: string
           subject?: string
           user_id?: string
@@ -689,6 +835,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_broadcast_notification: {
+        Args: {
+          _body: string
+          _link?: string
+          _target?: string
+          _title: string
+        }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -696,9 +851,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      report_review: { Args: { _review_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      approval_status: "pending" | "approved" | "rejected"
       lot_tier: "T1" | "T2" | "T3" | "T4"
       rate_type: "hourly" | "daily" | "monthly"
       reservation_status: "upcoming" | "active" | "completed" | "cancelled"
@@ -842,6 +999,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      approval_status: ["pending", "approved", "rejected"],
       lot_tier: ["T1", "T2", "T3", "T4"],
       rate_type: ["hourly", "daily", "monthly"],
       reservation_status: ["upcoming", "active", "completed", "cancelled"],
