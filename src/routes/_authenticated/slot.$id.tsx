@@ -523,13 +523,17 @@ function SlotDetail() {
                 <span className="text-2xl font-black">₹{total}</span>
               </div>
             )}
+            {hoursError && (
+              <p className="text-xs text-destructive">{hoursError} Pick another time.</p>
+            )}
             <button
-              disabled={busy || !!durationError}
+              disabled={busy || !!durationError || !!hoursError}
               onClick={reserve}
               className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
             >
               {busy ? "…" : "Reserve now"}
             </button>
+
           </div>
         )}
 
