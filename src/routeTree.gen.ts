@@ -30,6 +30,7 @@ import { Route as AuthenticatedAddSlotRouteImport } from './routes/_authenticate
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
 import { Route as AuthenticatedMessagesReservationIdRouteImport } from './routes/_authenticated/messages.$reservationId'
 import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authenticated/edit-slot.$id'
@@ -148,6 +149,11 @@ const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
   id: '/slot/$id',
   path: '/slot/$id',
@@ -203,7 +209,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteRoute
+  '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/add-slot': typeof AuthenticatedAddSlotRoute
@@ -225,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -234,7 +241,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/add-slot': typeof AuthenticatedAddSlotRoute
@@ -256,6 +262,7 @@ export interface FileRoutesByTo {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -267,7 +274,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/mcp': typeof McpRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/add-slot': typeof AuthenticatedAddSlotRoute
@@ -289,6 +296,7 @@ export interface FileRoutesById {
   '/_authenticated/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/_authenticated/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -322,6 +330,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/admin/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -331,7 +340,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mcp'
     | '/reset-password'
-    | '/admin'
     | '/.mcp/list-tools'
     | '/.well-known/oauth-protected-resource'
     | '/add-slot'
@@ -353,6 +361,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/admin'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -385,6 +394,7 @@ export interface FileRouteTypes {
     | '/_authenticated/edit-slot/$id'
     | '/_authenticated/messages/$reservationId'
     | '/_authenticated/slot/$id'
+    | '/_authenticated/admin/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
@@ -554,6 +564,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/slot/$id': {
       id: '/_authenticated/slot/$id'
       path: '/slot/$id'
@@ -620,8 +637,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAdminRouteRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
+  {
+    AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  }
+
+const AuthenticatedAdminRouteRouteWithChildren =
+  AuthenticatedAdminRouteRoute._addFileChildren(
+    AuthenticatedAdminRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRoute
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRouteWithChildren
   AuthenticatedAddSlotRoute: typeof AuthenticatedAddSlotRoute
   AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRoute
   AuthenticatedEarningsRoute: typeof AuthenticatedEarningsRoute
@@ -642,7 +673,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRoute,
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRouteWithChildren,
   AuthenticatedAddSlotRoute: AuthenticatedAddSlotRoute,
   AuthenticatedBookingsRoute: AuthenticatedBookingsRoute,
   AuthenticatedEarningsRoute: AuthenticatedEarningsRoute,
