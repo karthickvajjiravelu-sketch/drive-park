@@ -8,6 +8,7 @@ import { DemandBadge } from "@/components/PriceBreakdownCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-react";
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
+import { SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { toast } from "sonner";
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
@@ -51,6 +52,7 @@ function MapPage() {
   const [rate, setRate] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [maxPrice, setMaxPrice] = useState(500);
   const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
+  const [slotTypes, setSlotTypes] = useState<Set<SlotType>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   const favSet = useMemo(() => new Set(favorites.map((f) => f.slot_id)), [favorites]);
@@ -87,10 +89,12 @@ function MapPage() {
       if (vehicle !== "all" && s.vehicle_type !== vehicle && s.vehicle_type !== "both")
         return false;
       if ((s as unknown as Record<string, number>)[rateKey] > maxPrice) return false;
+      if (slotTypes.size && !slotTypes.has((s.slot_type ?? "standard_car") as SlotType))
+        return false;
       for (const a of amenities) if (!s[a]) return false;
       return true;
     });
-  }, [slots, vehicle, rate, maxPrice, amenities]);
+  }, [slots, vehicle, rate, maxPrice, amenities, slotTypes]);
 
   const sorted = useMemo(
     () =>
@@ -207,6 +211,32 @@ function MapPage() {
                     {r}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div>
+              <div className="text-white/60 font-semibold uppercase text-[10px] mb-1.5">
+                Space type
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {(Object.keys(SLOT_TYPE_LABELS) as SlotType[]).map((k) => {
+                  const on = slotTypes.has(k);
+                  return (
+                    <button
+                      key={k}
+                      onClick={() =>
+                        setSlotTypes((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(k)) next.delete(k);
+                          else next.add(k);
+                          return next;
+                        })
+                      }
+                      className={`px-3 py-1.5 rounded-full font-semibold ${on ? "bg-primary text-primary-foreground" : "bg-white/10"}`}
+                    >
+                      {SLOT_TYPE_LABELS[k]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div>
