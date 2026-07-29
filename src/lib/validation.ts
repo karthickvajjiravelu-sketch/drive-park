@@ -56,12 +56,20 @@ export function formatPlate(value: string): string {
   return value.toUpperCase().replace(/[\s-]/g, "").slice(0, 12);
 }
 
-/** Capitalise the first letter of each word. */
+/** Normalise a stored phone value to 10 local digits (drops +91 / 0 prefixes, spaces). */
+export function normalizePhone(value: string): string {
+  const digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+}
+
+/** Tidy a name without discarding valid characters (accents, ., ', -). */
 export function formatName(value: string): string {
   return value
-    .replace(/[^a-zA-Z\s]/g, "")
+    .replace(/[^\p{L}\s.'-]/gu, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
+    .replace(/(^|[\s.'-])(\p{Ll})/gu, (_m, p, c: string) => p + c.toUpperCase())
+    .slice(0, 50);
 }
 
 /* ------------------------------------------------------------ OTP throttling */
