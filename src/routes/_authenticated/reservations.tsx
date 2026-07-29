@@ -17,6 +17,7 @@ import {
   Star,
 } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
+import { PayNowButton } from "@/components/PayNowButton";
 import type { Reservation, Slot } from "@/lib/queries";
 
 type ReservationWithSlot = Reservation & { slot: Slot | null };
@@ -371,6 +372,12 @@ function UpcomingCard({
           Cancel
         </button>
       </div>
+      <PayNowButton
+        reservationId={r.id}
+        amount={Number(r.grand_total ?? r.total_price)}
+        slotName={slot?.name ?? "Parking slot"}
+      />
+
     </div>
   );
 }
