@@ -3,7 +3,7 @@ import { useMySlots } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, DollarSign, Pencil, Trash2 } from "lucide-react";
+import { Plus, DollarSign, Pencil, Trash2, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/my-slots")({
   component: MySlots,
