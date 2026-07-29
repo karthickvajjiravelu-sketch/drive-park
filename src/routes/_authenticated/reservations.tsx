@@ -371,6 +371,12 @@ function UpcomingCard({
           Cancel
         </button>
       </div>
+      <PayNowButton
+        reservationId={r.id}
+        amount={Number(r.grand_total ?? r.total_price)}
+        slotName={slot?.name ?? "Parking slot"}
+      />
+
     </div>
   );
 }
