@@ -1,6 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { useSlot, useMyVehicles, useOwnerProfile, useReviews, useMyFavorites } from "@/lib/queries";
+import {
+  useSlot,
+  useMyVehicles,
+  useOwnerProfile,
+  useReviews,
+  useMyFavorites,
+  useProfile,
+  useSlotAvailability,
+} from "@/lib/queries";
+import { checkWithinHours, SHORT_WEEKDAYS } from "@/lib/availability";
+
 import { supabase } from "@/integrations/supabase/client";
 import { sendBookingConfirmation } from "@/lib/emails.functions";
 import { toast } from "sonner";
