@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "Drive \u0026 Park"
+const SITE_NAME = "Usop"
 const ROOT_DOMAIN = "usop.in"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
