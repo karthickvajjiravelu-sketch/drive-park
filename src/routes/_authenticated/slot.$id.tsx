@@ -115,6 +115,14 @@ function SlotDetail() {
       : null;
   void priceEpoch;
   const total = breakdown ? breakdown.grandTotal : rate * duration;
+  const isOwner = !!myProfile && myProfile.user_id === slot.owner_id;
+  const msPerUnit = rateType === "hourly" ? 3600e3 : rateType === "daily" ? 86400e3 : 30 * 86400e3;
+  const hoursError = checkWithinHours(
+    hours,
+    new Date(startTime),
+    new Date(new Date(startTime).getTime() + duration * msPerUnit),
+  );
+
 
   async function refreshPrice() {
     const previous = breakdown?.grandTotal;
