@@ -99,23 +99,32 @@ function MySlots() {
               <div className="mt-2 text-xs text-muted-foreground">
                 ₹{s.hourly_rate}/hr · ₹{s.daily_rate}/day · ₹{s.monthly_rate}/mo
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 grid grid-cols-3 gap-2">
                 <Link
                   to="/edit-slot/$id"
                   params={{ id: s.id }}
-                  className="flex-1 rounded-xl border border-border py-2 text-xs font-semibold flex items-center justify-center gap-1"
+                  className="rounded-xl border border-border py-2 text-xs font-semibold flex items-center justify-center gap-1"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                   Edit
                 </Link>
+                <Link
+                  to="/availability/$id"
+                  params={{ id: s.id }}
+                  className="rounded-xl border border-border py-2 text-xs font-semibold flex items-center justify-center gap-1"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  Hours
+                </Link>
                 <button
                   onClick={() => remove(s.id, s.name)}
-                  className="flex-1 rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold flex items-center justify-center gap-1"
+                  className="rounded-xl border border-destructive text-destructive py-2 text-xs font-semibold flex items-center justify-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Delete
                 </button>
               </div>
+
             </div>
           </div>
         ))}
