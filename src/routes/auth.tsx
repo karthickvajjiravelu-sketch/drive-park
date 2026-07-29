@@ -72,6 +72,7 @@ function AuthPage() {
   const [role, setRole] = useState<"driver" | "landowner">("driver");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [tos, setTos] = useState(false);
 
   const nextPath = sanitizeNext(search.next);
   const otpMode = mode === "signin" && method === "otp";
@@ -82,7 +83,9 @@ function AuthPage() {
     : validate(emailSchema, email) === null &&
       validate(passwordSchema, password) === null &&
       (mode === "signin" ||
-        (validate(nameSchema, name) === null && validate(phoneSchema, phone) === null));
+        (tos &&
+          validate(nameSchema, name) === null &&
+          validate(phoneSchema, phone) === null));
 
   function goNext() {
     if (nextPath) window.location.href = nextPath;
