@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useSlot, useMyVehicles, useOwnerProfile, useReviews, useMyFavorites } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { sendBookingConfirmation } from "@/lib/emails.functions";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import {
