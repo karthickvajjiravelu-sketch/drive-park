@@ -73,6 +73,7 @@ export type Reservation = {
   rate_type: "hourly" | "daily" | "monthly";
   vehicle_id: string | null;
   vehicle_plate: string | null;
+  grand_total?: number | null;
 };
 
 export type Review = {
