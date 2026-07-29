@@ -52,6 +52,7 @@ function MapPage() {
   const [rate, setRate] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [maxPrice, setMaxPrice] = useState(500);
   const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
+  const [slotTypes, setSlotTypes] = useState<Set<SlotType>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   const favSet = useMemo(() => new Set(favorites.map((f) => f.slot_id)), [favorites]);
