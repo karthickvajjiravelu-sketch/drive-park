@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAdminUsers } from "@/lib/admin-queries";
+import { useAdminUsers, type AdminProfile } from "@/lib/admin-queries";
 import { AdminSection, AdminCard, AdminButton, Pill } from "@/components/admin/AdminUI";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
