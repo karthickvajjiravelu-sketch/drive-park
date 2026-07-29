@@ -393,6 +393,8 @@ export type Database = {
           created_at: string
           driver_id: string
           id: string
+          owner_reply: string | null
+          owner_reply_at: string | null
           rating: number
           reservation_id: string | null
           slot_id: string
@@ -402,6 +404,8 @@ export type Database = {
           created_at?: string
           driver_id: string
           id?: string
+          owner_reply?: string | null
+          owner_reply_at?: string | null
           rating: number
           reservation_id?: string | null
           slot_id: string
@@ -411,6 +415,8 @@ export type Database = {
           created_at?: string
           driver_id?: string
           id?: string
+          owner_reply?: string | null
+          owner_reply_at?: string | null
           rating?: number
           reservation_id?: string | null
           slot_id?: string
@@ -425,6 +431,44 @@ export type Database = {
           },
           {
             foreignKeyName: "reviews_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slot_availability: {
+        Row: {
+          close_time: string
+          closed: boolean
+          created_at: string
+          id: string
+          open_time: string
+          slot_id: string
+          weekday: number
+        }
+        Insert: {
+          close_time?: string
+          closed?: boolean
+          created_at?: string
+          id?: string
+          open_time?: string
+          slot_id: string
+          weekday: number
+        }
+        Update: {
+          close_time?: string
+          closed?: boolean
+          created_at?: string
+          id?: string
+          open_time?: string
+          slot_id?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slot_availability_slot_id_fkey"
             columns: ["slot_id"]
             isOneToOne: false
             referencedRelation: "slots"
