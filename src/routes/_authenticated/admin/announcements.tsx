@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/admin/announcements")({
       },
     ],
   }),
-  component: AdminAnnouncements —,
+  component: AdminAnnouncements,
 });
 
 function AdminAnnouncements() {
