@@ -168,6 +168,7 @@ function SlotDetail() {
       setReservationId(data.id);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
       toast.success("Reserved!");
+      void sendBookingConfirmation({ data: { reservationId: data.id } }).catch(() => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed";
       if (/no_overlap|conflicting key value|exclusion/i.test(msg)) {
