@@ -8,6 +8,7 @@ import { DemandBadge } from "@/components/PriceBreakdownCard";
 import { ClientOnly } from "@/components/ClientOnly";
 import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-react";
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
+import { SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { toast } from "sonner";
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
