@@ -537,6 +537,26 @@ function SlotDetail() {
           </div>
         )}
 
+        {hours.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
+              Opening hours
+            </h2>
+            <div className="rounded-xl bg-card border border-border divide-y divide-border">
+              {hours.map((h) => (
+                <div key={h.id} className="flex justify-between px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">{SHORT_WEEKDAYS[h.weekday]}</span>
+                  <span className="font-semibold">
+                    {h.closed
+                      ? "Closed"
+                      : `${h.open_time.slice(0, 5)} – ${h.close_time.slice(0, 5)}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-8">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
             Reviews
@@ -562,11 +582,21 @@ function SlotDetail() {
                   <div className="mt-1 text-[10px] text-muted-foreground">
                     {new Date(r.created_at).toLocaleDateString()}
                   </div>
+                  {r.owner_reply && (
+                    <div className="mt-2 rounded-lg bg-muted p-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Host response
+                      </div>
+                      <p className="text-sm">{r.owner_reply}</p>
+                    </div>
+                  )}
+                  {isOwner && !r.owner_reply && <OwnerReply reviewId={r.id} slotId={id} />}
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
