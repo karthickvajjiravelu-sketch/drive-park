@@ -32,6 +32,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
 import { Route as AuthenticatedMessagesReservationIdRouteImport } from './routes/_authenticated/messages.$reservationId'
 import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authenticated/edit-slot.$id'
+import { Route as AuthenticatedAvailabilityIdRouteImport } from './routes/_authenticated/availability.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -157,6 +158,12 @@ const AuthenticatedEditSlotIdRoute = AuthenticatedEditSlotIdRouteImport.update({
   path: '/edit-slot/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAvailabilityIdRoute =
+  AuthenticatedAvailabilityIdRouteImport.update({
+    id: '/availability/$id',
+    path: '/availability/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/availability/$id': typeof AuthenticatedAvailabilityIdRoute
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -236,6 +244,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/availability/$id': typeof AuthenticatedAvailabilityIdRoute
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -267,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/_authenticated/availability/$id': typeof AuthenticatedAvailabilityIdRoute
   '/_authenticated/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/_authenticated/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
@@ -298,6 +308,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/availability/$id'
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/availability/$id'
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
@@ -357,6 +369,7 @@ export interface FileRouteTypes {
     | '/_authenticated/wallet'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/_authenticated/availability/$id'
     | '/_authenticated/edit-slot/$id'
     | '/_authenticated/messages/$reservationId'
     | '/_authenticated/slot/$id'
@@ -543,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEditSlotIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/availability/$id': {
+      id: '/_authenticated/availability/$id'
+      path: '/availability/$id'
+      fullPath: '/availability/$id'
+      preLoaderRoute: typeof AuthenticatedAvailabilityIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
       path: '/.mcp/invoke-tool/$tool'
@@ -595,6 +615,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSavedRoute: typeof AuthenticatedSavedRoute
   AuthenticatedVehiclesRoute: typeof AuthenticatedVehiclesRoute
   AuthenticatedWalletRoute: typeof AuthenticatedWalletRoute
+  AuthenticatedAvailabilityIdRoute: typeof AuthenticatedAvailabilityIdRoute
   AuthenticatedEditSlotIdRoute: typeof AuthenticatedEditSlotIdRoute
   AuthenticatedMessagesReservationIdRoute: typeof AuthenticatedMessagesReservationIdRoute
   AuthenticatedSlotIdRoute: typeof AuthenticatedSlotIdRoute
@@ -614,6 +635,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSavedRoute: AuthenticatedSavedRoute,
   AuthenticatedVehiclesRoute: AuthenticatedVehiclesRoute,
   AuthenticatedWalletRoute: AuthenticatedWalletRoute,
+  AuthenticatedAvailabilityIdRoute: AuthenticatedAvailabilityIdRoute,
   AuthenticatedEditSlotIdRoute: AuthenticatedEditSlotIdRoute,
   AuthenticatedMessagesReservationIdRoute:
     AuthenticatedMessagesReservationIdRoute,

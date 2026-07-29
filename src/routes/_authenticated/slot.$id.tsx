@@ -1,6 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { useSlot, useMyVehicles, useOwnerProfile, useReviews, useMyFavorites } from "@/lib/queries";
+import {
+  useSlot,
+  useMyVehicles,
+  useOwnerProfile,
+  useReviews,
+  useMyFavorites,
+  useProfile,
+  useSlotAvailability,
+} from "@/lib/queries";
+import { checkWithinHours, SHORT_WEEKDAYS } from "@/lib/availability";
+
 import { supabase } from "@/integrations/supabase/client";
 import { sendBookingConfirmation } from "@/lib/emails.functions";
 import { toast } from "sonner";
@@ -41,7 +51,10 @@ function SlotDetail() {
   const { data: vehicles = [] } = useMyVehicles();
   const { data: owner } = useOwnerProfile(slot?.owner_id ?? "");
   const { data: reviews = [] } = useReviews(id);
+  const { data: myProfile } = useProfile();
+  const { data: hours = [] } = useSlotAvailability(id);
   const { data: favorites = [] } = useMyFavorites();
+
   const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
   const [duration, setDuration] = useState(2);
   const [vehicleId, setVehicleId] = useState<string>("");
@@ -102,6 +115,14 @@ function SlotDetail() {
       : null;
   void priceEpoch;
   const total = breakdown ? breakdown.grandTotal : rate * duration;
+  const isOwner = !!myProfile && myProfile.user_id === slot.owner_id;
+  const msPerUnit = rateType === "hourly" ? 3600e3 : rateType === "daily" ? 86400e3 : 30 * 86400e3;
+  const hoursError = checkWithinHours(
+    hours,
+    new Date(startTime),
+    new Date(new Date(startTime).getTime() + duration * msPerUnit),
+  );
+
 
   async function refreshPrice() {
     const previous = breakdown?.grandTotal;
@@ -502,13 +523,37 @@ function SlotDetail() {
                 <span className="text-2xl font-black">₹{total}</span>
               </div>
             )}
+            {hoursError && (
+              <p className="text-xs text-destructive">{hoursError} Pick another time.</p>
+            )}
             <button
-              disabled={busy || !!durationError}
+              disabled={busy || !!durationError || !!hoursError}
               onClick={reserve}
               className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
             >
               {busy ? "…" : "Reserve now"}
             </button>
+
+          </div>
+        )}
+
+        {hours.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
+              Opening hours
+            </h2>
+            <div className="rounded-xl bg-card border border-border divide-y divide-border">
+              {hours.map((h) => (
+                <div key={h.id} className="flex justify-between px-3 py-2 text-sm">
+                  <span className="text-muted-foreground">{SHORT_WEEKDAYS[h.weekday]}</span>
+                  <span className="font-semibold">
+                    {h.closed
+                      ? "Closed"
+                      : `${h.open_time.slice(0, 5)} – ${h.close_time.slice(0, 5)}`}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -537,11 +582,21 @@ function SlotDetail() {
                   <div className="mt-1 text-[10px] text-muted-foreground">
                     {new Date(r.created_at).toLocaleDateString()}
                   </div>
+                  {r.owner_reply && (
+                    <div className="mt-2 rounded-lg bg-muted p-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                        Host response
+                      </div>
+                      <p className="text-sm">{r.owner_reply}</p>
+                    </div>
+                  )}
+                  {isOwner && !r.owner_reply && <OwnerReply reviewId={r.id} slotId={id} />}
                 </div>
               ))}
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
@@ -555,6 +610,48 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
         {label}
       </div>
       <div className="mt-1 font-semibold capitalize">{value}</div>
+    </div>
+  );
+}
+
+function OwnerReply({ reviewId, slotId }: { reviewId: string; slotId: string }) {
+  const qc = useQueryClient();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    const body = text.trim();
+    if (!body) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("reviews")
+      .update({ owner_reply: body, owner_reply_at: new Date().toISOString() })
+      .eq("id", reviewId);
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setText("");
+    toast.success("Reply posted");
+    qc.invalidateQueries({ queryKey: ["reviews", slotId] });
+  }
+
+  return (
+    <div className="mt-2 flex gap-2">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Reply as host…"
+        className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm"
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !text.trim()}
+        className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+      >
+        Reply
+      </button>
     </div>
   );
 }

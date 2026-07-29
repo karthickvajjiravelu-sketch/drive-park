@@ -83,8 +83,20 @@ export type Review = {
   rating: number;
   comment: string;
   reservation_id: string | null;
+  owner_reply: string | null;
+  owner_reply_at: string | null;
   created_at: string;
 };
+
+export type SlotAvailability = {
+  id: string;
+  slot_id: string;
+  weekday: number;
+  open_time: string;
+  close_time: string;
+  closed: boolean;
+};
+
 
 export type Message = {
   id: string;
@@ -462,3 +474,19 @@ export const reservationPaymentStatusQuery = (reservationId: string) =>
     },
   });
 export const useReservationPaymentStatus = (reservationId: string) => useQuery(reservationPaymentStatusQuery(reservationId));
+
+export const slotAvailabilityQuery = (slotId: string) =>
+  queryOptions({
+    queryKey: ["slot-availability", slotId],
+    queryFn: async (): Promise<SlotAvailability[]> => {
+      const { data, error } = await supabase
+        .from("slot_availability")
+        .select("id, slot_id, weekday, open_time, close_time, closed")
+        .eq("slot_id", slotId)
+        .order("weekday");
+      if (error) throw error;
+      return (data ?? []) as SlotAvailability[];
+    },
+    enabled: !!slotId,
+  });
+export const useSlotAvailability = (slotId: string) => useQuery(slotAvailabilityQuery(slotId));
