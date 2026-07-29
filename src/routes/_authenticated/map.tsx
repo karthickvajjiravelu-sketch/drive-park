@@ -89,10 +89,12 @@ function MapPage() {
       if (vehicle !== "all" && s.vehicle_type !== vehicle && s.vehicle_type !== "both")
         return false;
       if ((s as unknown as Record<string, number>)[rateKey] > maxPrice) return false;
+      if (slotTypes.size && !slotTypes.has((s.slot_type ?? "standard_car") as SlotType))
+        return false;
       for (const a of amenities) if (!s[a]) return false;
       return true;
     });
-  }, [slots, vehicle, rate, maxPrice, amenities]);
+  }, [slots, vehicle, rate, maxPrice, amenities, slotTypes]);
 
   const sorted = useMemo(
     () =>
