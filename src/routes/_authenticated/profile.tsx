@@ -3,7 +3,14 @@ import { useState, useEffect } from "react";
 import { useProfile, useNotifications } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { ValidatedField } from "@/components/ValidatedField";
-import { nameSchema, phoneSchema, formatName, formatDigits, validate } from "@/lib/validation";
+import {
+  nameSchema,
+  phoneSchema,
+  formatName,
+  formatDigits,
+  normalizePhone,
+  validate,
+} from "@/lib/validation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -38,7 +45,7 @@ function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setName(profile.name);
-      setPhone(profile.phone);
+      setPhone(normalizePhone(profile.phone));
     }
   }, [profile]);
 
