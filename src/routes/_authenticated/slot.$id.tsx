@@ -613,3 +613,45 @@ function Info({ icon, label, value }: { icon: React.ReactNode; label: string; va
     </div>
   );
 }
+
+function OwnerReply({ reviewId, slotId }: { reviewId: string; slotId: string }) {
+  const qc = useQueryClient();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    const body = text.trim();
+    if (!body) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("reviews")
+      .update({ owner_reply: body, owner_reply_at: new Date().toISOString() })
+      .eq("id", reviewId);
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setText("");
+    toast.success("Reply posted");
+    qc.invalidateQueries({ queryKey: ["reviews", slotId] });
+  }
+
+  return (
+    <div className="mt-2 flex gap-2">
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Reply as host…"
+        className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm"
+      />
+      <button
+        onClick={submit}
+        disabled={busy || !text.trim()}
+        className="rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+      >
+        Reply
+      </button>
+    </div>
+  );
+}
