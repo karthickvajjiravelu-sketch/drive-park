@@ -37,6 +37,7 @@ import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAvailabilityIdRouteImport } from './routes/_authenticated/availability.$id'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin/transactions'
+import { Route as AuthenticatedAdminRevenueRouteImport } from './routes/_authenticated/admin/revenue'
 import { Route as AuthenticatedAdminListingsRouteImport } from './routes/_authenticated/admin/listings'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
@@ -190,6 +191,12 @@ const AuthenticatedAdminTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminRevenueRoute =
+  AuthenticatedAdminRevenueRouteImport.update({
+    id: '/revenue',
+    path: '/revenue',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminListingsRoute =
   AuthenticatedAdminListingsRouteImport.update({
     id: '/listings',
@@ -248,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/admin/revenue': typeof AuthenticatedAdminRevenueRoute
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/availability/$id': typeof AuthenticatedAvailabilityIdRoute
@@ -282,6 +290,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/admin/revenue': typeof AuthenticatedAdminRevenueRoute
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/availability/$id': typeof AuthenticatedAvailabilityIdRoute
@@ -319,6 +328,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/_authenticated/admin/listings': typeof AuthenticatedAdminListingsRoute
+  '/_authenticated/admin/revenue': typeof AuthenticatedAdminRevenueRoute
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/availability/$id': typeof AuthenticatedAvailabilityIdRoute
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/listings'
+    | '/admin/revenue'
     | '/admin/transactions'
     | '/admin/users'
     | '/availability/$id'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/listings'
+    | '/admin/revenue'
     | '/admin/transactions'
     | '/admin/users'
     | '/availability/$id'
@@ -426,6 +438,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/_authenticated/admin/listings'
+    | '/_authenticated/admin/revenue'
     | '/_authenticated/admin/transactions'
     | '/_authenticated/admin/users'
     | '/_authenticated/availability/$id'
@@ -651,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTransactionsRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/revenue': {
+      id: '/_authenticated/admin/revenue'
+      path: '/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AuthenticatedAdminRevenueRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/listings': {
       id: '/_authenticated/admin/listings'
       path: '/listings'
@@ -698,6 +718,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminListingsRoute: typeof AuthenticatedAdminListingsRoute
+  AuthenticatedAdminRevenueRoute: typeof AuthenticatedAdminRevenueRoute
   AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -706,6 +727,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
     AuthenticatedAdminListingsRoute: AuthenticatedAdminListingsRoute,
+    AuthenticatedAdminRevenueRoute: AuthenticatedAdminRevenueRoute,
     AuthenticatedAdminTransactionsRoute: AuthenticatedAdminTransactionsRoute,
     AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
