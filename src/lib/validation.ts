@@ -5,7 +5,7 @@ import { z } from "zod";
 export const PATTERNS = {
   phone: /^[6-9]\d{9}$/,
   otp: /^\d{6}$/,
-  name: /^[a-zA-Z\s]{2,50}$/,
+  name: /^[\p{L}][\p{L}\s.'-]{1,49}$/u,
   email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   vehicleNumber: /^[A-Z]{2}[-\s]?\d{1,2}[-\s]?[A-Z]{1,3}[-\s]?\d{4}$/,
   vehicleModel: /^[a-zA-Z0-9\s-]{2,30}$/,
@@ -14,7 +14,7 @@ export const PATTERNS = {
 export const MESSAGES = {
   phone: "Enter a valid 10-digit mobile number",
   otp: "OTP must be 6 digits",
-  name: "Name must be 2-50 letters only",
+  name: "Name must be 2-50 characters (letters, spaces, . ' -)",
   email: "Enter a valid email address",
   vehicleNumber: "Enter a valid vehicle number (e.g., TN01AB1234)",
   vehicleModel: "Enter a valid vehicle model",
