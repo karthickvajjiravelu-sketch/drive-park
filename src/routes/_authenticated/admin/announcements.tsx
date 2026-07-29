@@ -31,8 +31,8 @@ function AdminAnnouncements() {
     setBusy(true);
     const { data, error } = await supabase.rpc("admin_broadcast_notification", {
       _title: title.trim(),
-      _body: body.trim() || null,
-      _link: link.trim() || null,
+      _body: body.trim(),
+      _link: link.trim() || undefined,
       _target: target,
     });
     setBusy(false);
