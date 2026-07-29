@@ -17,6 +17,7 @@ import {
   Star,
 } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
+import { PayNowButton } from "@/components/PayNowButton";
 import type { Reservation, Slot } from "@/lib/queries";
 
 type ReservationWithSlot = Reservation & { slot: Slot | null };
