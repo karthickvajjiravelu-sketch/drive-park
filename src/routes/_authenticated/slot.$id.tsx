@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useSlot, useMyVehicles, useOwnerProfile, useReviews, useMyFavorites } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
+import { sendBookingConfirmation } from "@/lib/emails.functions";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -168,6 +169,7 @@ function SlotDetail() {
       setReservationId(data.id);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
       toast.success("Reserved!");
+      void sendBookingConfirmation({ data: { reservationId: data.id } }).catch(() => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed";
       if (/no_overlap|conflicting key value|exclusion/i.test(msg)) {
