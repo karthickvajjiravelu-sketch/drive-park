@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { template as bookingConfirmationTemplate } from './booking-confirmation'
 
 export interface TemplateEntry {
   component: ComponentType<any>
