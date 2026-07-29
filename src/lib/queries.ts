@@ -83,8 +83,20 @@ export type Review = {
   rating: number;
   comment: string;
   reservation_id: string | null;
+  owner_reply: string | null;
+  owner_reply_at: string | null;
   created_at: string;
 };
+
+export type SlotAvailability = {
+  id: string;
+  slot_id: string;
+  weekday: number;
+  open_time: string;
+  close_time: string;
+  closed: boolean;
+};
+
 
 export type Message = {
   id: string;
