@@ -5,7 +5,7 @@ import { z } from "zod";
 export const PATTERNS = {
   phone: /^[6-9]\d{9}$/,
   otp: /^\d{6}$/,
-  name: /^[a-zA-Z\s]{2,50}$/,
+  name: /^[\p{L}][\p{L}\s.'-]{1,49}$/u,
   email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
   vehicleNumber: /^[A-Z]{2}[-\s]?\d{1,2}[-\s]?[A-Z]{1,3}[-\s]?\d{4}$/,
   vehicleModel: /^[a-zA-Z0-9\s-]{2,30}$/,
@@ -14,7 +14,7 @@ export const PATTERNS = {
 export const MESSAGES = {
   phone: "Enter a valid 10-digit mobile number",
   otp: "OTP must be 6 digits",
-  name: "Name must be 2-50 letters only",
+  name: "Name must be 2-50 characters (letters, spaces, . ' -)",
   email: "Enter a valid email address",
   vehicleNumber: "Enter a valid vehicle number (e.g., TN01AB1234)",
   vehicleModel: "Enter a valid vehicle model",
@@ -56,12 +56,20 @@ export function formatPlate(value: string): string {
   return value.toUpperCase().replace(/[\s-]/g, "").slice(0, 12);
 }
 
-/** Capitalise the first letter of each word. */
+/** Normalise a stored phone value to 10 local digits (drops +91 / 0 prefixes, spaces). */
+export function normalizePhone(value: string): string {
+  const digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+}
+
+/** Tidy a name without discarding valid characters (accents, ., ', -). */
 export function formatName(value: string): string {
   return value
-    .replace(/[^a-zA-Z\s]/g, "")
+    .replace(/[^\p{L}\s.'-]/gu, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/\b[a-z]/g, (c) => c.toUpperCase());
+    .replace(/(^|[\s.'-])(\p{Ll})/gu, (_m, p, c: string) => p + c.toUpperCase())
+    .slice(0, 50);
 }
 
 /* ------------------------------------------------------------ OTP throttling */
