@@ -100,7 +100,9 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     const expected = createHmac("sha256", keySecret)
       .update(`${razorpayOrderId}|${razorpayPaymentId}`)
       .digest("hex");
-    if (!timingSafeEqual(Buffer.from(razorpaySignature), Buffer.from(expected))) {
+    const givenSig = Buffer.from(razorpaySignature);
+    const expectedSig = Buffer.from(expected);
+    if (givenSig.length !== expectedSig.length || !timingSafeEqual(givenSig, expectedSig)) {
       throw new Error("Invalid payment signature");
     }
 
@@ -116,7 +118,9 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       .single();
     if (findError || !paymentRow) throw new Error("Payment record not found");
 
-    const { error: updateError } = await context.supabase
+    // Only the server may mark a payment captured/authorized (signature verified above).
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: updateError } = await supabaseAdmin
       .from("payments")
       .update({
         razorpay_payment_id: razorpayPaymentId,
@@ -125,7 +129,8 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
         gateway_response: paymentDetails as Record<string, Json>,
         payment_method_id: paymentMethodId ?? null,
       })
-      .eq("id", paymentRow.id);
+      .eq("id", paymentRow.id)
+      .eq("user_id", context.userId);
     if (updateError) throw updateError;
 
     // Save tokenized instrument for future use if the gateway returned a token and none was reused
