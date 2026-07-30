@@ -50,7 +50,9 @@ function Landing() {
               U
             </div>
             <span className="text-lg font-black tracking-tight text-white">Usop</span>
+            <ThemeQuickToggle className="ml-auto bg-white/15 text-white backdrop-blur" />
           </div>
+
           <div className="mt-auto hero-text-shadow">
             <span className="chip chip-amber mb-4 shadow-md">India&apos;s parking marketplace</span>
             <h1 className="text-[2.6rem] leading-[1.05] font-black text-white">
