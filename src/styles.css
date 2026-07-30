@@ -149,3 +149,37 @@
 .hero-text-shadow { text-shadow: 0 2px 12px color-mix(in oklab, var(--surface-dark) 70%, transparent), 0 1px 2px color-mix(in oklab, var(--surface-dark) 60%, transparent); }
 .mobile-shell { box-shadow: 0 0 40px rgba(0,0,0,0.06); }
 
+
+/* Google Maps chrome — Places autocomplete dropdown + info windows follow the theme */
+.pac-container {
+  background: var(--color-card);
+  color: var(--color-card-foreground);
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  box-shadow: 0 12px 32px -12px rgba(0,0,0,0.45);
+  margin-top: 0.35rem;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+.pac-container .pac-item {
+  border-top-color: var(--color-border);
+  color: var(--color-muted-foreground);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+}
+.pac-container .pac-item:hover,
+.pac-container .pac-item-selected {
+  background: var(--color-muted);
+}
+.pac-container .pac-item-query,
+.pac-container .pac-matched { color: var(--color-foreground); }
+.pac-container:after { display: none; }
+.pac-icon { filter: grayscale(1) opacity(0.6); }
+
+.gm-style .gm-style-iw-c,
+.gm-style .gm-style-iw-t::after {
+  background: var(--color-card);
+  box-shadow: 0 8px 24px -10px rgba(0,0,0,0.5);
+}
+.gm-style .gm-style-iw-d { background: var(--color-card); overflow: hidden !important; }
+.gm-style .gm-style-iw-c button span { background-color: var(--color-muted-foreground) !important; }
