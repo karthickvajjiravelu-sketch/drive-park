@@ -109,7 +109,7 @@ function MessagesPage() {
             >
               <div className="whitespace-pre-wrap break-words">{m.body}</div>
               <div
-                className={`mt-0.5 text-[9px] ${mine ? "text-black/60" : "text-muted-foreground"}`}
+                className={`mt-0.5 text-[9px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}
               >
                 {new Date(m.created_at).toLocaleTimeString([], {
                   hour: "2-digit",

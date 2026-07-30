@@ -249,7 +249,7 @@ function ActiveCard({
         </div>
       </div>
       {slot.access_instructions && (
-        <div className="mt-2 text-xs bg-white/50 rounded-lg p-2">{slot.access_instructions}</div>
+        <div className="mt-2 text-xs bg-background/60 border border-border rounded-lg p-2">{slot.access_instructions}</div>
       )}
       <div className="mt-3 grid grid-cols-3 gap-2">
         <HostCall ownerId={slot.owner_id} />

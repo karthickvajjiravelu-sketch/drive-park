@@ -48,6 +48,24 @@ export const USOP_MAP_STYLE: google.maps.MapTypeStyle[] = [
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#cfe3ec" }] },
 ];
 
+// Dark-mode counterpart, tuned to the Usop indigo surfaces
+export const USOP_MAP_STYLE_DARK: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#221E38" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#9c95b4" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#191631" }] },
+  { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#25302b" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#302a4d" }] },
+  { featureType: "road.arterial", elementType: "geometry", stylers: [{ color: "#372f58" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#4a3d6b" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#2a2444" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#161329" }] },
+];
+
+export const mapStyleFor = (dark: boolean) => (dark ? USOP_MAP_STYLE_DARK : USOP_MAP_STYLE);
+
 // SVG pin as data URL
 export function pinIcon(color: string, stroke = "#241F3D") {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='36' height='44' viewBox='0 0 36 44'>

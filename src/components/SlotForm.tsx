@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Search } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClientOnly } from "@/components/ClientOnly";
-import { loadGoogleMaps, USOP_MAP_STYLE, pinIcon } from "@/lib/google-maps";
+import { loadGoogleMaps, mapStyleFor, pinIcon } from "@/lib/google-maps";
 import type { Slot } from "@/lib/queries";
 import { BASE_RATES, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 
@@ -315,7 +315,7 @@ function LocationPicker({
         const map = new g.maps.Map(mapEl.current, {
           center,
           zoom: 15,
-          styles: USOP_MAP_STYLE,
+          styles: mapStyleFor(document.documentElement.classList.contains("dark")),
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
@@ -399,8 +399,8 @@ function LocationPicker({
     <div className="relative w-full h-full">
       <div ref={mapEl} className="absolute inset-0" />
       <div className="absolute top-2 left-2 right-2 z-10">
-        <div className="flex items-center gap-2 bg-white rounded-full shadow px-3 py-2 border border-black/5">
-          <Search className="w-4 h-4 text-black/50" />
+        <div className="flex items-center gap-2 bg-card text-card-foreground rounded-full shadow px-3 py-2 border border-border">
+          <Search className="w-4 h-4 text-muted-foreground" />
           <input
             ref={inputEl}
             placeholder="Search address"
