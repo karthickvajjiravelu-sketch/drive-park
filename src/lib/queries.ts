@@ -292,11 +292,13 @@ export const reviewsQuery = (slotId: string) =>
       const rows = (data ?? []) as Review[];
       const driverIds = [...new Set(rows.map((r) => r.driver_id))];
       if (driverIds.length === 0) return rows.map((r) => ({ ...r, driver: null }));
-      const { data: drivers } = await supabase
-        .from("profiles")
-        .select("user_id, name")
-        .in("user_id", driverIds);
-      const m = new Map((drivers ?? []).map((d) => [d.user_id, { name: d.name }]));
+      const { data: drivers } = await supabase.rpc("profile_briefs", { _user_ids: driverIds });
+      const m = new Map(
+        ((drivers ?? []) as Array<{ user_id: string; name: string }>).map((d) => [
+          d.user_id,
+          { name: d.name },
+        ]),
+      );
       return rows.map((r) => ({ ...r, driver: m.get(r.driver_id) ?? null }));
     },
   });
@@ -333,7 +335,11 @@ export const ownerProfileQuery = (ownerId: string) =>
         .eq("user_id", ownerId)
         .maybeSingle();
       if (error) throw error;
-      return data as Profile | null;
+      if (data) return data as Profile | null;
+      // Not a counterparty yet: fall back to the safe public brief (no phone).
+      const { data: brief } = await supabase.rpc("profile_briefs", { _user_ids: [ownerId] });
+      const row = ((brief ?? []) as Array<Partial<Profile>>)[0];
+      return row ? (row as Profile) : null;
     },
   });
 export const useOwnerProfile = (ownerId: string) => useQuery(ownerProfileQuery(ownerId));

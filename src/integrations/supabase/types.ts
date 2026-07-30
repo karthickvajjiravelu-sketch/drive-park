@@ -851,6 +851,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      profile_briefs: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          verified: boolean
+        }[]
+      }
       report_review: { Args: { _review_id: string }; Returns: undefined }
     }
     Enums: {
