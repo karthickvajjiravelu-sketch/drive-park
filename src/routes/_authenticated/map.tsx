@@ -10,6 +10,8 @@ import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-rea
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
 import { SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { toast } from "sonner";
+import { ThemeQuickToggle } from "@/components/ThemeToggle";
+
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
 
