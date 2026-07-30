@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Slot } from "@/lib/queries";
-import { loadGoogleMaps, USOP_MAP_STYLE, pinIcon } from "@/lib/google-maps";
+import { loadGoogleMaps, mapStyleFor, pinIcon } from "@/lib/google-maps";
+import { useTheme } from "next-themes";
 import { Search } from "lucide-react";
 import { locationSchema, validate } from "@/lib/validation";
 
@@ -23,6 +24,8 @@ export default function SlotMap({
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   useEffect(() => {
     let cancelled = false;
@@ -32,7 +35,7 @@ export default function SlotMap({
         mapRef.current = new g.maps.Map(mapEl.current, {
           center: { lat: center[0], lng: center[1] },
           zoom: 14,
-          styles: USOP_MAP_STYLE,
+          styles: mapStyleFor(document.documentElement.classList.contains("dark")),
           disableDefaultUI: true,
           zoomControl: true,
           gestureHandling: "greedy",
@@ -82,6 +85,10 @@ export default function SlotMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    mapRef.current?.setOptions({ styles: mapStyleFor(isDark) });
+  }, [isDark, ready]);
+
   const centeredOnce = useRef(false);
   useEffect(() => {
     if (!mapRef.current || centeredOnce.current) return;
@@ -114,12 +121,14 @@ export default function SlotMap({
           title: s.name,
         });
         m.addListener("click", () => {
+          const ink = isDark ? "#F0ECF8" : "#2A2438";
+          const sub = isDark ? "#a9a1c0" : "#6b6478";
           infoRef.current?.setContent(
-            `<div style="font-family:Inter,sans-serif;min-width:180px;color:#2A2438">
+            `<div style="font-family:Inter,sans-serif;min-width:180px;color:${ink}">
                <div style="font-weight:800">${escapeHtml(s.name)}</div>
-               <div style="font-size:12px;color:#6b6478;margin-top:2px">${escapeHtml(s.approx_area || "")}</div>
-               <div style="margin-top:6px;font-weight:700">₹${s.hourly_rate}<span style="color:#6b6478;font-weight:500">/hr</span> · <span style="color:${isFull ? "#E85D3D" : "#1FA35A"}">${isFull ? "Full" : "Open"}</span></div>
-               <button id="usop-view-${s.id}" style="margin-top:8px;width:100%;background:#F2A522;color:#2A2438;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer">View details</button>
+               <div style="font-size:12px;color:${sub};margin-top:2px">${escapeHtml(s.approx_area || "")}</div>
+               <div style="margin-top:6px;font-weight:700">₹${s.hourly_rate}<span style="color:${sub};font-weight:500">/hr</span> · <span style="color:${isFull ? "#E85D3D" : "#1FA35A"}">${isFull ? "Full" : "Open"}</span></div>
+               <button id="usop-view-${s.id}" style="margin-top:8px;width:100%;background:#F2A522;color:#241F3D;border:none;padding:8px 10px;border-radius:8px;font-weight:700;cursor:pointer">View details</button>
              </div>`,
           );
           infoRef.current?.open({ map: mapRef.current!, anchor: m! });
@@ -143,14 +152,14 @@ export default function SlotMap({
         existing.delete(id);
       }
     });
-  }, [slots, ready, onSelect]);
+  }, [slots, ready, onSelect, isDark]);
 
   return (
     <div className="relative w-full h-full min-h-[60vh]">
       <div ref={mapEl} className="absolute inset-0" />
       <div className="absolute top-3 left-3 right-3 z-10">
-        <div className="flex items-center gap-2 bg-white rounded-full shadow-lg px-3 py-2 border border-black/5">
-          <Search className="w-4 h-4 text-black/50" />
+        <div className="flex items-center gap-2 bg-card text-card-foreground rounded-full shadow-lg px-3 py-2 border border-border">
+          <Search className="w-4 h-4 text-muted-foreground" />
           <input
             ref={searchEl}
             placeholder="Search a destination"
