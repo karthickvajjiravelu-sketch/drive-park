@@ -64,7 +64,9 @@ function MySlots() {
     <div className="pb-24">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-black">My Slots</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <ThemeQuickToggle className="bg-white/10 text-white" />
+
           <Link
             to="/earnings"
             className="rounded-full bg-white/10 text-white w-10 h-10 grid place-items-center"
