@@ -179,6 +179,8 @@ function MapPage() {
             <Filter className="w-3.5 h-3.5" />
             Filter
           </button>
+          <ThemeQuickToggle className="bg-white/10 text-white shrink-0" />
+
         </div>
 
         {showFilters && (
