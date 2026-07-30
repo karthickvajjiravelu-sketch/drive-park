@@ -5,6 +5,8 @@ import { MapPin, Zap, IndianRupee, ShieldCheck } from "lucide-react";
 import heroImg from "@/assets/parking-hero.jpg";
 import heroImgTall from "@/assets/parking-hero-tall.jpg";
 import heroImgWide from "@/assets/parking-hero-wide.jpg";
+import { ThemeQuickToggle } from "@/components/ThemeToggle";
+
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -50,7 +52,9 @@ function Landing() {
               U
             </div>
             <span className="text-lg font-black tracking-tight text-white">Usop</span>
+            <ThemeQuickToggle className="ml-auto bg-white/15 text-white backdrop-blur" />
           </div>
+
           <div className="mt-auto hero-text-shadow">
             <span className="chip chip-amber mb-4 shadow-md">India&apos;s parking marketplace</span>
             <h1 className="text-[2.6rem] leading-[1.05] font-black text-white">

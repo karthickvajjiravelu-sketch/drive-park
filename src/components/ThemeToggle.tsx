@@ -58,3 +58,27 @@ export function ThemeMetaColor() {
   }, [resolvedTheme]);
   return null;
 }
+
+const CYCLE = ["light", "dark", "system"] as const;
+
+/** Compact one-tap switcher: light → dark → system. */
+export function ThemeQuickToggle({ className = "" }: { className?: string }) {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const current = (mounted ? (theme ?? "system") : "system") as (typeof CYCLE)[number];
+  const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
+  const Icon = current === "light" ? Sun : current === "dark" ? Moon : Monitor;
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(next)}
+      aria-label={`Theme: ${current}. Switch to ${next}`}
+      title={`Theme: ${current} — tap for ${next}`}
+      className={`grid place-items-center w-9 h-9 rounded-full transition hover:opacity-80 ${className}`}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
