@@ -34,6 +34,18 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
     );
   }
 
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["reservation-payment", reservationId] });
+    qc.invalidateQueries({ queryKey: ["my-payment-methods"] });
+  };
+  const pollStatus = () => {
+    let n = 0;
+    const t = setInterval(() => {
+      refresh();
+      if (++n >= 5) clearInterval(t);
+    }, 2000);
+  };
+
   const pay = async () => {
     setBusy(true);
     try {
@@ -41,39 +53,44 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
       if (!ready || typeof window === "undefined" || !window.Razorpay) {
         throw new Error("Payment gateway is still loading. Please try again.");
       }
-      open({
-        key: order.keyId,
-        amount: order.amountPaise,
-        currency: order.currency,
-        name: "Usop Parking",
-        description: slotName,
-        order_id: order.orderId,
-        token: true,
-        prefill: { name: profile?.name || undefined, contact: profile?.phone || undefined },
-        notes: { reservation_id: reservationId },
-        theme: { color: "#443A78" },
-        handler: async (response) => {
-          try {
-            await verifyPayment({
-              data: {
-                reservationId,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              },
-            });
-            toast.success("Payment successful");
-            qc.invalidateQueries({ queryKey: ["reservation-payment", reservationId] });
-            qc.invalidateQueries({ queryKey: ["my-payment-methods"] });
-          } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Could not verify payment");
-          }
+      open(
+        {
+          key: order.keyId,
+          amount: order.amountPaise,
+          currency: order.currency,
+          name: "Usop Parking",
+          description: slotName,
+          order_id: order.orderId,
+          token: true,
+          method: { upi: true, card: true, netbanking: false, wallet: false, emi: false, paylater: false },
+          prefill: { name: profile?.name || undefined, contact: profile?.phone || undefined },
+          notes: { reservation_id: reservationId },
+          theme: { color: "#443A78" },
+          handler: async (response) => {
+            try {
+              await verifyPayment({
+                data: {
+                  reservationId,
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                },
+              });
+              toast.success("Payment successful — booking confirmed");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Could not verify payment");
+            } finally {
+              refresh();
+              pollStatus();
+              setBusy(false);
+            }
+          },
+          modal: { ondismiss: () => { setBusy(false); pollStatus(); } },
         },
-        modal: { ondismiss: () => setBusy(false) },
-      });
+        (msg) => toast.error(`Payment failed: ${msg}`),
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not start payment");
-    } finally {
       setBusy(false);
     }
   };
