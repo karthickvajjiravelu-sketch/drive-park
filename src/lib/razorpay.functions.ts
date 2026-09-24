@@ -9,7 +9,7 @@ const RAZORPAY_API = "https://api.razorpay.com/v1";
 function getKeys() {
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) throw new Error("Razorpay keys not configured");
+  if (!keyId || !keySecret) throw new Error("Payments are not set up yet. Please try again later.");
   return { keyId, keySecret };
 }
 
@@ -41,8 +41,7 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<{ orderId: string; amountPaise: number; currency: string; keyId: string; reservationId: string }> => {
     const { keyId } = getKeys();
-    const { reservationId, amount } = data;
-    const amountPaise = Math.round(amount * 100);
+    const { reservationId } = data;
 
     const { data: reservation, error } = await context.supabase
       .from("reservations")
@@ -52,6 +51,18 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     if (error || !reservation) throw new Error("Reservation not found");
     if (reservation.driver_id !== context.userId) throw new Error("Unauthorized");
     if (reservation.status === "cancelled") throw new Error("Reservation is cancelled");
+
+    // Amount always comes from the server-side reservation, never the client.
+    const amountPaise = Math.round(Number(reservation.total_price) * 100);
+    if (!(amountPaise > 0)) throw new Error("Nothing to pay for this booking");
+
+    const { data: existing } = await context.supabase
+      .from("payments")
+      .select("status")
+      .eq("reservation_id", reservationId)
+      .in("status", ["captured", "authorized"])
+      .limit(1);
+    if (existing && existing.length) throw new Error("This booking is already paid");
 
     const order = await razorpayFetch<{ id: string; amount: number; currency: string }>("/orders", {
       method: "POST",

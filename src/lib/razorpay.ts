@@ -12,6 +12,7 @@ export type RazorpayOptions = {
   theme?: { color?: string };
   /** If true, asks Razorpay to tokenize the card so it can be reused later. */
   token?: boolean;
+  method?: { upi?: boolean; card?: boolean; netbanking?: boolean; wallet?: boolean; emi?: boolean; paylater?: boolean };
   handler: (response: {
     razorpay_payment_id: string;
     razorpay_order_id: string;
@@ -28,7 +29,7 @@ export type RazorpayOptions = {
 type RazorpayInstance = {
   open: () => void;
   close: () => void;
-  on: (event: string, callback: () => void) => void;
+  on: (event: string, callback: (resp: { error?: { description?: string } }) => void) => void;
 };
 
 type RazorpayConstructor = new (options: RazorpayOptions) => RazorpayInstance;
@@ -66,9 +67,10 @@ export function useRazorpay() {
     };
   }, []);
 
-  const open = (options: RazorpayOptions) => {
+  const open = (options: RazorpayOptions, onFailed?: (message: string) => void) => {
     if (!window.Razorpay) return;
     const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (resp) => onFailed?.(resp?.error?.description || "Payment failed"));
     rzp.open();
   };
 
