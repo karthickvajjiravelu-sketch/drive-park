@@ -31,6 +31,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
 import { Route as AuthenticatedMessagesReservationIdRouteImport } from './routes/_authenticated/messages.$reservationId'
 import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authenticated/edit-slot.$id'
@@ -162,6 +163,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const ApiPublicRazorpayWebhookRoute =
+  ApiPublicRazorpayWebhookRouteImport.update({
+    id: '/api/public/razorpay-webhook',
+    path: '/api/public/razorpay-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
   id: '/slot/$id',
   path: '/slot/$id',
@@ -294,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -333,6 +341,7 @@ export interface FileRoutesByTo {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -375,6 +384,7 @@ export interface FileRoutesById {
   '/_authenticated/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/_authenticated/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/api/public/razorpay-webhook'
     | '/admin/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/api/public/razorpay-webhook'
     | '/admin'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -497,6 +509,7 @@ export interface FileRouteTypes {
     | '/_authenticated/edit-slot/$id'
     | '/_authenticated/messages/$reservationId'
     | '/_authenticated/slot/$id'
+    | '/api/public/razorpay-webhook'
     | '/_authenticated/admin/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -513,6 +526,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -673,6 +687,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/api/public/razorpay-webhook': {
+      id: '/api/public/razorpay-webhook'
+      path: '/api/public/razorpay-webhook'
+      fullPath: '/api/public/razorpay-webhook'
+      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/slot/$id': {
       id: '/_authenticated/slot/$id'
@@ -883,6 +904,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
