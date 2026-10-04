@@ -18,7 +18,8 @@ import {
   MessageCircle,
   Star,
 } from "lucide-react";
-import { POLICY_META, refundEligible } from "@/lib/amenities";
+import { POLICY_META } from "@/lib/amenities";
+import { billedAmount } from "@/lib/money";
 import { cancellationRefundShare } from "@/lib/refund-policy";
 import { PayNowButton } from "@/components/PayNowButton";
 import type { Reservation, Slot } from "@/lib/queries";
@@ -61,7 +62,7 @@ function MyReservations() {
     if (!confirm("End session now? You'll be charged only for the time used.")) return;
     try {
       const res = await endSessionServer({ data: { reservationId: r.id } });
-      toast.success(`Session ended · charged ₹${res.finalPrice} · refund ₹${res.refund}`);
+      toast.success(res.refund > 0 ? `Session ended · charged ₹${res.finalPrice} · ₹${res.refund} refund on its way` : `Session ended · charged ₹${res.finalPrice}`);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not end session");
@@ -81,7 +82,8 @@ function MyReservations() {
 
   async function cancel(id: string, slot: Slot | null, startTime: string) {
     const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
-    const share = cancellationRefundShare(policy, startTime);
+    const r0 = reservations.find((x) => x.id === id);
+    const share = cancellationRefundShare(policy, startTime, Date.now(), r0?.created_at);
     const msg = share === 1
       ? `Cancel this booking? You'll get a full refund (${POLICY_META[policy].label} policy).`
       : share > 0
@@ -97,7 +99,7 @@ function MyReservations() {
     }
     if (error) toast.error(error);
     else {
-      toast.success(refunded > 0 ? `Cancelled — ₹${refunded} refund issued` : "Cancelled");
+      toast.success(refunded > 0 ? `Cancelled — ₹${refunded} refund on its way` : "Cancelled");
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
     }
   }
@@ -144,7 +146,7 @@ function MyReservations() {
               <div key={r.id} className="rounded-2xl bg-card border border-border p-4">
                 <div className="font-semibold">{r.slot?.name ?? "Slot"}</div>
                 <div className="text-xs text-muted-foreground">
-                  {new Date(r.start_time).toLocaleString()} · ₹{r.total_price}
+                  {new Date(r.start_time).toLocaleString()} · ₹{billedAmount(r)}
                 </div>
                 {r.vehicle_plate && (
                   <div className="mt-1 text-[11px] flex items-center gap-1 text-muted-foreground">
@@ -326,7 +328,7 @@ function UpcomingCard({
 }) {
   const slot = r.slot;
   const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
-  const refund = refundEligible(policy, r.start_time);
+  const share = cancellationRefundShare(policy, r.start_time, Date.now(), r.created_at);
   return (
     <div className="rounded-2xl bg-card border border-border p-4">
       <div className="font-bold">{slot?.name}</div>
@@ -343,7 +345,7 @@ function UpcomingCard({
       <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
         <ShieldCheck className="w-3 h-3" />
         <span className="capitalize">{POLICY_META[policy].label}</span> ·{" "}
-        {refund ? "Full refund if cancelled now" : "No refund if cancelled now"}
+        {share === 1 ? "Full refund if cancelled now" : share > 0 ? `${Math.round(share * 100)}% refund if cancelled now` : "No refund if cancelled now"}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Link
@@ -424,7 +426,10 @@ function ReceiptModal({ r, onClose }: { r: ReservationWithSlot; onClose: () => v
           <hr className="my-3 border-dashed border-border" />
           <div className="flex items-baseline justify-between">
             <span className="text-muted-foreground">Total paid</span>
-            <strong className="text-xl font-black">₹{r.total_price}</strong>
+            <strong className="text-xl font-black">₹{billedAmount(r)}</strong>
+            {billedAmount(r) !== Number(r.total_price) && (
+              <div className="text-xs text-muted-foreground">Charged ₹{r.total_price} · refund ₹{(Number(r.total_price) - billedAmount(r)).toFixed(2)}</div>
+            )}
           </div>
           <div className="mt-4 text-[10px] text-muted-foreground text-center">
             Thank you for parking with Usop
