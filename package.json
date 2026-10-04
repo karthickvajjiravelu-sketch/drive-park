@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:db": "RUN_DB_TESTS=1 vitest run tests/money.db.test.ts tests/security.test.ts tests/reservation-overlap.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
