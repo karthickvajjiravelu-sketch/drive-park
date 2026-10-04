@@ -92,3 +92,4 @@ E2E_USER_EMAIL=... E2E_USER_PASSWORD=... bun run e2e   # enables signed-in specs
 ```
 
 Release steps, rollback and monitoring: see `docs/RELEASE.md`.
+
