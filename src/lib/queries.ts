@@ -77,7 +77,12 @@ export type Reservation = {
   created_at?: string;
   /** Billed amount after cancellation/early end (net of refunds). */
   final_price?: number | null;
-  pending_extension?: { minutes: number; new_end: string; extra: number; expires_at: string } | null;
+  pending_extension?: {
+    minutes: number;
+    new_end: string;
+    extra: number;
+    expires_at: string;
+  } | null;
 };
 
 export type Review = {
@@ -100,7 +105,6 @@ export type SlotAvailability = {
   close_time: string;
   closed: boolean;
 };
-
 
 export type Message = {
   id: string;
@@ -209,7 +213,9 @@ export async function withPrivate<T extends { id: string }>(slots: T[]): Promise
   const map = new Map((data ?? []).map((r) => [r.slot_id, r]));
   return slots.map((s) => {
     const p = map.get(s.id);
-    return p ? { ...s, full_address: p.full_address, access_instructions: p.access_instructions } : s;
+    return p
+      ? { ...s, full_address: p.full_address, access_instructions: p.access_instructions }
+      : s;
   });
 }
 
@@ -232,7 +238,11 @@ export const slotQuery = (id: string) =>
   queryOptions({
     queryKey: ["slot", id],
     queryFn: async (): Promise<Slot | null> => {
-      const { data, error } = await supabase.from("slots").select(SLOT_COLUMNS).eq("id", id).maybeSingle();
+      const { data, error } = await supabase
+        .from("slots")
+        .select(SLOT_COLUMNS)
+        .eq("id", id)
+        .maybeSingle();
       if (error) throw error;
       if (!data) return null;
       const [merged] = await withPrivate([data as unknown as Slot]);
@@ -482,8 +492,6 @@ export const lotOccupancyQuery = () =>
   });
 export const useLotOccupancy = () => useQuery(lotOccupancyQuery());
 
-
-
 export const myPaymentMethodsQuery = () =>
   queryOptions({
     queryKey: ["my-payment-methods"],
@@ -511,7 +519,9 @@ export const reservationPaymentStatusQuery = (reservationId: string) =>
       if (!reservationId) return null;
       const { data, error } = await supabase
         .from("payments")
-        .select("id, reservation_id, user_id, payment_method_id, amount_paise, currency, razorpay_order_id, razorpay_payment_id, status, created_at")
+        .select(
+          "id, reservation_id, user_id, payment_method_id, amount_paise, currency, razorpay_order_id, razorpay_payment_id, status, created_at",
+        )
         .eq("reservation_id", reservationId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -520,7 +530,8 @@ export const reservationPaymentStatusQuery = (reservationId: string) =>
       return (data ?? null) as unknown as Payment | null;
     },
   });
-export const useReservationPaymentStatus = (reservationId: string) => useQuery(reservationPaymentStatusQuery(reservationId));
+export const useReservationPaymentStatus = (reservationId: string) =>
+  useQuery(reservationPaymentStatusQuery(reservationId));
 
 export const slotAvailabilityQuery = (slotId: string) =>
   queryOptions({

@@ -212,7 +212,10 @@ function AdminPromos() {
               <AdminButton variant="ghost" onClick={() => edit(p)}>
                 Edit
               </AdminButton>
-              <AdminButton variant={p.active ? "danger" : "primary"} onClick={() => toggleActive(p)}>
+              <AdminButton
+                variant={p.active ? "danger" : "primary"}
+                onClick={() => toggleActive(p)}
+              >
                 {p.active ? "Deactivate" : "Activate"}
               </AdminButton>
             </div>

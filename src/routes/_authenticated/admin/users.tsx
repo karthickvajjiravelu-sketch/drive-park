@@ -24,11 +24,7 @@ function AdminUsers() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
 
-  async function patch(
-    userId: string,
-    values: Partial<AdminProfile>,
-    msg: string,
-  ) {
+  async function patch(userId: string, values: Partial<AdminProfile>, msg: string) {
     const { error } = await supabase.from("profiles").update(values).eq("user_id", userId);
     if (error) return toast.error(error.message);
     toast.success(msg);

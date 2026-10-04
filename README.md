@@ -70,21 +70,25 @@ npm run dev
 ```
 
 ## Tests
+
 - `bun run test` — unit + mocked payment tests (no network, no database). Database tests are skipped.
 - `RUN_DB_TESTS=1 bun run test:db` — database tests (race conditions, refund caps, guards). Needs `PG*` env vars for a role that can create auth users and `SET ROLE` (a test database's `postgres` role). Use Razorpay **test mode** keys only.
 
 Public API reference: see `docs/api.md`.
 
 ## Secrets: what may and may not live in the repo
+
 - **May**: publishable values only — Supabase URL / anon (publishable) key, project ID, the referrer-restricted Google Maps browser key. These are in `.env`, which Lovable Cloud regenerates; do not delete it.
 - **Must not**: Supabase service-role key, Razorpay key secret / webhook secret, `LOVABLE_API_KEY`, database passwords, private keys. Store them in Project Settings -> Secrets (or `.env.local`, which is git-ignored, for local work).
 - `.env.example` lists every variable name with placeholders. Rotate any secret that is ever pasted into chat, an issue, or a commit.
 
 ## End-to-end tests (Playwright, non-payment flows)
+
 ```sh
 bunx playwright install --with-deps chromium
 bun run e2e                                   # starts dev server automatically
 E2E_BASE_URL=https://staging.example bun run e2e
 E2E_USER_EMAIL=... E2E_USER_PASSWORD=... bun run e2e   # enables signed-in specs
 ```
+
 Release steps, rollback and monitoring: see `docs/RELEASE.md`.

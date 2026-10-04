@@ -51,18 +51,16 @@ function AdminDisputes() {
   return (
     <AdminSection title={`Disputes (${visible.length})`}>
       <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={openOnly}
-          onChange={(e) => setOpenOnly(e.target.checked)}
-        />
+        <input type="checkbox" checked={openOnly} onChange={(e) => setOpenOnly(e.target.checked)} />
         Show open only
       </label>
       {visible.map((r) => (
         <AdminCard key={r.id}>
           <div className="flex items-center justify-between gap-2">
             <span className="font-bold">{r.subject}</span>
-            <Pill tone={r.status === "open" ? "warn" : r.status === "resolved" ? "success" : "danger"}>
+            <Pill
+              tone={r.status === "open" ? "warn" : r.status === "resolved" ? "success" : "danger"}
+            >
               {r.status}
             </Pill>
           </div>

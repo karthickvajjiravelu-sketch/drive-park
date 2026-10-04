@@ -127,7 +127,6 @@ function MySlots() {
                   Delete
                 </button>
               </div>
-
             </div>
           </div>
         ))}

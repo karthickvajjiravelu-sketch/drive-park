@@ -86,10 +86,7 @@ function AvailabilityEditor() {
       return;
     }
     setBusy(true);
-    const { error: delError } = await supabase
-      .from("slot_availability")
-      .delete()
-      .eq("slot_id", id);
+    const { error: delError } = await supabase.from("slot_availability").delete().eq("slot_id", id);
     if (delError) {
       setBusy(false);
       toast.error(delError.message);

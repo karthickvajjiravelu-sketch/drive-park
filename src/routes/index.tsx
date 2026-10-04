@@ -7,7 +7,6 @@ import heroImgTall from "@/assets/parking-hero-tall.jpg";
 import heroImgWide from "@/assets/parking-hero-wide.jpg";
 import { ThemeQuickToggle } from "@/components/ThemeToggle";
 
-
 export const Route = createFileRoute("/")({
   component: Landing,
 });

@@ -55,7 +55,9 @@ function AdminListings() {
             key={f.key}
             onClick={() => setFilter(f.key)}
             className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-              filter === f.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              filter === f.key
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {f.label}

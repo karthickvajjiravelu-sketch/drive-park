@@ -39,29 +39,29 @@
 
 :root {
   --radius: 0.875rem;
-  --background: oklch(0.97 0.01 85);        /* #FAF6EF warm cream */
-  --foreground: oklch(0.25 0.03 290);       /* #2A2438 plum-charcoal */
+  --background: oklch(0.97 0.01 85); /* #FAF6EF warm cream */
+  --foreground: oklch(0.25 0.03 290); /* #2A2438 plum-charcoal */
   --card: oklch(0.98 0.008 85);
   --card-foreground: oklch(0.25 0.03 290);
   --popover: oklch(0.98 0.008 85);
   --popover-foreground: oklch(0.25 0.03 290);
-  --primary: oklch(0.38 0.11 285);          /* #443A78 midnight indigo */
+  --primary: oklch(0.38 0.11 285); /* #443A78 midnight indigo */
   --primary-foreground: oklch(0.97 0.01 85); /* cream */
-  --secondary: oklch(0.93 0.02 285);        /* soft cream-indigo */
+  --secondary: oklch(0.93 0.02 285); /* soft cream-indigo */
   --secondary-foreground: oklch(0.25 0.03 290);
   --muted: oklch(0.93 0.015 90);
   --muted-foreground: oklch(0.45 0.03 290);
-  --accent: oklch(0.76 0.15 70);            /* #F2A522 marigold amber */
+  --accent: oklch(0.76 0.15 70); /* #F2A522 marigold amber */
   --accent-foreground: oklch(0.25 0.03 290);
-  --destructive: oklch(0.66 0.18 35);       /* #E85D3D warm coral */
+  --destructive: oklch(0.66 0.18 35); /* #E85D3D warm coral */
   --destructive-foreground: oklch(0.98 0.005 85);
-  --success: oklch(0.62 0.15 155);          /* #1FA35A emerald */
+  --success: oklch(0.62 0.15 155); /* #1FA35A emerald */
   --success-foreground: oklch(0.98 0.005 85);
   --border: oklch(0.88 0.02 285);
   --input: oklch(0.88 0.02 285);
   --ring: oklch(0.38 0.11 285);
-  --surface-dark: oklch(0.22 0.05 285);     /* #241F3D dark indigo */
-  --accent-text: #8A5100;                   /* amber for text/icons on light: 5.98:1 on cream */
+  --surface-dark: oklch(0.22 0.05 285); /* #241F3D dark indigo */
+  --accent-text: #8a5100; /* amber for text/icons on light: 5.98:1 on cream */
 }
 
 .dark {
@@ -87,17 +87,24 @@
   --input: oklch(0.32 0.04 285);
   --ring: oklch(0.55 0.13 285);
   --surface-dark: oklch(0.14 0.03 285);
-  --accent-text: oklch(0.76 0.15 70);       /* amber on dark bg: 8.4:1 */
+  --accent-text: oklch(0.76 0.15 70); /* amber on dark bg: 8.4:1 */
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { font-family: var(--font-sans); }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    font-family: var(--font-sans);
+  }
   :focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
-  .dark :focus-visible { outline-color: var(--color-accent); }
+  .dark :focus-visible {
+    outline-color: var(--color-accent);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -125,7 +132,9 @@
 .card-elevated {
   background: var(--color-card);
   border-radius: 1.25rem;
-  box-shadow: 0 4px 20px -8px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow:
+    0 4px 20px -8px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.04);
   border: 1px solid var(--color-border);
 }
 .price-pill {
@@ -135,27 +144,47 @@
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
   font-size: 0.8rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 .chip {
-  display: inline-flex; align-items: center; gap: 0.25rem;
-  padding: 0.25rem 0.6rem; border-radius: 999px;
-  background: var(--color-muted); font-size: 0.7rem; font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
-.chip-dark { background: rgba(255,255,255,0.12); color: white; }
-.chip-amber { background: var(--color-accent); color: var(--color-accent-foreground); }
-.chip-yellow { background: var(--color-accent); color: var(--color-accent-foreground); }
+.chip-dark {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+.chip-amber {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+.chip-yellow {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
 .hero-scrim {
-  background:
-    linear-gradient(180deg,
-      color-mix(in oklab, var(--surface-dark) 55%, transparent) 0%,
-      color-mix(in oklab, var(--surface-dark) 15%, transparent) 32%,
-      color-mix(in oklab, var(--surface-dark) 55%, transparent) 62%,
-      color-mix(in oklab, var(--surface-dark) 92%, transparent) 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--surface-dark) 55%, transparent) 0%,
+    color-mix(in oklab, var(--surface-dark) 15%, transparent) 32%,
+    color-mix(in oklab, var(--surface-dark) 55%, transparent) 62%,
+    color-mix(in oklab, var(--surface-dark) 92%, transparent) 100%
+  );
 }
-.hero-text-shadow { text-shadow: 0 2px 12px color-mix(in oklab, var(--surface-dark) 70%, transparent), 0 1px 2px color-mix(in oklab, var(--surface-dark) 60%, transparent); }
-.mobile-shell { box-shadow: 0 0 40px rgba(0,0,0,0.06); }
-
+.hero-text-shadow {
+  text-shadow:
+    0 2px 12px color-mix(in oklab, var(--surface-dark) 70%, transparent),
+    0 1px 2px color-mix(in oklab, var(--surface-dark) 60%, transparent);
+}
+.mobile-shell {
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+}
 
 /* Google Maps chrome — Places autocomplete dropdown + info windows follow the theme */
 .pac-container {
@@ -163,7 +192,7 @@
   color: var(--color-card-foreground);
   border: 1px solid var(--color-border);
   border-radius: 0.9rem;
-  box-shadow: 0 12px 32px -12px rgba(0,0,0,0.45);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.45);
   margin-top: 0.35rem;
   overflow: hidden;
   font-family: var(--font-sans);
@@ -179,14 +208,25 @@
   background: var(--color-muted);
 }
 .pac-container .pac-item-query,
-.pac-container .pac-matched { color: var(--color-foreground); }
-.pac-container:after { display: none; }
-.pac-icon { filter: grayscale(1) opacity(0.6); }
+.pac-container .pac-matched {
+  color: var(--color-foreground);
+}
+.pac-container:after {
+  display: none;
+}
+.pac-icon {
+  filter: grayscale(1) opacity(0.6);
+}
 
 .gm-style .gm-style-iw-c,
 .gm-style .gm-style-iw-t::after {
   background: var(--color-card);
-  box-shadow: 0 8px 24px -10px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.5);
 }
-.gm-style .gm-style-iw-d { background: var(--color-card); overflow: hidden !important; }
-.gm-style .gm-style-iw-c button span { background-color: var(--color-muted-foreground) !important; }
+.gm-style .gm-style-iw-d {
+  background: var(--color-card);
+  overflow: hidden !important;
+}
+.gm-style .gm-style-iw-c button span {
+  background-color: var(--color-muted-foreground) !important;
+}
