@@ -870,6 +870,8 @@ export type Database = {
           approval_status: Database["public"]["Enums"]["approval_status"]
           approved_at: string | null
           approx_area: string
+          approx_lat: number | null
+          approx_lng: number | null
           archived: boolean
           base_rate: number
           cancellation_policy: string
@@ -903,6 +905,8 @@ export type Database = {
           approval_status?: Database["public"]["Enums"]["approval_status"]
           approved_at?: string | null
           approx_area: string
+          approx_lat?: number | null
+          approx_lng?: number | null
           archived?: boolean
           base_rate?: number
           cancellation_policy?: string
@@ -936,6 +940,8 @@ export type Database = {
           approval_status?: Database["public"]["Enums"]["approval_status"]
           approved_at?: string | null
           approx_area?: string
+          approx_lat?: number | null
+          approx_lng?: number | null
           archived?: boolean
           base_rate?: number
           cancellation_policy?: string
@@ -1108,6 +1114,8 @@ export type Database = {
         Returns: {
           access_instructions: string
           full_address: string
+          lat: number
+          lng: number
           slot_id: string
         }[]
       }
