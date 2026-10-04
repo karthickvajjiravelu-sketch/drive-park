@@ -29,6 +29,13 @@
       "when": 1791103341074,
       "tag": "0003_payments_cron_token",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791149559122,
+      "tag": "0004_location_privacy",
+      "breakpoints": true
     }
   ]
 }
