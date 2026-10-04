@@ -23,7 +23,7 @@ test.describe("public pages", () => {
 
   test("unknown page shows friendly 404", async ({ page }) => {
     await page.goto("/definitely-not-a-page");
-    await expect(page.getByText("404")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
     await expect(page.getByRole("link", { name: /go home/i })).toBeVisible();
   });
 });
@@ -54,7 +54,8 @@ test.describe("auth form validation", () => {
   });
 
   test("rejects a phone not starting 6-9", async ({ page }) => {
-    await page.goto("/auth");
+    // Phone is only on the sign-up form; /auth defaults to sign-in.
+    await page.goto("/auth?mode=signup");
     const phone = page.locator('input[type="tel"]').first();
     test.skip((await phone.count()) === 0, "phone field not on default auth tab");
     await phone.fill("5123456789");
@@ -68,8 +69,7 @@ async function signIn(page: Page) {
   await page.locator('input[type="email"]').first().fill(EMAIL!);
   await page.locator('input[type="password"]').first().fill(PASSWORD!);
   await page
-    .getByRole("button", { name: /sign in|log in/i })
-    .first()
+    .getByRole("button", { name: "Sign in", exact: true })
     .click();
   await page.waitForURL((u) => !u.pathname.startsWith("/auth"));
 }

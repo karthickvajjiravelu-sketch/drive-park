@@ -69,6 +69,8 @@ npm i
 npm run dev
 ```
 
+> `bun run dev` / `npm run dev` needs `LOVABLE_API_KEY` set (in `.env.local` or the shell), or every page returns 500 — the auth email webhook route reads it when the app loads. A placeholder is fine locally if you do not send email. No other variable is required at startup; Supabase values come from the committed `.env`.
+
 ## Tests
 
 - `bun run test` — unit + mocked payment tests (no network, no database). Database tests are skipped.

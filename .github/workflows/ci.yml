@@ -44,5 +44,10 @@ jobs:
       # Credentialed specs skip when E2E_USER_EMAIL / E2E_USER_PASSWORD are not set.
       - run: bun run e2e
         env:
+          # Fake placeholder so the dev server can boot: src/routes/lovable/email/auth/webhook.ts
+          # calls createAuthEmailHandler() at import time and throws without it, which makes
+          # every page return 500. Not a real key; it exists only in this CI job and e2e
+          # specs never send email. Do not replace with a real secret.
+          LOVABLE_API_KEY: ci-placeholder-not-a-real-key
           E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
           E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
