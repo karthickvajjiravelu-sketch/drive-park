@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-export const orderSchema = z.object({ reservationId: z.string().uuid(), amount: z.number().optional() });
+// Any client "amount" is stripped: the server always derives the amount from the booking.
+export const orderSchema = z.object({ reservationId: z.string().uuid() });
 export const verifySchema = z.object({
   reservationId: z.string().uuid(),
   razorpayOrderId: z.string().min(1),

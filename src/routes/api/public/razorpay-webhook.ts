@@ -7,11 +7,11 @@ const eventSchema = z.object({
   payload: z.object({
     payment: z.object({ entity: z.object({ id: z.string(), order_id: z.string().nullable().optional(), status: z.string().optional() }).passthrough() }).optional(),
     order: z.object({ entity: z.object({ id: z.string() }).passthrough() }).optional(),
-    refund: z.object({ entity: z.object({ payment_id: z.string() }).passthrough() }).optional(),
+    refund: z.object({ entity: z.object({ id: z.string(), payment_id: z.string(), amount: z.number().optional() }).passthrough() }).optional(),
   }).passthrough(),
 });
 
-const RANK: Record<string, number> = { created: 0, failed: 1, authorized: 2, captured: 3, refunded: 4 };
+const RANK: Record<string, number> = { created: 0, failed: 1, authorized: 2, captured: 3, partially_refunded: 4, refunded: 5 };
 
 export const Route = createFileRoute("/api/public/razorpay-webhook")({
   server: {
@@ -40,58 +40,44 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         const { event, payload } = parsed;
         const payment = payload.payment?.entity;
 
-        let next: "authorized" | "captured" | "failed" | "refunded" | null = null;
-        let orderId: string | null = null;
-        let paymentId: string | null = payment?.id ?? null;
-        if (event === "payment.captured" || event === "order.paid") {
-          next = "captured";
-          orderId = payment?.order_id ?? payload.order?.entity.id ?? null;
-        } else if (event === "payment.authorized") {
-          next = "authorized";
-          orderId = payment?.order_id ?? null;
-        } else if (event === "payment.failed") {
-          next = "failed";
-          orderId = payment?.order_id ?? null;
-        } else if (event === "refund.processed") {
-          next = "refunded";
-          paymentId = payload.refund?.entity.payment_id ?? paymentId;
-        } else {
-          return new Response("ignored");
+        // Refund events: match the exact refund row (several refunds per payment are allowed).
+        if (event === "refund.processed" || event === "refund.failed") {
+          const rf = payload.refund?.entity;
+          if (!rf) return new Response("ok");
+          const status = event === "refund.processed" ? "processed" : "failed";
+          const { data: row } = await supabaseAdmin.from("refunds").select("id, payment_id, status").eq("razorpay_refund_id", rf.id).maybeSingle();
+          if (!row || row.status === "processed") return new Response("ok"); // replay or unknown
+          await supabaseAdmin.from("refunds").update({ status, updated_at: new Date().toISOString() }).eq("id", row.id);
+          const { syncPaymentRefunds } = await import("@/lib/payments.server");
+          await syncPaymentRefunds(row.payment_id);
+          return new Response("ok");
         }
 
-        const q = supabaseAdmin.from("payments").select("id, status, user_id, reservation_id");
-        const { data: row } = orderId
-          ? await q.eq("razorpay_order_id", orderId).maybeSingle()
-          : await q.eq("razorpay_payment_id", paymentId ?? "").maybeSingle();
-        if (!row) return new Response("ok"); // unknown order; acknowledge
+        let next: "authorized" | "captured" | "failed" | null = null;
+        if (event === "payment.captured" || event === "order.paid") next = "captured";
+        else if (event === "payment.authorized") next = "authorized";
+        else if (event === "payment.failed") next = "failed";
+        else return new Response("ignored");
+        const orderId = payment?.order_id ?? payload.order?.entity.id ?? null;
+        const paymentId = payment?.id ?? null;
+        if (!orderId) return new Response("ok");
 
-        // Idempotent + monotonic: never downgrade (e.g. captured -> failed)
+        const { data: row } = await supabaseAdmin.from("payments").select("id, status, user_id").eq("razorpay_order_id", orderId).maybeSingle();
+        if (!row) return new Response("ok");
+        // Idempotent + monotonic: never downgrade (captured -> failed) or reprocess a replay.
         if ((RANK[row.status] ?? 0) >= RANK[next]) return new Response("ok");
 
-        await supabaseAdmin
-          .from("payments")
-          .update({
-            status: next,
-            ...(paymentId ? { razorpay_payment_id: paymentId } : {}),
-            gateway_response: JSON.parse(raw),
-          })
-          .eq("id", row.id);
+        await supabaseAdmin.from("payments").update({
+          status: next, ...(paymentId ? { razorpay_payment_id: paymentId } : {}), gateway_response: JSON.parse(raw),
+        }).eq("id", row.id);
 
-        if (next === "captured" || next === "authorized") {
-          await supabaseAdmin
-            .from("reservations")
-            .update({ payment_expires_at: null })
-            .eq("id", row.reservation_id)
-            .neq("status", "cancelled");
+        if (row.status === "created" && (next === "captured" || next === "authorized")) {
+          const { applyCapture } = await import("@/lib/payments.server");
+          await applyCapture(row.id);
         }
-
         if (next === "captured") {
           await supabaseAdmin.from("notifications").insert({
-            user_id: row.user_id,
-            type: "payment",
-            title: "Payment received",
-            body: "Your parking booking is confirmed.",
-            link: "/reservations",
+            user_id: row.user_id, type: "payment", title: "Payment received", body: "Your parking payment was received.", link: "/reservations",
           });
         }
         return new Response("ok");
