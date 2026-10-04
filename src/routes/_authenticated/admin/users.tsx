@@ -41,6 +41,7 @@ function AdminUsers() {
   return (
     <AdminSection title={`Users (${users.length})`}>
       <input
+        aria-label="Search users"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search name, phone or role"

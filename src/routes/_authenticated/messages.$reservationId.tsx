@@ -86,6 +86,7 @@ function MessagesPage() {
         </div>
         {isDriver && hostPhone && (
           <a
+            aria-label="Call host"
             href={`tel:${hostPhone}`}
             className="w-10 h-10 rounded-full bg-primary text-primary-foreground grid place-items-center"
           >
@@ -126,6 +127,7 @@ function MessagesPage() {
         className="border-t border-border bg-background p-3 flex items-center gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         <input
+          aria-label="Message"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message"
@@ -133,6 +135,7 @@ function MessagesPage() {
           className="flex-1 rounded-full border border-input bg-background px-4 py-2.5 text-sm"
         />
         <button
+          aria-label="Send message"
           type="submit"
           disabled={!text.trim()}
           className="w-11 h-11 rounded-full bg-primary text-primary-foreground grid place-items-center disabled:opacity-50"

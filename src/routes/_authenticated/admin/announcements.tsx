@@ -50,6 +50,7 @@ function AdminAnnouncements() {
       <AdminCard>
         <div className="grid gap-2">
           <select
+            aria-label="Audience"
             className={field}
             value={target}
             onChange={(e) => setTarget(e.target.value as typeof target)}
@@ -59,18 +60,21 @@ function AdminAnnouncements() {
             <option value="landowner">Hosts only</option>
           </select>
           <input
+            aria-label="Title"
             className={field}
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <textarea
+            aria-label="Message"
             className={`${field} min-h-24`}
             placeholder="Message"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
           <input
+            aria-label="Link (optional)"
             className={field}
             placeholder="Link (optional, e.g. /map)"
             value={link}

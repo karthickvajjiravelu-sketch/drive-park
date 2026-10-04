@@ -80,7 +80,11 @@ function VehiclesPage() {
     <div className="pb-20">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/profile" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center">
+          <Link
+            aria-label="Back to profile"
+            to="/profile"
+            className="w-9 h-9 rounded-full bg-white/10 grid place-items-center"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <h1 className="text-2xl font-black">My Garage</h1>
