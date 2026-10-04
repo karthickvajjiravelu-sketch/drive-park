@@ -52,6 +52,7 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicPaymentsVerifyRouteImport } from './routes/api/public/payments/verify'
 import { Route as ApiPublicPaymentsOrderRouteImport } from './routes/api/public/payments/order'
+import { Route as ApiPublicCronPaymentsRouteImport } from './routes/api/public/cron/payments'
 import { Route as ApiPublicPaymentsReservationIdStatusRouteImport } from './routes/api/public/payments/$reservationId.status'
 import { Route as ApiPublicBookingsIdActionRouteImport } from './routes/api/public/bookings/$id.$action'
 
@@ -285,6 +286,11 @@ const ApiPublicPaymentsOrderRoute = ApiPublicPaymentsOrderRouteImport.update({
   path: '/api/public/payments/order',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronPaymentsRoute = ApiPublicCronPaymentsRouteImport.update({
+  id: '/api/public/cron/payments',
+  path: '/api/public/cron/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsReservationIdStatusRoute =
   ApiPublicPaymentsReservationIdStatusRouteImport.update({
     id: '/api/public/payments/$reservationId/status',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
   '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
   '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -380,6 +387,7 @@ export interface FileRoutesByTo {
   '/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
   '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
   '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
   '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
   '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/admin/'
+    | '/api/public/cron/payments'
     | '/api/public/payments/order'
     | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/admin'
+    | '/api/public/cron/payments'
     | '/api/public/payments/order'
     | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
@@ -568,6 +579,7 @@ export interface FileRouteTypes {
     | '/_authenticated/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/_authenticated/admin/'
+    | '/api/public/cron/payments'
     | '/api/public/payments/order'
     | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
@@ -589,6 +601,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicCronPaymentsRoute: typeof ApiPublicCronPaymentsRoute
   ApiPublicPaymentsOrderRoute: typeof ApiPublicPaymentsOrderRoute
   ApiPublicPaymentsVerifyRoute: typeof ApiPublicPaymentsVerifyRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -902,6 +915,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsOrderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/payments': {
+      id: '/api/public/cron/payments'
+      path: '/api/public/cron/payments'
+      fullPath: '/api/public/cron/payments'
+      preLoaderRoute: typeof ApiPublicCronPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/$reservationId/status': {
       id: '/api/public/payments/$reservationId/status'
       path: '/api/public/payments/$reservationId/status'
@@ -1007,6 +1027,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicCronPaymentsRoute: ApiPublicCronPaymentsRoute,
   ApiPublicPaymentsOrderRoute: ApiPublicPaymentsOrderRoute,
   ApiPublicPaymentsVerifyRoute: ApiPublicPaymentsVerifyRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
