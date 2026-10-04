@@ -15,6 +15,13 @@
       "when": 1791102609803,
       "tag": "0001_money_handling",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791103054562,
+      "tag": "0002_money_handling_hardening",
+      "breakpoints": true
     }
   ]
 }

@@ -43,6 +43,33 @@ export type Database = {
           },
         ]
       }
+      idempotency_keys: {
+        Row: {
+          created_at: string
+          key: string
+          response: Json | null
+          scope: string
+          status_code: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          response?: Json | null
+          scope: string
+          status_code?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          response?: Json | null
+          scope?: string
+          status_code?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -150,6 +177,48 @@ export type Database = {
           tier?: Database["public"]["Enums"]["lot_tier"]
           total_slots?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_events: {
+        Row: {
+          actor: string
+          amount_paise: number | null
+          created_at: string
+          data: Json | null
+          id: string
+          kind: string
+          payment_id: string | null
+          reason: string | null
+          refund_id: string | null
+          reservation_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          actor?: string
+          amount_paise?: number | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          kind: string
+          payment_id?: string | null
+          reason?: string | null
+          refund_id?: string | null
+          reservation_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          actor?: string
+          amount_paise?: number | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          kind?: string
+          payment_id?: string | null
+          reason?: string | null
+          refund_id?: string | null
+          reservation_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -448,10 +517,15 @@ export type Database = {
       }
       refunds: {
         Row: {
+          actor: string
           amount_paise: number
+          attempts: number
           created_at: string
+          gst_paise: number
           id: string
           idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
           payment_id: string
           razorpay_refund_id: string | null
           reason: string
@@ -461,10 +535,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actor?: string
           amount_paise: number
+          attempts?: number
           created_at?: string
+          gst_paise?: number
           id?: string
           idempotency_key: string
+          last_error?: string | null
+          next_attempt_at?: string
           payment_id: string
           razorpay_refund_id?: string | null
           reason: string
@@ -474,10 +553,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actor?: string
           amount_paise?: number
+          attempts?: number
           created_at?: string
+          gst_paise?: number
           id?: string
           idempotency_key?: string
+          last_error?: string | null
+          next_attempt_at?: string
           payment_id?: string
           razorpay_refund_id?: string | null
           reason?: string
@@ -511,6 +595,8 @@ export type Database = {
           discount_amount: number
           driver_id: string
           end_time: string
+          extended_minutes: number
+          final_price: number | null
           final_price_per_hour: number | null
           grand_total: number | null
           gst_amount: number | null
@@ -535,6 +621,8 @@ export type Database = {
           discount_amount?: number
           driver_id: string
           end_time: string
+          extended_minutes?: number
+          final_price?: number | null
           final_price_per_hour?: number | null
           grand_total?: number | null
           gst_amount?: number | null
@@ -559,6 +647,8 @@ export type Database = {
           discount_amount?: number
           driver_id?: string
           end_time?: string
+          extended_minutes?: number
+          final_price?: number | null
           final_price_per_hour?: number | null
           grand_total?: number | null
           gst_amount?: number | null
@@ -952,6 +1042,24 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          event: string
+          event_id: string
+          received_at: string
+        }
+        Insert: {
+          event: string
+          event_id: string
+          received_at?: string
+        }
+        Update: {
+          event?: string
+          event_id?: string
+          received_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -965,6 +1073,16 @@ export type Database = {
           _title: string
         }
         Returns: number
+      }
+      apply_extension: { Args: { _id: string }; Returns: string }
+      claim_payment: {
+        Args: {
+          _next: string
+          _payment_id: string
+          _response: Json
+          _rzp_payment_id: string
+        }
+        Returns: boolean
       }
       expire_unpaid_reservations: { Args: never; Returns: number }
       get_slots_private: {
@@ -983,6 +1101,20 @@ export type Database = {
         Returns: boolean
       }
       is_privileged: { Args: never; Returns: boolean }
+      log_payment_event: {
+        Args: {
+          _actor: string
+          _amount: number
+          _data?: Json
+          _kind: string
+          _payment_id: string
+          _reason: string
+          _refund_id: string
+          _reservation_id: string
+        }
+        Returns: undefined
+      }
+      payment_rank: { Args: { _s: string }; Returns: number }
       profile_briefs: {
         Args: { _user_ids: string[] }
         Returns: {
@@ -1001,7 +1133,23 @@ export type Database = {
         }
         Returns: number
       }
+      release_promo: { Args: { _reservation_id: string }; Returns: undefined }
       report_review: { Args: { _review_id: string }; Returns: undefined }
+      request_refund: {
+        Args: {
+          _actor: string
+          _amount: number
+          _gst: number
+          _key: string
+          _payment_id: string
+          _reason: string
+          _reservation_id: string
+        }
+        Returns: {
+          created: boolean
+          refund_id: string
+        }[]
+      }
       reservation_balance: { Args: { _id: string }; Returns: number }
       rl_hit: {
         Args: {
@@ -1010,6 +1158,10 @@ export type Database = {
           _user_id: string
           _window_s: number
         }
+        Returns: boolean
+      }
+      set_pending_extension: {
+        Args: { _ext: Json; _id: string }
         Returns: boolean
       }
     }
