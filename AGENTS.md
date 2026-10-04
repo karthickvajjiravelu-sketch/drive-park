@@ -21,3 +21,4 @@
 - bun.lock is the only lockfile; never add package-lock.json — CI runs `bun install --frozen-lockfile`.
 - Route error/404 screens use src/components/RouteError.tsx — users never see raw error text.
 - Playwright specs live in e2e/\*.e2e.ts (not .test/.spec) so vitest never picks them up.
+- Slot exact lat/lng are column-revoked; clients read approx_lat/approx_lng (aliased as lat/lng in SLOT_COLUMNS) and get exact values only via get_slots_private, which requires owner, admin or a fully paid booking — keeps location private until payment.
