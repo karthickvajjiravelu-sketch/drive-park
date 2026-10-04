@@ -46,9 +46,14 @@ import { Route as AuthenticatedAdminDisputesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminAnnouncementsRouteImport } from './routes/_authenticated/admin/announcements'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as ApiPublicBookingsIndexRouteImport } from './routes/api/public/bookings/index'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicPaymentsVerifyRouteImport } from './routes/api/public/payments/verify'
+import { Route as ApiPublicPaymentsOrderRouteImport } from './routes/api/public/payments/order'
+import { Route as ApiPublicPaymentsReservationIdStatusRouteImport } from './routes/api/public/payments/$reservationId.status'
+import { Route as ApiPublicBookingsIdActionRouteImport } from './routes/api/public/bookings/$id.$action'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -249,6 +254,11 @@ const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
   path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBookingsIndexRoute = ApiPublicBookingsIndexRouteImport.update({
+  id: '/api/public/bookings/',
+  path: '/api/public/bookings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalPreviewRoute =
   LovableEmailTransactionalPreviewRouteImport.update({
     id: '/lovable/email/transactional/preview',
@@ -265,6 +275,28 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPaymentsVerifyRoute = ApiPublicPaymentsVerifyRouteImport.update({
+  id: '/api/public/payments/verify',
+  path: '/api/public/payments/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPaymentsOrderRoute = ApiPublicPaymentsOrderRouteImport.update({
+  id: '/api/public/payments/order',
+  path: '/api/public/payments/order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPaymentsReservationIdStatusRoute =
+  ApiPublicPaymentsReservationIdStatusRouteImport.update({
+    id: '/api/public/payments/$reservationId/status',
+    path: '/api/public/payments/$reservationId/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicBookingsIdActionRoute =
+  ApiPublicBookingsIdActionRouteImport.update({
+    id: '/api/public/bookings/$id/$action',
+    path: '/api/public/bookings/$id/$action',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -303,9 +335,14 @@ export interface FileRoutesByFullPath {
   '/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
+  '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/api/public/bookings/': typeof ApiPublicBookingsIndexRoute
+  '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
+  '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -343,9 +380,14 @@ export interface FileRoutesByTo {
   '/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
+  '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/api/public/bookings': typeof ApiPublicBookingsIndexRoute
+  '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
+  '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -386,9 +428,14 @@ export interface FileRoutesById {
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/payments/order': typeof ApiPublicPaymentsOrderRoute
+  '/api/public/payments/verify': typeof ApiPublicPaymentsVerifyRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/api/public/bookings/': typeof ApiPublicBookingsIndexRoute
+  '/api/public/bookings/$id/$action': typeof ApiPublicBookingsIdActionRoute
+  '/api/public/payments/$reservationId/status': typeof ApiPublicPaymentsReservationIdStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -429,9 +476,14 @@ export interface FileRouteTypes {
     | '/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/admin/'
+    | '/api/public/payments/order'
+    | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
+    | '/api/public/bookings/'
+    | '/api/public/bookings/$id/$action'
+    | '/api/public/payments/$reservationId/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -469,9 +521,14 @@ export interface FileRouteTypes {
     | '/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/admin'
+    | '/api/public/payments/order'
+    | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
+    | '/api/public/bookings'
+    | '/api/public/bookings/$id/$action'
+    | '/api/public/payments/$reservationId/status'
   id:
     | '__root__'
     | '/'
@@ -511,9 +568,14 @@ export interface FileRouteTypes {
     | '/_authenticated/slot/$id'
     | '/api/public/razorpay-webhook'
     | '/_authenticated/admin/'
+    | '/api/public/payments/order'
+    | '/api/public/payments/verify'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/transactional/preview'
+    | '/api/public/bookings/'
+    | '/api/public/bookings/$id/$action'
+    | '/api/public/payments/$reservationId/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -527,9 +589,14 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicPaymentsOrderRoute: typeof ApiPublicPaymentsOrderRoute
+  ApiPublicPaymentsVerifyRoute: typeof ApiPublicPaymentsVerifyRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  ApiPublicBookingsIndexRoute: typeof ApiPublicBookingsIndexRoute
+  ApiPublicBookingsIdActionRoute: typeof ApiPublicBookingsIdActionRoute
+  ApiPublicPaymentsReservationIdStatusRoute: typeof ApiPublicPaymentsReservationIdStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -793,6 +860,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bookings/': {
+      id: '/api/public/bookings/'
+      path: '/api/public/bookings'
+      fullPath: '/api/public/bookings/'
+      preLoaderRoute: typeof ApiPublicBookingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/preview': {
       id: '/lovable/email/transactional/preview'
       path: '/lovable/email/transactional/preview'
@@ -812,6 +886,34 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/auth/preview'
       fullPath: '/lovable/email/auth/preview'
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/verify': {
+      id: '/api/public/payments/verify'
+      path: '/api/public/payments/verify'
+      fullPath: '/api/public/payments/verify'
+      preLoaderRoute: typeof ApiPublicPaymentsVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/order': {
+      id: '/api/public/payments/order'
+      path: '/api/public/payments/order'
+      fullPath: '/api/public/payments/order'
+      preLoaderRoute: typeof ApiPublicPaymentsOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/$reservationId/status': {
+      id: '/api/public/payments/$reservationId/status'
+      path: '/api/public/payments/$reservationId/status'
+      fullPath: '/api/public/payments/$reservationId/status'
+      preLoaderRoute: typeof ApiPublicPaymentsReservationIdStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/bookings/$id/$action': {
+      id: '/api/public/bookings/$id/$action'
+      path: '/api/public/bookings/$id/$action'
+      fullPath: '/api/public/bookings/$id/$action'
+      preLoaderRoute: typeof ApiPublicBookingsIdActionRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -905,9 +1007,15 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicPaymentsOrderRoute: ApiPublicPaymentsOrderRoute,
+  ApiPublicPaymentsVerifyRoute: ApiPublicPaymentsVerifyRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  ApiPublicBookingsIndexRoute: ApiPublicBookingsIndexRoute,
+  ApiPublicBookingsIdActionRoute: ApiPublicBookingsIdActionRoute,
+  ApiPublicPaymentsReservationIdStatusRoute:
+    ApiPublicPaymentsReservationIdStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

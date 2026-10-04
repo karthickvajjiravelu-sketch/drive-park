@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { handle, options, HttpError } from "@/lib/api-auth.server";
+import { handle, options, HttpError } from "@/lib/api-auth";
 
 export const Route = createFileRoute("/api/public/bookings/$id/$action")({
   server: {

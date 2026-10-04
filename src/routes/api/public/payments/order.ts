@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { handle, options } from "@/lib/api-auth.server";
+import { handle, options } from "@/lib/api-auth";
 import { orderSchema } from "@/lib/payments.schema";
 
 export const Route = createFileRoute("/api/public/payments/order")({

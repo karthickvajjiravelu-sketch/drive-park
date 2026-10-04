@@ -1,7 +1,8 @@
 // Bearer-token auth + JSON helpers for /api/public/* routes used by the mobile app.
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import type { UserCtx } from "@/lib/payments.server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+type UserCtx = { supabase: SupabaseClient<Database>; userId: string };
 
 const ALLOWED_ORIGINS = ["https://www.usop.in", "https://usop.in"];
 
