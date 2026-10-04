@@ -67,7 +67,10 @@ async function signIn(page: Page) {
   await page.goto("/auth");
   await page.locator('input[type="email"]').first().fill(EMAIL!);
   await page.locator('input[type="password"]').first().fill(PASSWORD!);
-  await page.getByRole("button", { name: /sign in|log in/i }).first().click();
+  await page
+    .getByRole("button", { name: /sign in|log in/i })
+    .first()
+    .click();
   await page.waitForURL((u) => !u.pathname.startsWith("/auth"));
 }
 

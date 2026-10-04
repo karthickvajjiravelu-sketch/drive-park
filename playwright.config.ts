@@ -13,8 +13,27 @@ export default defineConfig({
     ? undefined
     : { command: "bun run dev", url: baseURL, reuseExistingServer: true, timeout: 120_000 },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
-    { name: "mobile-375", use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true } },
-    { name: "mobile-414", use: { ...devices["Desktop Chrome"], viewport: { width: 414, height: 896 }, isMobile: true, hasTouch: true } },
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
+    {
+      name: "mobile-375",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
+    {
+      name: "mobile-414",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 414, height: 896 },
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
   ],
 });
