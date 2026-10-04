@@ -8,6 +8,13 @@
       "when": 1791101595775,
       "tag": "0000_security_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791102609803,
+      "tag": "0001_money_handling",
+      "breakpoints": true
     }
   ]
 }
