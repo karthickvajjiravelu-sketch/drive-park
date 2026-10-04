@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { billedAmount } from "@/lib/money";
 import { useEffect } from "react";
 import { useOwnerBookings } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,7 +82,7 @@ function Bookings() {
                       {b.status}
                     </span>
                   </div>
-                  <div className="mt-1 text-sm font-bold">₹{b.total_price}</div>
+                  <div className="mt-1 text-sm font-bold">₹{billedAmount(b)}</div>
                 </div>
               ))}
             </div>

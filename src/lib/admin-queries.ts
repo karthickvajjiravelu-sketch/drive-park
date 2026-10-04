@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
+import { billedAmount } from "@/lib/money";
 import { supabase } from "@/integrations/supabase/client";
 import { SLOT_COLUMNS, withPrivate } from "@/lib/queries";
 import type { Database } from "@/integrations/supabase/types";
@@ -159,12 +160,11 @@ export const adminOverviewQuery = () =>
         supabase.from("slots").select("approval_status"),
         supabase.from("support_requests").select("status"),
         supabase.from("reviews").select("reported,hidden"),
-        supabase.from("reservations").select("start_time,status,total_price,grand_total"),
+        supabase.from("reservations").select("start_time,status,total_price,final_price"),
       ]);
       const rows = res.data ?? [];
-      const paid = rows.filter((r) => r.status !== "cancelled");
-      const amount = (r: { total_price: number; grand_total: number | null }) =>
-        Number(r.grand_total ?? r.total_price ?? 0);
+      const paid = rows.filter((r) => billedAmount(r) > 0);
+      const amount = billedAmount;
       return {
         users: profiles.data?.length ?? 0,
         hosts: (profiles.data ?? []).filter((p) => p.role === "landowner").length,
