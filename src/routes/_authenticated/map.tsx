@@ -13,7 +13,6 @@ import { SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { toast } from "sonner";
 import { ThemeQuickToggle } from "@/components/ThemeToggle";
 
-
 const SlotMap = lazy(() => import("@/components/SlotMap"));
 
 export const Route = createFileRoute("/_authenticated/map")({
@@ -185,7 +184,6 @@ function MapPage() {
             Filter
           </button>
           <ThemeQuickToggle className="bg-white/10 text-white shrink-0" />
-
         </div>
 
         {showFilters && (
