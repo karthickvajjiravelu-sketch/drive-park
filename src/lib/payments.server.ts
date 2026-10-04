@@ -154,6 +154,7 @@ export async function verifyPayment(
       });
     }
 
+    return { success: true, paymentId: razorpayPaymentId, status: paymentDetails.status };
 }
 
 export async function paymentStatus(context: UserCtx, data: { reservationId: string }) {
