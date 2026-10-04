@@ -23,7 +23,7 @@ export const sendBookingConfirmation = createServerFn({ method: "POST" })
     const { data: reservation, error } = await supabase
       .from("reservations")
       .select(
-        "id, start_time, end_time, grand_total, total_price, vehicle_plate, slots(name, approx_area, full_address, access_instructions)",
+        "id, start_time, end_time, grand_total, total_price, vehicle_plate, slot_id, slots(name, approx_area)",
       )
       .eq("id", data.reservationId)
       .single();
