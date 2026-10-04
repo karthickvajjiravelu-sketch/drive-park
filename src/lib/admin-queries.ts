@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SLOT_COLUMNS } from "@/lib/queries";
 import type { Database } from "@/integrations/supabase/types";
 
 export type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
