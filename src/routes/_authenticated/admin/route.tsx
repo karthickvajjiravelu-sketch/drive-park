@@ -1,3 +1,4 @@
+import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck } from "lucide-react";
@@ -17,6 +18,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
     if (!data) throw redirect({ to: "/home" });
   },
   component: AdminLayout,
+  errorComponent: RouteError,
+  notFoundComponent: RouteNotFound,
 });
 
 const tabs = [

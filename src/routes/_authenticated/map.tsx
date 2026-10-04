@@ -1,3 +1,4 @@
+import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +18,8 @@ const SlotMap = lazy(() => import("@/components/SlotMap"));
 
 export const Route = createFileRoute("/_authenticated/map")({
   component: MapPage,
+  errorComponent: RouteError,
+  notFoundComponent: RouteNotFound,
 });
 
 const CHENNAI: [number, number] = [13.05, 80.24];

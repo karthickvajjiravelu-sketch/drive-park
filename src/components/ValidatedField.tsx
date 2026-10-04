@@ -30,6 +30,7 @@ export function ValidatedField({
   const [touched, setTouched] = useState(false);
   const localError = schema && (touched || value) ? validate(schema, value) : null;
   const shown = error ?? (touched ? localError : null);
+  const msgId = `${inputProps.id ?? inputProps.name ?? label.replace(/\W+/g, "-").toLowerCase()}-msg`;
 
   return (
     <label className="block">
@@ -45,17 +46,20 @@ export function ValidatedField({
           if (formatOnBlur) onChange(formatOnBlur(value));
         }}
         aria-invalid={!!shown}
+        aria-describedby={shown || hint ? msgId : undefined}
         className={`mt-1 w-full rounded-xl border bg-background px-4 py-3 text-base outline-none focus:ring-2 ${
           shown
             ? "border-destructive focus:border-destructive focus:ring-destructive/30"
             : "border-input focus:border-primary focus:ring-primary/30"
         }`}
       />
-      {shown ? (
-        <span className="mt-1 block text-xs font-medium text-destructive">{shown}</span>
-      ) : hint ? (
-        <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
-      ) : null}
+      <span id={msgId} aria-live="polite" className="block">
+        {shown ? (
+          <span className="mt-1 block text-xs font-medium text-destructive">{shown}</span>
+        ) : hint ? (
+          <span className="mt-1 block text-xs text-muted-foreground">{hint}</span>
+        ) : null}
+      </span>
     </label>
   );
 }

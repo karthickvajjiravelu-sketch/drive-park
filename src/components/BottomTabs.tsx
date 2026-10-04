@@ -17,16 +17,19 @@ export function BottomTabs({ role }: { role: Profile["role"] }) {
         ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[var(--surface-dark)] text-white z-50">
-      <div className="flex items-center justify-around py-3 px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <nav
+      aria-label="Main"
+      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[var(--surface-dark)] text-white z-50"
+    >
+      <div className="flex items-center justify-around py-2 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {items.map(({ to, icon: Icon, label }) => (
           <Link
             key={to}
             to={to}
-            className="flex flex-col items-center gap-1 flex-1 py-1 text-white/60 [&.active]:text-primary"
-            activeProps={{ className: "active" }}
+            className="flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 flex-1 py-1 rounded-xl text-white/70 [&.active]:text-accent"
+            activeProps={{ className: "active", "aria-current": "page" }}
           >
-            <Icon className="w-6 h-6" />
+            <Icon className="w-6 h-6" aria-hidden />
             <span className="text-[10px] font-semibold uppercase tracking-wide">{label}</span>
           </Link>
         ))}

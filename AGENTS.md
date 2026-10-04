@@ -16,3 +16,6 @@
 - Unpaid bookings carry payment_expires_at (15 min); expiry is applied lazily on each new booking, no cron.
 - A booking may have several payments and refunds; "amount due" = price − (paid − refunds) via reservation_balance(), and all refunds go through refundReservation() with a unique idempotency key — prevents double charges and double refunds.
 - Extensions on paid bookings are stored as pending_extension and only applied by applyCapture() after the extra payment confirms — end time never moves unpaid.
+- bun.lock is the only lockfile; never add package-lock.json — CI runs `bun install --frozen-lockfile`.
+- Route error/404 screens use src/components/RouteError.tsx — users never see raw error text.
+- Playwright specs live in e2e/*.e2e.ts (not .test/.spec) so vitest never picks them up.
