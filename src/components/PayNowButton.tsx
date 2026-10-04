@@ -4,8 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CreditCard, Check, Loader2 } from "lucide-react";
 import { useRazorpay } from "@/lib/razorpay";
-import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
-import { reservationPaymentStatusQuery, useProfile } from "@/lib/queries";
+import { createRazorpayOrder, verifyRazorpayPayment, getPaymentStatus } from "@/lib/razorpay.functions";
+import { useProfile } from "@/lib/queries";
 
 type Props = {
   reservationId: string;
@@ -22,14 +22,21 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
   const createOrder = useServerFn(createRazorpayOrder);
   const verifyPayment = useServerFn(verifyRazorpayPayment);
 
-  const { data: payment } = useQuery(reservationPaymentStatusQuery(reservationId));
-  const paid = payment?.status === "captured" || payment?.status === "authorized";
+  const fetchStatus = useServerFn(getPaymentStatus);
+  const { data: payment } = useQuery({
+    queryKey: ["reservation-payment", reservationId],
+    queryFn: () => fetchStatus({ data: { reservationId } }),
+    enabled: !!reservationId,
+  });
+  // The server works out what is still owed (booking balance + any pending extension).
+  const due = payment ? payment.amountDuePaise / 100 : amount;
+  const paid = !!payment?.paid;
 
   if (paid) {
     return (
       <div className="mt-2 w-full rounded-xl bg-[var(--success,theme(colors.emerald.600))]/10 border border-primary/30 py-3 font-bold flex items-center justify-center gap-2 text-sm">
         <Check className="w-4 h-4" />
-        Payment received · ₹{((payment?.amount_paise ?? 0) / 100).toFixed(2)}
+        Payment received
       </div>
     );
   }
@@ -49,7 +56,7 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
   const pay = async () => {
     setBusy(true);
     try {
-      const order = await createOrder({ data: { reservationId, amount } });
+      const order = await createOrder({ data: { reservationId } });
       if (!ready || typeof window === "undefined" || !window.Razorpay) {
         throw new Error("Payment gateway is still loading. Please try again.");
       }
@@ -76,7 +83,8 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
                   razorpaySignature: response.razorpay_signature,
                 },
               });
-              toast.success("Payment successful — booking confirmed");
+              toast.success(payment?.pendingExtension ? "Payment successful — extension confirmed" : "Payment successful — booking confirmed");
+              qc.invalidateQueries({ queryKey: ["my-reservations"] });
             } catch (e) {
               toast.error(e instanceof Error ? e.message : "Could not verify payment");
             } finally {
@@ -102,7 +110,7 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
       className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
     >
       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-      Pay ₹{amount.toFixed(2)} · UPI or card
+      {payment?.pendingExtension ? "Pay" : "Pay"} ₹{due.toFixed(2)}{payment?.pendingExtension ? " to confirm extension" : " · UPI or card"}
     </button>
   );
 }
