@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /map
+Disallow: /slot/
+Disallow: /reservations
+Disallow: /bookings
+Disallow: /my-slots
+Disallow: /profile
+Disallow: /home
+Disallow: /wallet
+Disallow: /earnings
+Disallow: /messages/
+Disallow: /reset-password
+
+Sitemap: https://www.usop.in/sitemap.xml
