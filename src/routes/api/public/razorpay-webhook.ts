@@ -77,6 +77,14 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
           })
           .eq("id", row.id);
 
+        if (next === "captured" || next === "authorized") {
+          await supabaseAdmin
+            .from("reservations")
+            .update({ payment_expires_at: null })
+            .eq("id", row.reservation_id)
+            .neq("status", "cancelled");
+        }
+
         if (next === "captured") {
           await supabaseAdmin.from("notifications").insert({
             user_id: row.user_id,

@@ -45,12 +45,14 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
 
     const { data: reservation, error } = await context.supabase
       .from("reservations")
-      .select("id, total_price, status, driver_id")
+      .select("id, total_price, status, driver_id, payment_expires_at")
       .eq("id", reservationId)
       .single();
     if (error || !reservation) throw new Error("Reservation not found");
     if (reservation.driver_id !== context.userId) throw new Error("Unauthorized");
     if (reservation.status === "cancelled") throw new Error("Reservation is cancelled");
+    if (reservation.payment_expires_at && new Date(reservation.payment_expires_at).getTime() < Date.now())
+      throw new Error("The payment window for this booking has expired. Please book again.");
 
     // Amount always comes from the server-side reservation, never the client.
     const amountPaise = Math.round(Number(reservation.total_price) * 100);
@@ -123,7 +125,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
 
     const { data: paymentRow, error: findError } = await context.supabase
       .from("payments")
-      .select("id")
+      .select("id, reservation_id")
       .eq("razorpay_order_id", razorpayOrderId)
       .eq("user_id", context.userId)
       .single();
@@ -143,6 +145,12 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       .eq("id", paymentRow.id)
       .eq("user_id", context.userId);
     if (updateError) throw updateError;
+    // Payment received: release the payment hold so the booking is not auto-cancelled.
+    await supabaseAdmin
+      .from("reservations")
+      .update({ payment_expires_at: null })
+      .eq("id", paymentRow.reservation_id)
+      .neq("status", "cancelled");
 
     // Save tokenized instrument for future use if the gateway returned a token and none was reused
     if (!paymentMethodId && paymentDetails.token_id) {
