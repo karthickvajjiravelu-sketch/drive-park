@@ -68,3 +68,9 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Tests
+- `bun run test` — unit + mocked payment tests (no network, no database). Database tests are skipped.
+- `RUN_DB_TESTS=1 bun run test:db` — database tests (race conditions, refund caps, guards). Needs `PG*` env vars for a role that can create auth users and `SET ROLE` (a test database's `postgres` role). Use Razorpay **test mode** keys only.
+
+Public API reference: see `docs/api.md`.
