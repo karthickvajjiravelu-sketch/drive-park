@@ -197,6 +197,7 @@ export type Database = {
           gateway_response: Json | null
           id: string
           payment_method_id: string | null
+          purpose: string
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
@@ -215,6 +216,7 @@ export type Database = {
           gateway_response?: Json | null
           id?: string
           payment_method_id?: string | null
+          purpose?: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
@@ -233,6 +235,7 @@ export type Database = {
           gateway_response?: Json | null
           id?: string
           payment_method_id?: string | null
+          purpose?: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
@@ -422,8 +425,87 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          bucket: string
+          count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          count?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      refunds: {
+        Row: {
+          amount_paise: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          payment_id: string
+          razorpay_refund_id: string | null
+          reason: string
+          reservation_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paise: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          payment_id: string
+          razorpay_refund_id?: string | null
+          reason: string
+          reservation_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paise?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          payment_id?: string
+          razorpay_refund_id?: string | null
+          reason?: string
+          reservation_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refunds_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refunds_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
+          amount_charged: number | null
           base_rate: number | null
           created_at: string
           discount_amount: number
@@ -434,6 +516,7 @@ export type Database = {
           gst_amount: number | null
           id: string
           payment_expires_at: string | null
+          pending_extension: Json | null
           price_breakdown: Json | null
           promo_code: string | null
           rate_type: Database["public"]["Enums"]["rate_type"]
@@ -446,6 +529,7 @@ export type Database = {
           vehicle_plate: string | null
         }
         Insert: {
+          amount_charged?: number | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -456,6 +540,7 @@ export type Database = {
           gst_amount?: number | null
           id?: string
           payment_expires_at?: string | null
+          pending_extension?: Json | null
           price_breakdown?: Json | null
           promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
@@ -468,6 +553,7 @@ export type Database = {
           vehicle_plate?: string | null
         }
         Update: {
+          amount_charged?: number | null
           base_rate?: number | null
           created_at?: string
           discount_amount?: number
@@ -478,6 +564,7 @@ export type Database = {
           gst_amount?: number | null
           id?: string
           payment_expires_at?: string | null
+          pending_extension?: Json | null
           price_breakdown?: Json | null
           promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
@@ -915,6 +1002,16 @@ export type Database = {
         Returns: number
       }
       report_review: { Args: { _review_id: string }; Returns: undefined }
+      reservation_balance: { Args: { _id: string }; Returns: number }
+      rl_hit: {
+        Args: {
+          _bucket: string
+          _limit: number
+          _user_id: string
+          _window_s: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

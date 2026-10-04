@@ -14,3 +14,5 @@
 - Admin-only columns (profile verification/suspension/role, slot approval/rating) are enforced by is_privileged() guard triggers, not by UI.
 - Payment logic lives in src/lib/payments.server.ts, shared by server fns and /api/public/payments/* (Bearer JWT via src/lib/api-auth.ts) so the mobile app uses the same path.
 - Unpaid bookings carry payment_expires_at (15 min); expiry is applied lazily on each new booking, no cron.
+- A booking may have several payments and refunds; "amount due" = price − (paid − refunds) via reservation_balance(), and all refunds go through refundReservation() with a unique idempotency key — prevents double charges and double refunds.
+- Extensions on paid bookings are stored as pending_extension and only applied by applyCapture() after the extra payment confirms — end time never moves unpaid.

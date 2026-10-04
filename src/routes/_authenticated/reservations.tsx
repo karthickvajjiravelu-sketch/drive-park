@@ -19,6 +19,7 @@ import {
   Star,
 } from "lucide-react";
 import { POLICY_META, refundEligible } from "@/lib/amenities";
+import { cancellationRefundShare } from "@/lib/refund-policy";
 import { PayNowButton } from "@/components/PayNowButton";
 import type { Reservation, Slot } from "@/lib/queries";
 
@@ -70,8 +71,9 @@ function MyReservations() {
   async function extend(r: ReservationWithSlot, minutes: number) {
     try {
       const res = await extendServer({ data: { reservationId: r.id, minutes } });
-      toast.success(`+${minutes} min · ₹${res.extraCost}`);
+      toast.success(res.needsPayment ? `Pay ₹${res.extraCost} within 15 min to confirm +${minutes} min` : `+${minutes} min · ₹${res.extraCost}`);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
+      qc.invalidateQueries({ queryKey: ["reservation-payment", r.id] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not extend");
     }
@@ -79,20 +81,23 @@ function MyReservations() {
 
   async function cancel(id: string, slot: Slot | null, startTime: string) {
     const policy = (slot?.cancellation_policy ?? "moderate") as "flexible" | "moderate" | "strict";
-    const refund = refundEligible(policy, startTime);
-    const msg = refund
+    const share = cancellationRefundShare(policy, startTime);
+    const msg = share === 1
       ? `Cancel this booking? You'll get a full refund (${POLICY_META[policy].label} policy).`
-      : `Cancel this booking? No refund per ${POLICY_META[policy].label} policy (${POLICY_META[policy].hoursBefore}h notice required).`;
+      : share > 0
+        ? `Cancel this booking? You'll get a ${Math.round(share * 100)}% refund (${POLICY_META[policy].label} policy).`
+        : `Cancel this booking? No refund per ${POLICY_META[policy].label} policy (${POLICY_META[policy].hoursBefore}h notice required).`;
     if (!confirm(msg)) return;
     let error: string | null = null;
+    let refunded = 0;
     try {
-      await cancelServer({ data: { reservationId: id } });
+      refunded = (await cancelServer({ data: { reservationId: id } })).refund;
     } catch (e) {
       error = e instanceof Error ? e.message : "Could not cancel";
     }
     if (error) toast.error(error);
     else {
-      toast.success(refund ? "Cancelled — refund issued" : "Cancelled");
+      toast.success(refunded > 0 ? `Cancelled — ₹${refunded} refund issued` : "Cancelled");
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
     }
   }
@@ -278,6 +283,9 @@ function ActiveCard({
       >
         End session (prorated)
       </button>
+      {(r as { pending_extension?: unknown }).pending_extension ? (
+        <PayNowButton reservationId={r.id} amount={0} slotName={slot.name} />
+      ) : null}
     </div>
   );
 }

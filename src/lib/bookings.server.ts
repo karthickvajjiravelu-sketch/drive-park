@@ -4,7 +4,10 @@ import { createBookingSchema, type CreateBookingInput } from "@/lib/bookings.sch
 import { calculatePrice, type LocationTier, type SlotType } from "@/lib/pricing";
 import { checkWithinHours } from "@/lib/availability";
 import type { SlotAvailability } from "@/lib/queries";
+import { cancellationRefundShare, earlyEndCharge, refundable } from "@/lib/refund-policy";
+import type { CancellationPolicy } from "@/lib/amenities";
 
+export const MAX_UNPAID_HOLDS = 2;
 export const PAYMENT_HOLD_MS = 15 * 60 * 1000;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 const UNIT_MS = { hourly: 3600e3, daily: 86400e3, monthly: 30 * 86400e3 } as const;
@@ -48,7 +51,13 @@ async function pricingInputs(db: Awaited<ReturnType<typeof admin>>, slot: {
 
 export async function createBooking(userId: string, input: CreateBookingInput) {
   const db = await admin();
+  const { rateLimit } = await import("@/lib/payments.server");
+  await rateLimit(userId, "bookings_create", 5);
   await db.rpc("expire_unpaid_reservations");
+  const { count: holds } = await db.from("reservations").select("id", { count: "exact", head: true })
+    .eq("driver_id", userId).neq("status", "cancelled").not("payment_expires_at", "is", null);
+  if ((holds ?? 0) >= MAX_UNPAID_HOLDS)
+    throw new BookingError("Please pay for or cancel your unpaid bookings before making another.", 429);
 
   const { data: slot } = await db.from("slots")
     .select("id, owner_id, status, archived, is_available, approval_status, slot_type, base_rate, lot_id, approx_area, hourly_rate, daily_rate, monthly_rate")
@@ -99,7 +108,7 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
     driver_id: userId, slot_id: slot.id,
     start_time: start.toISOString(), end_time: end.toISOString(),
     status, rate_type: input.rateType,
-    total_price: grandTotal, grand_total: grandTotal,
+    total_price: grandTotal, grand_total: grandTotal, amount_charged: grandTotal,
     subtotal_amount: subtotal, gst_amount: breakdown ? gst : null,
     base_rate: breakdown?.baseRate ?? Number(slot[`${input.rateType}_rate`]),
     final_price_per_hour: breakdown?.finalPricePerHour ?? null,
@@ -125,7 +134,7 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
     const discounted = Math.max(0, Math.round(grandTotal - d));
     await db.from("reservations").update({
       discount_amount: d, promo_code: input.promoCode.toUpperCase(),
-      total_price: discounted, grand_total: discounted,
+      total_price: discounted, grand_total: discounted, amount_charged: discounted,
       ...(discounted === 0 ? { payment_expires_at: null } : {}),
     }).eq("id", row.id);
     return { reservationId: row.id, grandTotal: discounted };
@@ -136,13 +145,20 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
 async function ownReservation(userId: string, id: string) {
   const db = await admin();
   const { data: r } = await db.from("reservations")
-    .select("id, driver_id, slot_id, start_time, end_time, status, total_price, rate_type, price_breakdown")
+    .select("id, driver_id, slot_id, start_time, end_time, status, total_price, rate_type, price_breakdown, payment_expires_at")
     .eq("id", id).maybeSingle();
   if (!r || r.driver_id !== userId) throw new BookingError("Booking not found", 404);
   return { db, r };
 }
 
-/** End an active session early; charge pro-rata for time used. */
+async function isPaid(id: string) {
+  const db = await admin();
+  const { count } = await db.from("payments").select("id", { count: "exact", head: true })
+    .eq("reservation_id", id).in("status", ["authorized", "captured", "partially_refunded"]);
+  return (count ?? 0) > 0;
+}
+
+/** End an active session early; keep the pro-rata amount (1-hour minimum) and refund the rest. */
 export async function endSession(userId: string, id: string) {
   const { db, r } = await ownReservation(userId, id);
   if (r.status !== "active" && !(r.status === "upcoming" && new Date(r.start_time).getTime() <= Date.now()))
@@ -150,19 +166,31 @@ export async function endSession(userId: string, id: string) {
   const start = new Date(r.start_time).getTime();
   const end = new Date(r.end_time).getTime();
   const now = Math.min(Date.now(), end);
-  const ratio = Math.min(1, Math.max(0, (now - start) / Math.max(1, end - start)));
-  const finalPrice = Math.round(Number(r.total_price) * ratio);
+  const total = Number(r.total_price);
+  const finalPrice = earlyEndCharge(total, start, end, now);
+  const refund = refundable(total - finalPrice);
+  const kept = total - refund;
   await db.from("reservations").update({
-    status: "completed", end_time: new Date(now).toISOString(), total_price: finalPrice, grand_total: finalPrice,
+    status: "completed", end_time: new Date(Math.max(now, start + 60e3)).toISOString(),
+    total_price: kept, grand_total: kept, pending_extension: null,
   }).eq("id", id);
-  return { finalPrice, refund: Number(r.total_price) - finalPrice };
+  let refunded = 0;
+  if (refund > 0 && (await isPaid(id))) {
+    const { refundReservation } = await import("@/lib/payments.server");
+    refunded = (await refundReservation(id, refund, "Session ended early", `end:${id}`)).refundedPaise / 100;
+  }
+  return { finalPrice: kept, refund: refunded };
 }
 
-/** Extend a booking; extra time is priced at the booking's locked per-hour rate. */
+/**
+ * Request an extension. Paid bookings must pay the extra first; end_time only moves once that
+ * payment is confirmed (see applyCapture). The request expires after the payment hold window.
+ */
 export async function extendBooking(userId: string, id: string, minutes: number) {
   if (!Number.isInteger(minutes) || minutes < 15 || minutes > 240) throw new BookingError("Invalid extension");
   const { db, r } = await ownReservation(userId, id);
   if (r.status !== "active" && r.status !== "upcoming") throw new BookingError("This booking can't be extended");
+  if (r.payment_expires_at) throw new BookingError("Please pay for this booking before extending it");
   const pb = r.price_breakdown as { finalPricePerHour?: number } | null;
   let perHour = pb?.finalPricePerHour;
   if (!perHour) {
@@ -172,20 +200,45 @@ export async function extendBooking(userId: string, id: string, minutes: number)
   }
   const extra = Math.round(perHour * (minutes / 60) * (pb?.finalPricePerHour ? 1.18 : 1));
   const newEnd = new Date(new Date(r.end_time).getTime() + minutes * 60e3).toISOString();
-  const { error } = await db.from("reservations").update({
-    end_time: newEnd, total_price: Number(r.total_price) + extra, grand_total: Number(r.total_price) + extra,
-  }).eq("id", id);
-  if (error) {
-    if (/no_overlap|exclusion/i.test(error.message)) throw new BookingError("The slot is booked right after you", 409);
-    throw new BookingError("Could not extend", 500);
+
+  const { count: clash } = await db.from("reservations").select("id", { count: "exact", head: true })
+    .eq("slot_id", r.slot_id).neq("id", id).neq("status", "cancelled")
+    .lt("start_time", newEnd).gt("end_time", r.end_time);
+  if ((clash ?? 0) > 0) throw new BookingError("The slot is booked right after you", 409);
+
+  if (extra <= 0 || !(await isPaid(id))) {
+    // Free booking or extension: apply now.
+    const price = Number(r.total_price) + extra;
+    const { error } = await db.from("reservations").update({ end_time: newEnd, total_price: price, grand_total: price, pending_extension: null }).eq("id", id);
+    if (error) {
+      if (/no_overlap|exclusion/i.test(error.message)) throw new BookingError("The slot is booked right after you", 409);
+      throw new BookingError("Could not extend", 500);
+    }
+    return { extraCost: extra, endTime: newEnd, needsPayment: false };
   }
-  return { extraCost: extra, endTime: newEnd };
+  await db.from("reservations").update({
+    pending_extension: { minutes, new_end: newEnd, extra, expires_at: new Date(Date.now() + PAYMENT_HOLD_MS).toISOString() },
+  }).eq("id", id);
+  return { extraCost: extra, endTime: newEnd, needsPayment: true };
 }
 
+/** Cancel before start; refund per the slot's cancellation policy. */
 export async function cancelBooking(userId: string, id: string) {
   const { db, r } = await ownReservation(userId, id);
   if (r.status !== "upcoming" || new Date(r.start_time).getTime() <= Date.now())
     throw new BookingError("Only upcoming bookings can be cancelled");
-  await db.from("reservations").update({ status: "cancelled", payment_expires_at: null }).eq("id", id);
-  return { ok: true };
+  const paid = await isPaid(id);
+  let refund = 0;
+  if (paid) {
+    const { data: slot } = await db.from("slots").select("cancellation_policy").eq("id", r.slot_id).single();
+    const share = cancellationRefundShare((slot?.cancellation_policy ?? "flexible") as CancellationPolicy, r.start_time);
+    refund = refundable(Number(r.total_price) * share);
+  }
+  await db.from("reservations").update({ status: "cancelled", payment_expires_at: null, pending_extension: null }).eq("id", id);
+  let refunded = 0;
+  if (refund > 0) {
+    const { refundReservation } = await import("@/lib/payments.server");
+    refunded = (await refundReservation(id, refund, "Cancelled by driver", `cancel:${id}`)).refundedPaise / 100;
+  }
+  return { ok: true, refund: refunded };
 }
