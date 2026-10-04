@@ -70,6 +70,24 @@ export type Database = {
         }
         Relationships: []
       }
+      internal_tokens: {
+        Row: {
+          created_at: string
+          name: string
+          token_sha256: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          token_sha256: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          token_sha256?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -1162,6 +1180,10 @@ export type Database = {
       }
       set_pending_extension: {
         Args: { _ext: Json; _id: string }
+        Returns: boolean
+      }
+      verify_internal_token: {
+        Args: { _name: string; _token: string }
         Returns: boolean
       }
     }
