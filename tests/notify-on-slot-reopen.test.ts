@@ -30,7 +30,9 @@ async function q(sql: string, params: unknown[] = []) {
   return client.query(sql, params);
 }
 
+const DB_ON = process.env.RUN_DB_TESTS === "1" && !!process.env.PGHOST;
 beforeAll(async () => {
+  if (!DB_ON) return;
   if (!process.env.PGHOST) {
     throw new Error("PGHOST not set — this test needs Supabase DB access.");
   }
@@ -53,6 +55,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (!DB_ON) return;
   // Clean up everything we created, in FK-safe order.
   await q(`DELETE FROM public.notifications WHERE user_id = ANY($1::uuid[])`, [
     [driverA, driverB, driverC],
@@ -64,7 +67,7 @@ afterAll(async () => {
   await client.end();
 });
 
-describe("notify_on_slot_reopen trigger", () => {
+describe.skipIf(!DB_ON)("notify_on_slot_reopen trigger", () => {
   it("notifies exactly the drivers waitlisted for the reopened slot", async () => {
     // Flip status full -> open, which fires the trigger.
     await q(`UPDATE public.slots SET status = 'open' WHERE id = $1`, [slotId]);
