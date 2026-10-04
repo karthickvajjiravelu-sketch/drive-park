@@ -85,6 +85,8 @@ export function PayNowButton({ reservationId, amount, slotName }: Props) {
               });
               toast.success(payment?.pendingExtension ? "Payment successful — extension confirmed" : "Payment successful — booking confirmed");
               qc.invalidateQueries({ queryKey: ["my-reservations"] });
+              // Paid bookings unlock the exact address and location — refetch the slot.
+              qc.invalidateQueries({ queryKey: ["slot"] });
             } catch (e) {
               toast.error(e instanceof Error ? e.message : "Could not verify payment");
             } finally {
