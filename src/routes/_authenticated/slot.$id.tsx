@@ -32,6 +32,7 @@ import {
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPricingContext } from "@/lib/pricing.functions";
+import { createBookingFn } from "@/lib/bookings.functions";
 import { calculatePrice, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { PriceBreakdownCard, DemandBadge } from "@/components/PriceBreakdownCard";
 import { durationSchema, validate, MESSAGES } from "@/lib/validation";
