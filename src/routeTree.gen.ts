@@ -45,6 +45,7 @@ import { Route as AuthenticatedAvailabilityIdRouteImport } from './routes/_authe
 import { Route as AuthenticatedEditSlotIdRouteImport } from './routes/_authenticated/edit-slot.$id'
 import { Route as AuthenticatedMessagesReservationIdRouteImport } from './routes/_authenticated/messages.$reservationId'
 import { Route as AuthenticatedSlotIdRouteImport } from './routes/_authenticated/slot.$id'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicBookingsIndexRouteImport } from './routes/api/public/bookings/index'
 import { Route as ApiPublicCronPaymentsRouteImport } from './routes/api/public/cron/payments'
@@ -249,6 +250,11 @@ const AuthenticatedSlotIdRoute = AuthenticatedSlotIdRouteImport.update({
   path: '/slot/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicRazorpayWebhookRoute =
   ApiPublicRazorpayWebhookRouteImport.update({
     id: '/api/public/razorpay-webhook',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
@@ -434,6 +442,7 @@ export interface FileRoutesById {
   '/_authenticated/edit-slot/$id': typeof AuthenticatedEditSlotIdRoute
   '/_authenticated/messages/$reservationId': typeof AuthenticatedMessagesReservationIdRoute
   '/_authenticated/slot/$id': typeof AuthenticatedSlotIdRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/cron/payments': typeof ApiPublicCronPaymentsRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/api/public/health'
     | '/api/public/razorpay-webhook'
     | '/admin/'
     | '/api/public/cron/payments'
@@ -529,6 +539,7 @@ export interface FileRouteTypes {
     | '/edit-slot/$id'
     | '/messages/$reservationId'
     | '/slot/$id'
+    | '/api/public/health'
     | '/api/public/razorpay-webhook'
     | '/admin'
     | '/api/public/cron/payments'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/_authenticated/edit-slot/$id'
     | '/_authenticated/messages/$reservationId'
     | '/_authenticated/slot/$id'
+    | '/api/public/health'
     | '/api/public/razorpay-webhook'
     | '/_authenticated/admin/'
     | '/api/public/cron/payments'
@@ -600,6 +612,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicCronPaymentsRoute: typeof ApiPublicCronPaymentsRoute
   ApiPublicPaymentsOrderRoute: typeof ApiPublicPaymentsOrderRoute
@@ -866,6 +879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSlotIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razorpay-webhook': {
       id: '/api/public/razorpay-webhook'
       path: '/api/public/razorpay-webhook'
@@ -1026,6 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicCronPaymentsRoute: ApiPublicCronPaymentsRoute,
   ApiPublicPaymentsOrderRoute: ApiPublicPaymentsOrderRoute,
