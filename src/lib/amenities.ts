@@ -16,27 +16,23 @@ export function slotAmenities(slot: Pick<Slot, "covered" | "cctv" | "disabled_ac
 
 export { Ruler };
 
-export type CancellationPolicy = "flexible" | "moderate" | "strict";
+import { REFUND_CONFIG, policyBlurb, cancellationRefundShare, type CancellationPolicy } from "@/lib/refund-policy";
+export type { CancellationPolicy };
 
-export const POLICY_META: Record<
-  CancellationPolicy,
-  { label: string; blurb: string; hoursBefore: number }
-> = {
-  flexible: { label: "Flexible", blurb: "Full refund up to booking start.", hoursBefore: 0 },
-  moderate: {
-    label: "Moderate",
-    blurb: "Full refund if cancelled 24h before start.",
-    hoursBefore: 24,
-  },
-  strict: {
-    label: "Strict",
-    blurb: "Full refund only if cancelled 48h before start.",
-    hoursBefore: 48,
-  },
+const meta = (p: CancellationPolicy, label: string) => ({
+  label,
+  blurb: policyBlurb(p),
+  hoursBefore: REFUND_CONFIG.policies[p].fullUntilHours,
+});
+
+/** Wording is generated from src/lib/refund-policy.ts so it always matches what the server refunds. */
+export const POLICY_META: Record<CancellationPolicy, { label: string; blurb: string; hoursBefore: number }> = {
+  flexible: meta("flexible", "Flexible"),
+  moderate: meta("moderate", "Moderate"),
+  strict: meta("strict", "Strict"),
 };
 
+/** True when cancelling now would give a full refund. */
 export function refundEligible(policy: CancellationPolicy, startTimeIso: string): boolean {
-  const meta = POLICY_META[policy];
-  const start = new Date(startTimeIso).getTime();
-  return start - Date.now() >= meta.hoursBefore * 3600e3;
+  return cancellationRefundShare(policy, startTimeIso) === 1;
 }

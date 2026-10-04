@@ -10,7 +10,7 @@ export function cors(request: Request): Record<string, string> {
   const origin = request.headers.get("origin");
   const h: Record<string, string> = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Headers": "authorization, content-type, idempotency-key",
     "Cache-Control": "no-store",
     Vary: "Origin",
   };
@@ -51,25 +51,63 @@ export async function authenticate(request: Request): Promise<UserCtx> {
   return { supabase, userId: sub };
 }
 
-/** Wrap a handler: auth, JSON body, consistent error responses. */
-export function handle(fn: (args: { request: Request; ctx: UserCtx; body: unknown; params: Record<string, string> }) => Promise<unknown>) {
+type HandleOpts = { idempotent?: string };
+
+/**
+ * Wrap a handler: auth, JSON body, optional Idempotency-Key replay, consistent error responses.
+ * With `idempotent`, a repeated Idempotency-Key from the same user returns the first response.
+ */
+export function handle(
+  fn: (args: { request: Request; ctx: UserCtx; body: unknown; params: Record<string, string> }) => Promise<unknown>,
+  opts: HandleOpts = {},
+) {
   return async ({ request, params }: { request: Request; params: Record<string, string> }) => {
+    let idem: { db: Awaited<ReturnType<typeof adminDb>>; userId: string; key: string } | null = null;
     try {
       const ctx = await authenticate(request);
       const body = request.method === "POST" ? await request.json().catch(() => ({})) : {};
-      return json(request, await fn({ request, ctx, body, params }));
+      const key = request.headers.get("idempotency-key")?.trim();
+      if (opts.idempotent && key) {
+        if (key.length > 200) throw new HttpError("Idempotency-Key too long", 400);
+        const db = await adminDb();
+        const { error } = await db.from("idempotency_keys").insert({ user_id: ctx.userId, scope: opts.idempotent, key });
+        if (error) {
+          const { data: prev } = await db.from("idempotency_keys").select("response, status_code")
+            .eq("user_id", ctx.userId).eq("scope", opts.idempotent).eq("key", key).maybeSingle();
+          if (prev?.status_code) return json(request, prev.response, prev.status_code);
+          throw new HttpError("A request with this Idempotency-Key is still in progress", 409);
+        }
+        idem = { db, userId: ctx.userId, key };
+      }
+      const result = await fn({ request, ctx, body, params });
+      if (idem) await idem.db.from("idempotency_keys").update({ response: result as never, status_code: 200 })
+        .eq("user_id", idem.userId).eq("scope", opts.idempotent!).eq("key", idem.key);
+      return json(request, result);
     } catch (e) {
-      const { BookingError } = await import("@/lib/bookings.server");
-      const { ZodError } = await import("zod");
-      if (e instanceof HttpError || e instanceof BookingError) return json(request, { error: e.message }, e.status);
-      if (e instanceof ZodError) return json(request, { error: "Invalid input", issues: e.issues }, 400);
-      const msg = e instanceof Error ? e.message : "";
-      if (/not found|unauthorized/i.test(msg)) return json(request, { error: "Not found" }, 404);
-      if (/already paid|cancelled|expired|not set up|signature/i.test(msg)) return json(request, { error: msg }, 400);
-      console.error(e);
-      return json(request, { error: "Internal error" }, 500);
+      // Errors are not cached: release the key so the client may retry.
+      if (idem) await idem.db.from("idempotency_keys").delete().eq("user_id", idem.userId).eq("scope", opts.idempotent!).eq("key", idem.key);
+      return errorResponse(request, e);
     }
   };
+}
+
+async function adminDb() {
+  return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+}
+
+export async function errorResponse(request: Request, e: unknown) {
+  const { BookingError } = await import("@/lib/bookings.server");
+  const { PaymentError } = await import("@/lib/payments.server");
+  const { ZodError } = await import("zod");
+  if (e instanceof PaymentError) {
+    const res = json(request, { error: e.message }, e.status);
+    if (e.retryAfter) res.headers.set("Retry-After", String(e.retryAfter));
+    return res;
+  }
+  if (e instanceof HttpError || e instanceof BookingError) return json(request, { error: e.message }, e.status);
+  if (e instanceof ZodError) return json(request, { error: "Invalid input", issues: e.issues }, 400);
+  console.error(e);
+  return json(request, { error: "Internal error" }, 500);
 }
 
 export const options = ({ request }: { request: Request }) => new Response(null, { status: 204, headers: cors(request) });

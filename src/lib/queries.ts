@@ -74,6 +74,10 @@ export type Reservation = {
   vehicle_id: string | null;
   vehicle_plate: string | null;
   grand_total?: number | null;
+  created_at?: string;
+  /** Billed amount after cancellation/early end (net of refunds). */
+  final_price?: number | null;
+  pending_extension?: { minutes: number; new_end: string; extra: number; expires_at: string } | null;
 };
 
 export type Review = {

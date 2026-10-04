@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { billedAmount } from "@/lib/money";
 import { useMemo, useState } from "react";
 import { useAdminTransactions, useAdminUsers, PLATFORM_COMMISSION_RATE } from "@/lib/admin-queries";
 import { AdminSection, AdminCard, StatCard, inr } from "@/components/admin/AdminUI";
@@ -37,12 +38,12 @@ function AdminRevenue() {
     const since =
       period === "all" ? 0 : Date.now() - Number(period) * 86400_000;
     const inRange = rows.filter(
-      (r) => r.status !== "cancelled" && new Date(r.start_time).getTime() >= since,
+      (r) => billedAmount(r) > 0 && new Date(r.start_time).getTime() >= since,
     );
     const totals = new Map<string, { gross: number; bookings: number }>();
     let g = 0;
     for (const r of inRange) {
-      const amount = Number(r.grand_total ?? r.total_price ?? 0);
+      const amount = billedAmount(r);
       g += amount;
       const owner = r.slot?.owner_id ?? "unknown";
       const prev = totals.get(owner) ?? { gross: 0, bookings: 0 };

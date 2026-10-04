@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { billedAmount } from "@/lib/money";
 import { useOwnerBookings } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/earnings")({
@@ -7,20 +8,20 @@ export const Route = createFileRoute("/_authenticated/earnings")({
 
 function Earnings() {
   const { data: bookings = [] } = useOwnerBookings();
-  const completed = bookings.filter((b) => b.status === "completed");
+  const completed = bookings.filter((b) => billedAmount(b) > 0 && b.status !== "upcoming" && b.status !== "active");
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
   const thisMonth = completed.filter((b) => new Date(b.start_time) >= monthStart);
-  const monthTotal = thisMonth.reduce((a, b) => a + Number(b.total_price), 0);
-  const lifetime = completed.reduce((a, b) => a + Number(b.total_price), 0);
+  const monthTotal = thisMonth.reduce((a, b) => a + billedAmount(b), 0);
+  const lifetime = completed.reduce((a, b) => a + billedAmount(b), 0);
 
   const bySlot = new Map<string, { name: string; total: number }>();
   thisMonth.forEach((b) => {
     const key = b.slot_id;
     const prev = bySlot.get(key) ?? { name: b.slot?.name ?? "Slot", total: 0 };
-    prev.total += Number(b.total_price);
+    prev.total += billedAmount(b);
     bySlot.set(key, prev);
   });
 

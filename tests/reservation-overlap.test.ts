@@ -25,7 +25,9 @@ async function q(sql: string, params: unknown[] = []) {
   return client.query(sql, params);
 }
 
+const DB_ON = process.env.RUN_DB_TESTS === "1" && !!process.env.PGHOST;
 beforeAll(async () => {
+  if (!DB_ON) return;
   if (!process.env.PGHOST) {
     throw new Error("PGHOST not set — this test needs Supabase DB access.");
   }
@@ -38,12 +40,13 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (!DB_ON) return;
   await q(`DELETE FROM public.reservations WHERE slot_id = $1`, [slotId]);
   await q(`DELETE FROM public.slots WHERE id = $1`, [slotId]);
   await client.end();
 });
 
-describe("reservations_no_overlap exclusion constraint", () => {
+describe.skipIf(!DB_ON)("reservations_no_overlap exclusion constraint", () => {
   it("rejects a second reservation that overlaps an existing upcoming one", async () => {
     await q(
       `INSERT INTO public.reservations

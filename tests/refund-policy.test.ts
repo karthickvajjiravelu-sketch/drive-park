@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cancellationRefundShare, earlyEndCharge, refundable } from "@/lib/refund-policy";
+import { cancellationRefundShare } from "@/lib/refund-policy";
 import { createBookingSchema } from "@/lib/bookings.schema";
 import { orderSchema } from "@/lib/payments.schema";
 
@@ -23,17 +23,6 @@ describe("cancellation refund share", () => {
   });
 });
 
-describe("early end charge", () => {
-  const s = NOW, e = NOW + 4 * 3600e3; // 4h for ₹400
-  it("pro-rata for time used", () => expect(earlyEndCharge(400, s, e, s + 2 * 3600e3)).toBe(200));
-  it("1-hour minimum", () => expect(earlyEndCharge(400, s, e, s + 10 * 60e3)).toBe(100));
-  it("never above total", () => expect(earlyEndCharge(400, s, e, e + 3600e3)).toBe(400));
-  it("tiny refunds are skipped", () => {
-    expect(refundable(9)).toBe(0);
-    expect(refundable(10)).toBe(10);
-  });
-});
-
 describe("booking schema durations", () => {
   const base = { slotId: crypto.randomUUID(), startTime: inH(1), rateType: "hourly" as const };
   it("accepts half-hour steps", () => {
@@ -50,5 +39,43 @@ describe("order input", () => {
   it("drops any client-sent amount", () => {
     const parsed = orderSchema.parse({ reservationId: crypto.randomUUID(), amount: 1 });
     expect("amount" in parsed).toBe(false);
+  });
+});
+
+import { cancellationRefundShare as share2, earlyEndChargePaise, refundablePaise, toPaise, gstShareOfRefund, REFUND_CONFIG } from "@/lib/refund-policy";
+
+describe("grace window", () => {
+  it("full refund within 10 min of booking when start is 1h+ away, even inside the strict cutoff", () => {
+    expect(share2("strict", inH(5), NOW, new Date(NOW - 5 * 60e3).toISOString())).toBe(1);
+  });
+  it("no grace when start is under 1h away", () => {
+    expect(share2("strict", inH(0.5), NOW, new Date(NOW - 5 * 60e3).toISOString())).toBe(0);
+  });
+  it("no grace after 10 minutes", () => {
+    expect(share2("moderate", inH(5), NOW, new Date(NOW - 11 * 60e3).toISOString())).toBe(0.5);
+  });
+});
+
+describe("paise rules", () => {
+  it("a 0.5h booking is never charged more than its price", () => {
+    const s = NOW, e = NOW + 30 * 60e3;
+    expect(earlyEndChargePaise(5000, s, e, s + 60e3)).toBe(5000);
+  });
+  it("1h minimum on longer bookings, capped at charged", () => {
+    const s = NOW, e = NOW + 4 * 3600e3;
+    expect(earlyEndChargePaise(40000, s, e, s + 10 * 60e3)).toBe(10000);
+    expect(earlyEndChargePaise(40000, s, e, e)).toBe(40000);
+  });
+  it("floors to whole paise and skips refunds under ₹10", () => {
+    expect(toPaise(10.019)).toBe(1001);
+    expect(refundablePaise(999.9)).toBe(0);
+    expect(refundablePaise(1000.7)).toBe(1000);
+  });
+  it("GST refunded in proportion", () => {
+    expect(gstShareOfRefund(5900, 11800, 1800)).toBe(900);
+  });
+  it("config is the single source for limits", () => {
+    expect(REFUND_CONFIG.maxUnpaidHolds).toBe(2);
+    expect(REFUND_CONFIG.graceMinutes).toBe(10);
   });
 });

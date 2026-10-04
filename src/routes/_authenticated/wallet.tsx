@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { billedAmount } from "@/lib/money";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyReservations, useMyPaymentMethods } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,8 +33,7 @@ function WalletPage() {
   const { data: methods = [] } = useMyPaymentMethods();
 
   const totalSpent = reservations
-    .filter((r) => r.status !== "cancelled")
-    .reduce((s, r) => s + Number(r.total_price || 0), 0);
+    .reduce((s, r) => s + billedAmount(r), 0);
   const wallet = Math.max(0, 500 - (totalSpent % 500));
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["my-payment-methods"] });
@@ -166,9 +166,12 @@ function WalletPage() {
                 </div>
               </div>
               <div
-                className={`font-black ${r.status === "cancelled" ? "line-through text-muted-foreground" : ""}`}
+                className={`font-black ${billedAmount(r) === 0 ? "text-muted-foreground" : ""}`}
               >
-                ₹{r.total_price}
+                ₹{billedAmount(r)}
+                {billedAmount(r) !== Number(r.total_price) && (
+                  <span className="ml-1 text-xs font-normal text-muted-foreground line-through">₹{r.total_price}</span>
+                )}
               </div>
             </div>
           ))}
