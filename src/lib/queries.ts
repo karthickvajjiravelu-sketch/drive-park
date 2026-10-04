@@ -197,6 +197,18 @@ export const slotsPrivateQuery = (ids: string[]) =>
   });
 export const useSlotsPrivate = (ids: string[]) => useQuery(slotsPrivateQuery(ids));
 
+/** Merge address + access instructions into slots the caller is allowed to see. */
+export async function withPrivate<T extends { id: string }>(slots: T[]): Promise<T[]> {
+  const ids = slots.map((s) => s.id);
+  if (ids.length === 0) return slots;
+  const { data } = await supabase.rpc("get_slots_private", { _slot_ids: ids });
+  const map = new Map((data ?? []).map((r) => [r.slot_id, r]));
+  return slots.map((s) => {
+    const p = map.get(s.id);
+    return p ? { ...s, full_address: p.full_address, access_instructions: p.access_instructions } : s;
+  });
+}
+
 export const slotsQuery = () =>
   queryOptions({
     queryKey: ["slots"],
@@ -218,7 +230,9 @@ export const slotQuery = (id: string) =>
     queryFn: async (): Promise<Slot | null> => {
       const { data, error } = await supabase.from("slots").select(SLOT_COLUMNS).eq("id", id).maybeSingle();
       if (error) throw error;
-      return data as Slot | null;
+      if (!data) return null;
+      const [merged] = await withPrivate([data as unknown as Slot]);
+      return merged;
     },
   });
 export const useSlot = (id: string) => useQuery(slotQuery(id));
@@ -237,7 +251,7 @@ export const mySlotsQuery = () =>
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Slot[];
+      return withPrivate((data ?? []) as unknown as Slot[]);
     },
   });
 export const useMySlots = () => useQuery(mySlotsQuery());
@@ -256,7 +270,10 @@ export const myReservationsQuery = () =>
         .eq("driver_id", user.id)
         .order("start_time", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<Reservation & { slot: Slot | null }>;
+      const rows = (data ?? []) as unknown as Array<Reservation & { slot: Slot | null }>;
+      const slots = await withPrivate(rows.flatMap((r) => (r.slot ? [r.slot] : [])));
+      const byId = new Map(slots.map((sl) => [sl.id, sl]));
+      return rows.map((r) => ({ ...r, slot: r.slot ? (byId.get(r.slot.id) ?? r.slot) : null }));
     },
   });
 export const useMyReservations = () => useQuery(myReservationsQuery());
@@ -431,7 +448,9 @@ export const reservationQuery = (id: string) =>
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data as (Reservation & { slot: Slot | null }) | null;
+      const row = data as unknown as (Reservation & { slot: Slot | null }) | null;
+      if (row?.slot) row.slot = (await withPrivate([row.slot]))[0];
+      return row;
     },
   });
 export const useReservation = (id: string) => useQuery(reservationQuery(id));
