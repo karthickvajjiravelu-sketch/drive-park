@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Client } from "pg";
 import { randomUUID } from "node:crypto";
 
-const enabled = !!process.env.PGHOST;
+const enabled = process.env.RUN_DB_TESTS === "1" && !!process.env.PGHOST;
 const client = new Client({ ssl: { rejectUnauthorized: false } });
 
 const host = randomUUID();
