@@ -1,5 +1,6 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SLOT_COLUMNS, withPrivate } from "@/lib/queries";
 import type { Database } from "@/integrations/supabase/types";
 
 export type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
@@ -51,11 +52,11 @@ export const adminSlotsQuery = (status?: ApprovalStatus) =>
   queryOptions({
     queryKey: ["admin-slots", status ?? "all"],
     queryFn: async (): Promise<AdminSlot[]> => {
-      let q = supabase.from("slots").select("*").order("created_at", { ascending: false });
+      let q = supabase.from("slots").select(SLOT_COLUMNS).order("created_at", { ascending: false });
       if (status) q = q.eq("approval_status", status);
       const { data, error } = await q;
       if (error) throw error;
-      return data ?? [];
+      return withPrivate((data ?? []) as unknown as AdminSlot[]);
     },
   });
 export const useAdminSlots = (status?: ApprovalStatus) => useQuery(adminSlotsQuery(status));

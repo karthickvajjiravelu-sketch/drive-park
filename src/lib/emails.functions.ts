@@ -23,18 +23,17 @@ export const sendBookingConfirmation = createServerFn({ method: "POST" })
     const { data: reservation, error } = await supabase
       .from("reservations")
       .select(
-        "id, start_time, end_time, grand_total, total_price, vehicle_plate, slots(name, approx_area, full_address, access_instructions)",
+        "id, start_time, end_time, grand_total, total_price, vehicle_plate, slot_id, slots(name, approx_area)",
       )
       .eq("id", data.reservationId)
       .single();
     if (error || !reservation) return { sent: false as const };
 
-    const slot = reservation.slots as unknown as {
-      name: string;
-      approx_area: string;
-      full_address: string;
-      access_instructions: string;
-    } | null;
+    const base = reservation.slots as unknown as { name: string; approx_area: string } | null;
+    const { data: priv } = await supabase.rpc("get_slots_private", { _slot_ids: [reservation.slot_id] });
+    const slot = base ? { ...base, ...(priv?.[0] ?? {}) } as {
+      name: string; approx_area: string; full_address?: string; access_instructions?: string;
+    } : null;
 
     const amount = reservation.grand_total ?? reservation.total_price ?? 0;
 

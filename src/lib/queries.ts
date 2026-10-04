@@ -32,7 +32,7 @@ export type Slot = {
   owner_id: string;
   name: string;
   approx_area: string;
-  full_address: string;
+  full_address?: string;
   lat: number;
   lng: number;
   hourly_rate: number;
@@ -41,7 +41,7 @@ export type Slot = {
   status: "open" | "full";
   vehicle_type: "car" | "bike" | "both";
   vehicle_size_limit: string;
-  access_instructions: string;
+  access_instructions?: string;
   photos: string[];
   rating: number;
   covered: boolean;
@@ -179,13 +179,43 @@ export const profileQuery = () =>
   });
 export const useProfile = () => useQuery(profileQuery());
 
+/** Public slot columns. Address + access instructions come from get_slots_private. */
+export const SLOT_COLUMNS =
+  "id, owner_id, name, approx_area, lat, lng, hourly_rate, daily_rate, monthly_rate, status, vehicle_type, vehicle_size_limit, photos, rating, created_at, covered, cctv, disabled_access, height_limit_cm, width_limit_cm, cancellation_policy, archived, lot_id, slot_type, base_rate, is_available, approval_status, approval_note, approved_at";
+
+export type SlotPrivate = { slot_id: string; full_address: string; access_instructions: string };
+
+export const slotsPrivateQuery = (ids: string[]) =>
+  queryOptions({
+    queryKey: ["slots-private", [...ids].sort().join(",")],
+    enabled: ids.length > 0,
+    queryFn: async (): Promise<Record<string, SlotPrivate>> => {
+      const { data, error } = await supabase.rpc("get_slots_private", { _slot_ids: ids });
+      if (error) throw error;
+      return Object.fromEntries((data ?? []).map((r) => [r.slot_id, r as SlotPrivate]));
+    },
+  });
+export const useSlotsPrivate = (ids: string[]) => useQuery(slotsPrivateQuery(ids));
+
+/** Merge address + access instructions into slots the caller is allowed to see. */
+export async function withPrivate<T extends { id: string }>(slots: T[]): Promise<T[]> {
+  const ids = slots.map((s) => s.id);
+  if (ids.length === 0) return slots;
+  const { data } = await supabase.rpc("get_slots_private", { _slot_ids: ids });
+  const map = new Map((data ?? []).map((r) => [r.slot_id, r]));
+  return slots.map((s) => {
+    const p = map.get(s.id);
+    return p ? { ...s, full_address: p.full_address, access_instructions: p.access_instructions } : s;
+  });
+}
+
 export const slotsQuery = () =>
   queryOptions({
     queryKey: ["slots"],
     queryFn: async (): Promise<Slot[]> => {
       const { data, error } = await supabase
         .from("slots")
-        .select("*")
+        .select(SLOT_COLUMNS)
         .eq("archived", false)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -198,9 +228,11 @@ export const slotQuery = (id: string) =>
   queryOptions({
     queryKey: ["slot", id],
     queryFn: async (): Promise<Slot | null> => {
-      const { data, error } = await supabase.from("slots").select("*").eq("id", id).maybeSingle();
+      const { data, error } = await supabase.from("slots").select(SLOT_COLUMNS).eq("id", id).maybeSingle();
       if (error) throw error;
-      return data as Slot | null;
+      if (!data) return null;
+      const [merged] = await withPrivate([data as unknown as Slot]);
+      return merged;
     },
   });
 export const useSlot = (id: string) => useQuery(slotQuery(id));
@@ -215,11 +247,11 @@ export const mySlotsQuery = () =>
       if (!user) return [];
       const { data, error } = await supabase
         .from("slots")
-        .select("*")
+        .select(SLOT_COLUMNS)
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Slot[];
+      return withPrivate((data ?? []) as unknown as Slot[]);
     },
   });
 export const useMySlots = () => useQuery(mySlotsQuery());
@@ -234,11 +266,14 @@ export const myReservationsQuery = () =>
       if (!user) return [];
       const { data, error } = await supabase
         .from("reservations")
-        .select("*, slot:slots(*)")
+        .select(`*, slot:slots(${SLOT_COLUMNS})`)
         .eq("driver_id", user.id)
         .order("start_time", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<Reservation & { slot: Slot | null }>;
+      const rows = (data ?? []) as unknown as Array<Reservation & { slot: Slot | null }>;
+      const slots = await withPrivate(rows.flatMap((r) => (r.slot ? [r.slot] : [])));
+      const byId = new Map(slots.map((sl) => [sl.id, sl]));
+      return rows.map((r) => ({ ...r, slot: r.slot ? (byId.get(r.slot.id) ?? r.slot) : null }));
     },
   });
 export const useMyReservations = () => useQuery(myReservationsQuery());
@@ -355,7 +390,7 @@ export const myFavoritesQuery = () =>
       if (!user) return [];
       const { data, error } = await supabase
         .from("favorites")
-        .select("id, slot_id, slot:slots(*)")
+        .select(`id, slot_id, slot:slots(${SLOT_COLUMNS})`)
         .eq("driver_id", user.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -409,11 +444,13 @@ export const reservationQuery = (id: string) =>
       if (!id) return null;
       const { data, error } = await supabase
         .from("reservations")
-        .select("*, slot:slots(*)")
+        .select(`*, slot:slots(${SLOT_COLUMNS})`)
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data as (Reservation & { slot: Slot | null }) | null;
+      const row = data as unknown as (Reservation & { slot: Slot | null }) | null;
+      if (row?.slot) row.slot = (await withPrivate([row.slot]))[0];
+      return row;
     },
   });
 export const useReservation = (id: string) => useQuery(reservationQuery(id));

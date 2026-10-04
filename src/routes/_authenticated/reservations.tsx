@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { endSessionFn, extendBookingFn, cancelBookingFn } from "@/lib/bookings.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { useMyReservations } from "@/lib/queries";
@@ -46,55 +48,32 @@ function MyReservations() {
     null,
   );
   const [receipt, setReceipt] = useState<ReservationWithSlot | null>(null);
+  const endSessionServer = useServerFn(endSessionFn);
+  const extendServer = useServerFn(extendBookingFn);
+  const cancelServer = useServerFn(cancelBookingFn);
 
   const active = reservations.filter((r) => r.status === "active");
   const upcoming = reservations.filter((r) => r.status === "upcoming");
   const past = reservations.filter((r) => r.status === "completed" || r.status === "cancelled");
 
   async function endSession(r: ReservationWithSlot) {
-    const start = new Date(r.start_time).getTime();
-    const end = new Date(r.end_time).getTime();
-    const now = Date.now();
-    const totalMs = Math.max(1, end - start);
-    const usedMs = Math.min(totalMs, Math.max(0, now - start));
-    const usedRatio = usedMs / totalMs;
-    const finalPrice = Math.round(r.total_price * usedRatio);
-    const refund = r.total_price - finalPrice;
-    if (!confirm(`End session now? You'll be charged ₹${finalPrice} (refund ₹${refund}).`)) return;
-    const { error } = await supabase
-      .from("reservations")
-      .update({
-        status: "completed",
-        end_time: new Date(now).toISOString(),
-        total_price: finalPrice,
-      })
-      .eq("id", r.id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`Session ended · refund ₹${refund}`);
+    if (!confirm("End session now? You'll be charged only for the time used.")) return;
+    try {
+      const res = await endSessionServer({ data: { reservationId: r.id } });
+      toast.success(`Session ended · charged ₹${res.finalPrice} · refund ₹${res.refund}`);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not end session");
     }
   }
 
   async function extend(r: ReservationWithSlot, minutes: number) {
-    const rate = r.slot?.[`${r.rate_type}_rate` as const] as number | undefined;
-    const perMinute = rate
-      ? r.rate_type === "hourly"
-        ? rate / 60
-        : r.rate_type === "daily"
-          ? rate / (24 * 60)
-          : rate / (30 * 24 * 60)
-      : 0;
-    const extraCost = Math.round(perMinute * minutes);
-    const newEnd = new Date(new Date(r.end_time).getTime() + minutes * 60e3).toISOString();
-    const { error } = await supabase
-      .from("reservations")
-      .update({ end_time: newEnd, total_price: r.total_price + extraCost })
-      .eq("id", r.id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`+${minutes} min · ₹${extraCost}`);
+    try {
+      const res = await extendServer({ data: { reservationId: r.id, minutes } });
+      toast.success(`+${minutes} min · ₹${res.extraCost}`);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not extend");
     }
   }
 
@@ -105,11 +84,13 @@ function MyReservations() {
       ? `Cancel this booking? You'll get a full refund (${POLICY_META[policy].label} policy).`
       : `Cancel this booking? No refund per ${POLICY_META[policy].label} policy (${POLICY_META[policy].hoursBefore}h notice required).`;
     if (!confirm(msg)) return;
-    const { error } = await supabase
-      .from("reservations")
-      .update({ status: "cancelled" })
-      .eq("id", id);
-    if (error) toast.error(error.message);
+    let error: string | null = null;
+    try {
+      await cancelServer({ data: { reservationId: id } });
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Could not cancel";
+    }
+    if (error) toast.error(error);
     else {
       toast.success(refund ? "Cancelled — refund issued" : "Cancelled");
       qc.invalidateQueries({ queryKey: ["my-reservations"] });

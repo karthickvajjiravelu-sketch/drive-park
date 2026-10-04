@@ -433,6 +433,7 @@ export type Database = {
           grand_total: number | null
           gst_amount: number | null
           id: string
+          payment_expires_at: string | null
           price_breakdown: Json | null
           promo_code: string | null
           rate_type: Database["public"]["Enums"]["rate_type"]
@@ -454,6 +455,7 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          payment_expires_at?: string | null
           price_breakdown?: Json | null
           promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
@@ -475,6 +477,7 @@ export type Database = {
           grand_total?: number | null
           gst_amount?: number | null
           id?: string
+          payment_expires_at?: string | null
           price_breakdown?: Json | null
           promo_code?: string | null
           rate_type?: Database["public"]["Enums"]["rate_type"]
@@ -499,6 +502,38 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
             referencedColumns: ["id"]
           },
         ]
@@ -844,6 +879,15 @@ export type Database = {
         }
         Returns: number
       }
+      expire_unpaid_reservations: { Args: never; Returns: number }
+      get_slots_private: {
+        Args: { _slot_ids: string[] }
+        Returns: {
+          access_instructions: string
+          full_address: string
+          slot_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -851,6 +895,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_privileged: { Args: never; Returns: boolean }
       profile_briefs: {
         Args: { _user_ids: string[] }
         Returns: {
@@ -859,6 +904,15 @@ export type Database = {
           user_id: string
           verified: boolean
         }[]
+      }
+      redeem_promo: {
+        Args: {
+          _code: string
+          _reservation_id: string
+          _subtotal: number
+          _user_id: string
+        }
+        Returns: number
       }
       report_review: { Args: { _review_id: string }; Returns: undefined }
     }

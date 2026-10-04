@@ -32,6 +32,7 @@ import {
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPricingContext } from "@/lib/pricing.functions";
+import { createBookingFn } from "@/lib/bookings.functions";
 import { calculatePrice, SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { PriceBreakdownCard, DemandBadge } from "@/components/PriceBreakdownCard";
 import { durationSchema, validate, MESSAGES } from "@/lib/validation";
@@ -63,6 +64,8 @@ function SlotDetail() {
     return d.toISOString().slice(0, 16);
   });
   const [reservationId, setReservationId] = useState<string | null>(null);
+  const [bookedTotal, setBookedTotal] = useState<number | null>(null);
+  const createBooking = useServerFn(createBookingFn);
   const [busy, setBusy] = useState(false);
   const [priceEpoch, setPriceEpoch] = useState(0);
 
@@ -159,38 +162,22 @@ function SlotDetail() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
-      const start = new Date(startTime);
-      const msPerUnit =
-        rateType === "hourly" ? 3600e3 : rateType === "daily" ? 86400e3 : 30 * 86400e3;
-      const end = new Date(start.getTime() + duration * msPerUnit);
-      const status = start.getTime() <= Date.now() ? "active" : "upcoming";
       const vehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
-      const { data, error } = await supabase
-        .from("reservations")
-        .insert({
-          driver_id: user.id,
-          slot_id: slot!.id,
-          start_time: start.toISOString(),
-          end_time: end.toISOString(),
-          status,
-          total_price: total,
-          rate_type: rateType,
-          price_breakdown: breakdown ? JSON.parse(JSON.stringify(breakdown)) : null,
-          base_rate: breakdown?.baseRate ?? rate,
-          final_price_per_hour: breakdown?.finalPricePerHour ?? null,
-          subtotal_amount: breakdown?.subtotal ?? total,
-          gst_amount: breakdown?.gst ?? null,
-          grand_total: breakdown?.grandTotal ?? total,
-          vehicle_id: vehicle?.id ?? null,
-          vehicle_plate: vehicle?.plate ?? null,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      setReservationId(data.id);
+      const data = await createBooking({
+        data: {
+          slotId: slot!.id,
+          startTime: new Date(startTime).toISOString(),
+          rateType,
+          duration,
+          vehicleId: vehicle?.id ?? null,
+        },
+      });
+      setReservationId(data.reservationId);
+      setBookedTotal(data.grandTotal);
       qc.invalidateQueries({ queryKey: ["my-reservations"] });
+      qc.invalidateQueries({ queryKey: ["slot", id] });
       toast.success("Reserved!");
-      void sendBookingConfirmation({ data: { reservationId: data.id } }).catch(() => {});
+      void sendBookingConfirmation({ data: { reservationId: data.reservationId } }).catch(() => {});
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed";
       if (/no_overlap|conflicting key value|exclusion/i.test(msg)) {
@@ -382,12 +369,12 @@ function SlotDetail() {
             </div>
             <PayNowButton
               reservationId={reservationId!}
-              amount={breakdown?.grandTotal ?? total}
+              amount={bookedTotal ?? breakdown?.grandTotal ?? total}
               slotName={slot.name}
             />
 
             <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address ?? slot.approx_area)}`}
               target="_blank"
               rel="noreferrer"
               className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2"
