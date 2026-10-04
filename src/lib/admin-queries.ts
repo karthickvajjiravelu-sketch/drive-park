@@ -51,7 +51,7 @@ export const adminSlotsQuery = (status?: ApprovalStatus) =>
   queryOptions({
     queryKey: ["admin-slots", status ?? "all"],
     queryFn: async (): Promise<AdminSlot[]> => {
-      let q = supabase.from("slots").select("*").order("created_at", { ascending: false });
+      let q = supabase.from("slots").select(SLOT_COLUMNS).order("created_at", { ascending: false });
       if (status) q = q.eq("approval_status", status);
       const { data, error } = await q;
       if (error) throw error;
