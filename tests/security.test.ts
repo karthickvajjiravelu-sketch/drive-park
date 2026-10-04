@@ -109,10 +109,60 @@ describe.skipIf(!enabled)("security hardening", () => {
     await expect(asUser(stranger, () => sql("SELECT full_address FROM public.slots WHERE id=$1", [slotId]))).rejects.toThrow();
     const none = await asUser(stranger, () => sql("SELECT * FROM public.get_slots_private($1)", [[slotId]]));
     expect(none.rowCount).toBe(0);
-    const mine = await asUser(driver, () => sql("SELECT full_address FROM public.get_slots_private($1)", [[slotId]]));
-    expect(mine.rows[0]?.full_address).toBe("42 Secret St");
-    const owner = await asUser(host, () => sql("SELECT full_address FROM public.get_slots_private($1)", [[slotId]]));
+    const owner = await asUser(host, () => sql("SELECT full_address, lat FROM public.get_slots_private($1)", [[slotId]]));
     expect(owner.rowCount).toBe(1);
+    expect(owner.rows[0].lat).toBe(0);
+  });
+
+  /** Run fn as the driver after recording a captured payment (inserted as the test superuser). */
+  const asPaidDriver = <T>(paise: number, fn: () => Promise<T>) =>
+    asUser(driver, async () => {
+      await sql("RESET ROLE");
+      await sql(
+        `INSERT INTO public.payments (reservation_id, user_id, amount_paise, currency, status, purpose)
+         VALUES ($1,$2,$3,'INR','captured','booking')`,
+        [resId, driver, paise],
+      );
+      await sql("SET LOCAL ROLE authenticated");
+      return fn();
+    });
+
+  it("#4b unpaid hold does not reveal the address or exact location", async () => {
+    const r = await asUser(driver, () => sql("SELECT * FROM public.get_slots_private($1)", [[slotId]]));
+    expect(r.rowCount).toBe(0);
+  });
+
+  it("#4c a fully paid booking reveals address and exact lat/lng", async () => {
+    const r = await asPaidDriver(20000, () =>
+      sql("SELECT full_address, lat, lng FROM public.get_slots_private($1)", [[slotId]]),
+    );
+    expect(r.rows[0]).toEqual({ full_address: "42 Secret St", lat: 0, lng: 0 });
+  });
+
+  it("#4d a partly paid booking still hides the address", async () => {
+    const r = await asPaidDriver(5000, () => sql("SELECT * FROM public.get_slots_private($1)", [[slotId]]));
+    expect(r.rowCount).toBe(0);
+  });
+
+  it("#4e cancelled booking hides the address even if paid", async () => {
+    const r = await asPaidDriver(20000, async () => {
+      await sql("RESET ROLE");
+      await sql("UPDATE public.reservations SET status='cancelled' WHERE id=$1", [resId]);
+      await sql("SET LOCAL ROLE authenticated");
+      return sql("SELECT * FROM public.get_slots_private($1)", [[slotId]]);
+    });
+    expect(r.rowCount).toBe(0);
+  });
+
+  it("#4f exact lat/lng are not readable; approximate ones are 150-450 m away", async () => {
+    await expect(asUser(stranger, () => sql("SELECT lat FROM public.slots WHERE id=$1", [slotId]))).rejects.toThrow();
+    const r = await asUser(stranger, () =>
+      sql("SELECT approx_lat, approx_lng FROM public.slots WHERE id=$1", [slotId]),
+    );
+    const { approx_lat: la, approx_lng: ln } = r.rows[0];
+    const metres = Math.hypot(la * 111320, ln * 111320);
+    expect(metres).toBeGreaterThan(80); // 150-300 m offset, then rounded to ~110 m grid
+    expect(metres).toBeLessThan(450);
   });
 
   it("#6 messages must go between the booking's driver and host", async () => {
