@@ -10,7 +10,8 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (e) {
     const { BookingError } = await import("./bookings.server");
-    if (e instanceof BookingError) throw new Error(e.message);
+    const { PaymentError } = await import("./payments.server");
+    if (e instanceof BookingError || e instanceof PaymentError) throw new Error(e.message);
     console.error(e);
     throw new Error("Something went wrong");
   }

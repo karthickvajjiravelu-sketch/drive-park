@@ -10,3 +10,8 @@ export const verifySchema = z.object({
   paymentMethodId: z.string().uuid().nullable().optional(),
 });
 export const statusSchema = z.object({ reservationId: z.string().uuid() });
+export const adminRefundSchema = z.object({
+  paymentId: z.string().uuid(),
+  amountPaise: z.number().int().positive(),
+  reason: z.string().trim().min(1).max(200),
+});

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/public/bookings/")({
       POST: handle(async ({ ctx, body }) => {
         const { createBooking } = await import("@/lib/bookings.server");
         return createBooking(ctx.userId, createBookingSchema.parse(body));
-      }),
+      }, { idempotent: "bookings_create" }),
     },
   },
 });
