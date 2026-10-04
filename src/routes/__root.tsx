@@ -15,46 +15,18 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { ThemeMetaColor } from "../components/ThemeToggle";
 
-function NotFoundComponent() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-black text-foreground">404</h1>
-        <p className="mt-2 text-sm text-muted-foreground">This page doesn't exist.</p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-        >
-          Go home
-        </Link>
-      </div>
-    </div>
-  );
-}
+import { RouteError, RouteNotFound } from "../components/RouteError";
 
-function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
-  const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root" });
-  }, [error]);
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-bold">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
-        <button
-          onClick={() => {
-            router.invalidate();
-            reset();
-          }}
-          className="mt-6 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
-  );
-}
+const NotFoundComponent = () => (
+  <div className="min-h-screen">
+    <RouteNotFound />
+  </div>
+);
+const ErrorComponent = (props: { error: unknown; reset: () => void }) => (
+  <div className="min-h-screen">
+    <RouteError {...props} />
+  </div>
+);
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({

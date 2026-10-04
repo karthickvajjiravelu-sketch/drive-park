@@ -1,3 +1,4 @@
+import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { useServerFn } from "@tanstack/react-start";
 import { endSessionFn, extendBookingFn, cancelBookingFn } from "@/lib/bookings.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -28,6 +29,8 @@ type ReservationWithSlot = Reservation & { slot: Slot | null };
 
 export const Route = createFileRoute("/_authenticated/reservations")({
   component: MyReservations,
+  errorComponent: RouteError,
+  notFoundComponent: RouteNotFound,
 });
 
 function useCountdown(end: string) {

@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:db": "RUN_DB_TESTS=1 vitest run tests/money.db.test.ts tests/security.test.ts tests/reservation-overlap.test.ts"
+    "test:db": "RUN_DB_TESTS=1 vitest run tests/money.db.test.ts tests/security.test.ts tests/reservation-overlap.test.ts",
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -109,5 +111,8 @@
     "overrides": {
       "entities": "4.5.0"
     }
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

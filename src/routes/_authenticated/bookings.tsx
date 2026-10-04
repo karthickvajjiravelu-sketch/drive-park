@@ -1,3 +1,4 @@
+import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { createFileRoute } from "@tanstack/react-router";
 import { billedAmount } from "@/lib/money";
 import { useEffect } from "react";
@@ -7,6 +8,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/bookings")({
   component: Bookings,
+  errorComponent: RouteError,
+  notFoundComponent: RouteNotFound,
 });
 
 function Bookings() {
