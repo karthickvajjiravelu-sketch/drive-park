@@ -89,6 +89,7 @@ function HelpPage() {
     <div className="pb-24">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-5 flex items-center gap-3">
         <button
+          aria-label="Back to profile"
           onClick={() => navigate({ to: "/profile" })}
           className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"
         >

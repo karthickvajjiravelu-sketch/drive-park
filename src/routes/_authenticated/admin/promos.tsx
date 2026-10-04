@@ -113,12 +113,14 @@ function AdminPromos() {
         <AdminCard>
           <div className="grid gap-2">
             <input
+              aria-label="Promo code"
               className={field}
               placeholder="CODE"
               value={draft.code}
               onChange={(e) => setDraft({ ...draft, code: e.target.value.toUpperCase() })}
             />
             <input
+              aria-label="Description"
               className={field}
               placeholder="Description"
               value={draft.description}
@@ -126,6 +128,7 @@ function AdminPromos() {
             />
             <div className="grid grid-cols-2 gap-2">
               <select
+                aria-label="Discount type"
                 className={field}
                 value={draft.discount_type}
                 onChange={(e) =>
@@ -136,6 +139,7 @@ function AdminPromos() {
                 <option value="flat">Flat ₹</option>
               </select>
               <input
+                aria-label="Discount value"
                 className={field}
                 type="number"
                 placeholder="Value"
@@ -143,6 +147,7 @@ function AdminPromos() {
                 onChange={(e) => setDraft({ ...draft, discount_value: e.target.value })}
               />
               <input
+                aria-label="Maximum discount in rupees"
                 className={field}
                 type="number"
                 placeholder="Max discount ₹"
@@ -150,6 +155,7 @@ function AdminPromos() {
                 onChange={(e) => setDraft({ ...draft, max_discount: e.target.value })}
               />
               <input
+                aria-label="Minimum spend in rupees"
                 className={field}
                 type="number"
                 placeholder="Min spend ₹"
@@ -157,6 +163,7 @@ function AdminPromos() {
                 onChange={(e) => setDraft({ ...draft, min_spend: e.target.value })}
               />
               <input
+                aria-label="Total uses"
                 className={field}
                 type="number"
                 placeholder="Total uses"
@@ -164,6 +171,7 @@ function AdminPromos() {
                 onChange={(e) => setDraft({ ...draft, usage_limit: e.target.value })}
               />
               <input
+                aria-label="End date"
                 className={field}
                 type="date"
                 value={draft.ends_at}
@@ -212,7 +220,10 @@ function AdminPromos() {
               <AdminButton variant="ghost" onClick={() => edit(p)}>
                 Edit
               </AdminButton>
-              <AdminButton variant={p.active ? "danger" : "primary"} onClick={() => toggleActive(p)}>
+              <AdminButton
+                variant={p.active ? "danger" : "primary"}
+                onClick={() => toggleActive(p)}
+              >
                 {p.active ? "Deactivate" : "Activate"}
               </AdminButton>
             </div>

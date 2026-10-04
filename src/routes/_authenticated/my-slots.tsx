@@ -69,12 +69,14 @@ function MySlots() {
           <ThemeQuickToggle className="bg-white/10 text-white" />
 
           <Link
+            aria-label="Earnings"
             to="/earnings"
             className="rounded-full bg-white/10 text-white w-10 h-10 grid place-items-center"
           >
             <DollarSign className="w-5 h-5" />
           </Link>
           <Link
+            aria-label="Add a slot"
             to="/add-slot"
             className="rounded-full bg-primary text-primary-foreground w-10 h-10 grid place-items-center"
           >
@@ -127,7 +129,6 @@ function MySlots() {
                   Delete
                 </button>
               </div>
-
             </div>
           </div>
         ))}

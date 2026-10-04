@@ -86,10 +86,7 @@ function AvailabilityEditor() {
       return;
     }
     setBusy(true);
-    const { error: delError } = await supabase
-      .from("slot_availability")
-      .delete()
-      .eq("slot_id", id);
+    const { error: delError } = await supabase.from("slot_availability").delete().eq("slot_id", id);
     if (delError) {
       setBusy(false);
       toast.error(delError.message);
@@ -160,6 +157,7 @@ function AvailabilityEditor() {
             {!r.closed && (
               <div className="mt-2 flex items-center gap-2">
                 <input
+                  aria-label="Opening time"
                   type="time"
                   value={r.open_time}
                   onChange={(e) => update(i, { open_time: e.target.value })}
@@ -167,6 +165,7 @@ function AvailabilityEditor() {
                 />
                 <span className="text-muted-foreground text-sm">to</span>
                 <input
+                  aria-label="Closing time"
                   type="time"
                   value={r.close_time}
                   onChange={(e) => update(i, { close_time: e.target.value })}

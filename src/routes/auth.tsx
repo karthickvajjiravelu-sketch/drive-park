@@ -39,7 +39,6 @@ function recordOtpAttempt(identifier: string) {
   }
 }
 
-
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
   next: z.string().optional(),
@@ -78,14 +77,11 @@ function AuthPage() {
   const otpMode = mode === "signin" && method === "otp";
 
   const formValid = otpMode
-    ? validate(emailSchema, email) === null &&
-      (!otpSent || validate(otpSchema, otp) === null)
+    ? validate(emailSchema, email) === null && (!otpSent || validate(otpSchema, otp) === null)
     : validate(emailSchema, email) === null &&
       validate(passwordSchema, password) === null &&
       (mode === "signin" ||
-        (tos &&
-          validate(nameSchema, name) === null &&
-          validate(phoneSchema, phone) === null));
+        (tos && validate(nameSchema, name) === null && validate(phoneSchema, phone) === null));
 
   function goNext() {
     if (nextPath) window.location.href = nextPath;
@@ -204,9 +200,7 @@ function AuthPage() {
                   setOtp("");
                 }}
                 className={`rounded-xl py-2 text-sm font-semibold transition ${
-                  method === m
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground"
+                  method === m ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                 }`}
               >
                 {m === "password" ? "Email & password" : "Email code"}
@@ -309,7 +303,6 @@ function AuthPage() {
           </label>
         )}
 
-
         <button
           disabled={loading || !formValid}
           className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
@@ -358,8 +351,6 @@ function AuthPage() {
           Continue with Google
         </button>
 
-
-
         {otpMode && otpSent && (
           <button
             type="button"
@@ -384,7 +375,6 @@ function AuthPage() {
         >
           {mode === "signup" ? "Have an account? Sign in" : "New here? Create account"}
         </button>
-
       </form>
     </div>
   );

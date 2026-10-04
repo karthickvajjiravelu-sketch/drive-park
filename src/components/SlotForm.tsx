@@ -166,6 +166,7 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
           Slot type (drives dynamic pricing)
         </span>
         <select
+          aria-label="Slot type"
           value={form.slot_type}
           onChange={(e) => {
             const st = e.target.value as SlotType;
@@ -402,6 +403,7 @@ function LocationPicker({
         <div className="flex items-center gap-2 bg-card text-card-foreground rounded-full shadow px-3 py-2 border border-border">
           <Search className="w-4 h-4 text-muted-foreground" />
           <input
+            aria-label="Search address"
             ref={inputEl}
             placeholder="Search address"
             className="flex-1 outline-none text-sm bg-transparent"

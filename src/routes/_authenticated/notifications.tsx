@@ -71,6 +71,7 @@ function NotificationsPage() {
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
+            aria-label="Back"
             onClick={() => history.back()}
             className="w-9 h-9 rounded-full bg-white/10 grid place-items-center"
           >

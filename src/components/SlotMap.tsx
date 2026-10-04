@@ -161,6 +161,7 @@ export default function SlotMap({
         <div className="flex items-center gap-2 bg-card text-card-foreground rounded-full shadow-lg px-3 py-2 border border-border">
           <Search className="w-4 h-4 text-muted-foreground" />
           <input
+            aria-label="Search a destination"
             ref={searchEl}
             placeholder="Search a destination"
             aria-invalid={!!searchError}

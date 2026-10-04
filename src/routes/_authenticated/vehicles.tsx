@@ -80,12 +80,17 @@ function VehiclesPage() {
     <div className="pb-20">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/profile" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center">
+          <Link
+            aria-label="Back to profile"
+            to="/profile"
+            className="w-9 h-9 rounded-full bg-white/10 grid place-items-center"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <h1 className="text-2xl font-black">My Garage</h1>
         </div>
         <button
+          aria-label="Add a vehicle"
           onClick={() => setAdding((v) => !v)}
           className="rounded-full bg-primary text-primary-foreground w-10 h-10 grid place-items-center"
         >
@@ -147,6 +152,7 @@ function VehiclesPage() {
               <Star className={`w-4 h-4 ${v.is_default ? "fill-current" : ""}`} />
             </button>
             <button
+              aria-label="Delete vehicle"
               onClick={() => remove(v.id)}
               className="w-9 h-9 grid place-items-center rounded-full bg-muted text-destructive"
             >

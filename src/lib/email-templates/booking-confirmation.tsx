@@ -1,4 +1,4 @@
-import * as React from 'react'
+import * as React from "react";
 
 import {
   Body,
@@ -10,22 +10,22 @@ import {
   Preview,
   Section,
   Text,
-} from '@react-email/components'
-import type { TemplateEntry } from './registry'
+} from "@react-email/components";
+import type { TemplateEntry } from "./registry";
 
 interface BookingConfirmationProps {
-  slotName?: string
-  area?: string
-  fullAddress?: string
-  accessInstructions?: string
-  startTime?: string
-  endTime?: string
-  vehiclePlate?: string
-  total?: string
+  slotName?: string;
+  area?: string;
+  fullAddress?: string;
+  accessInstructions?: string;
+  startTime?: string;
+  endTime?: string;
+  vehiclePlate?: string;
+  total?: string;
 }
 
 const BookingConfirmationEmail = ({
-  slotName = 'Your parking space',
+  slotName = "Your parking space",
   area,
   fullAddress,
   accessInstructions,
@@ -43,7 +43,7 @@ const BookingConfirmationEmail = ({
         <Heading style={h1}>Booking confirmed</Heading>
         <Text style={text}>
           Your space at <strong>{slotName}</strong>
-          {area ? ` (${area})` : ''} is reserved.
+          {area ? ` (${area})` : ""} is reserved.
         </Text>
 
         <Section style={card}>
@@ -74,67 +74,67 @@ const BookingConfirmationEmail = ({
       </Container>
     </Body>
   </Html>
-)
+);
 
 export const template = {
   component: BookingConfirmationEmail,
-  subject: 'Your Usop booking is confirmed',
-  displayName: 'Booking confirmation',
+  subject: "Your Usop booking is confirmed",
+  displayName: "Booking confirmation",
   previewData: {
-    slotName: 'Anna Nagar Covered Bay',
-    area: 'Anna Nagar West, Chennai',
-    fullAddress: '12, 3rd Avenue, Anna Nagar West, Chennai 600040',
-    accessInstructions: 'Gate code 4821. Bay #7 on the left.',
-    startTime: '29 Jul 2026, 9:00 AM',
-    endTime: '29 Jul 2026, 1:00 PM',
-    vehiclePlate: 'TN01AB1234',
-    total: '₹465.00',
+    slotName: "Anna Nagar Covered Bay",
+    area: "Anna Nagar West, Chennai",
+    fullAddress: "12, 3rd Avenue, Anna Nagar West, Chennai 600040",
+    accessInstructions: "Gate code 4821. Bay #7 on the left.",
+    startTime: "29 Jul 2026, 9:00 AM",
+    endTime: "29 Jul 2026, 1:00 PM",
+    vehiclePlate: "TN01AB1234",
+    total: "₹465.00",
   },
-} satisfies TemplateEntry
+} satisfies TemplateEntry;
 
-export default BookingConfirmationEmail
+export default BookingConfirmationEmail;
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '24px 25px', maxWidth: '560px' }
+const main = { backgroundColor: "#ffffff", fontFamily: "Arial, sans-serif" };
+const container = { padding: "24px 25px", maxWidth: "560px" };
 const brand = {
-  fontSize: '13px',
-  letterSpacing: '2px',
-  fontWeight: 'bold' as const,
-  color: '#443A78',
-  margin: '0 0 12px',
-}
+  fontSize: "13px",
+  letterSpacing: "2px",
+  fontWeight: "bold" as const,
+  color: "#443A78",
+  margin: "0 0 12px",
+};
 const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#2A2438',
-  margin: '0 0 16px',
-}
+  fontSize: "22px",
+  fontWeight: "bold" as const,
+  color: "#2A2438",
+  margin: "0 0 16px",
+};
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.6',
-  margin: '0 0 16px',
-}
+  fontSize: "14px",
+  color: "#55575d",
+  lineHeight: "1.6",
+  margin: "0 0 16px",
+};
 const card = {
-  backgroundColor: '#FAF6EF',
-  borderRadius: '10px',
-  padding: '16px 18px',
-  margin: '0 0 8px',
-}
-const row = { fontSize: '14px', color: '#2A2438', margin: '0 0 6px' }
+  backgroundColor: "#FAF6EF",
+  borderRadius: "10px",
+  padding: "16px 18px",
+  margin: "0 0 8px",
+};
+const row = { fontSize: "14px", color: "#2A2438", margin: "0 0 6px" };
 const rowStrong = {
-  fontSize: '15px',
-  color: '#443A78',
-  fontWeight: 'bold' as const,
-  margin: '8px 0 0',
-}
+  fontSize: "15px",
+  color: "#443A78",
+  fontWeight: "bold" as const,
+  margin: "8px 0 0",
+};
 const label = {
-  fontSize: '12px',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '1px',
-  color: '#F2A522',
-  fontWeight: 'bold' as const,
-  margin: '16px 0 6px',
-}
-const hr = { borderColor: '#eeeae3', margin: '20px 0' }
-const footer = { fontSize: '12px', color: '#999999', margin: '28px 0 0' }
+  fontSize: "12px",
+  textTransform: "uppercase" as const,
+  letterSpacing: "1px",
+  color: "#F2A522",
+  fontWeight: "bold" as const,
+  margin: "16px 0 6px",
+};
+const hr = { borderColor: "#eeeae3", margin: "20px 0" };
+const footer = { fontSize: "12px", color: "#999999", margin: "28px 0 0" };

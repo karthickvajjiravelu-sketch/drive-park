@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authenticated/admin/reviews")({
       { title: "Review moderation · Usop admin" },
       {
         name: "description",
-        content: "Review reported feedback on Usop listings and hide or delete inappropriate content.",
+        content:
+          "Review reported feedback on Usop listings and hide or delete inappropriate content.",
       },
     ],
   }),

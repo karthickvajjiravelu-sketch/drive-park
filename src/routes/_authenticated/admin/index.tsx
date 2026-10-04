@@ -19,8 +19,7 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 function AdminOverview() {
   const { data, isLoading } = useAdminOverview();
 
-  if (isLoading || !data)
-    return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading || !data) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
 
   return (
     <>

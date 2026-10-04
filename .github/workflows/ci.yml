@@ -14,7 +14,15 @@ jobs:
           node-version: 22
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      # TODO: baseline has ~1.9k pre-existing (mostly Prettier) lint errors; make blocking once cleaned up.
+      # TODO: lint is non-blocking until the remaining errors are fixed, then make it blocking.
+      # Remaining errors live only in paths excluded from the formatting cleanup:
+      #   - payments/bookings/pricing/refund code is frozen while payments are on hold:
+      #     src/lib/{bookings,payments,pricing,refund-policy,razorpay,money,api-auth,availability,admin-queries,amenities}*,
+      #     src/components/{PayNowButton,PriceBreakdownCard}.tsx, src/routes/api/public/{bookings,payments,cron}/,
+      #     src/routes/api/public/razorpay-webhook.ts, screens slot.$id, bookings, reservations, wallet,
+      #     earnings, admin/transactions, admin/revenue, tests/{money,security,refund,payments,pricing,reservation-overlap}*
+      #   - platform-generated files (do not edit): src/integrations/supabase/*, src/types/supabase-augment.ts,
+      #     src/lib/email-templates/* and src/routes/lovable/email/* (no-explicit-any in scaffolding)
       - run: bun run lint
         continue-on-error: true
       - run: bun run typecheck
