@@ -1,6 +1,6 @@
 // Server-only booking logic shared by server functions and the mobile HTTPS routes.
 // All money values are computed here from database state; clients never supply prices.
-import { z } from "zod";
+import { createBookingSchema, type CreateBookingInput } from "@/lib/bookings.schema";
 import { calculatePrice, type LocationTier, type SlotType } from "@/lib/pricing";
 import { checkWithinHours } from "@/lib/availability";
 import type { SlotAvailability } from "@/lib/queries";
@@ -15,15 +15,7 @@ export class BookingError extends Error {
   }
 }
 
-export const createBookingSchema = z.object({
-  slotId: z.string().uuid(),
-  startTime: z.string().datetime({ offset: true }),
-  rateType: z.enum(["hourly", "daily", "monthly"]),
-  duration: z.number().int().min(1).max(24 * 31),
-  vehicleId: z.string().uuid().nullable().optional(),
-  promoCode: z.string().trim().min(1).max(40).nullable().optional(),
-});
-export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export { createBookingSchema };
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

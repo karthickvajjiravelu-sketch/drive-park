@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createBookingSchema } from "./bookings.schema";
 
 const idSchema = z.object({ reservationId: z.string().uuid() });
 
@@ -17,7 +18,7 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
 
 export const createBookingFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(async (d: unknown) => (await import("./bookings.server")).createBookingSchema.parse(d))
+  .inputValidator((d: unknown) => createBookingSchema.parse(d))
   .handler(async ({ data, context }) =>
     run(async () => (await import("./bookings.server")).createBooking(context.userId, data)),
   );
@@ -45,11 +46,3 @@ export const cancelBookingFn = createServerFn({ method: "POST" })
     run(async () => (await import("./bookings.server")).cancelBooking(context.userId, data.reservationId)),
   );
 
-/** Address + access instructions, only for owner, admin or a driver who booked. */
-export const getSlotsPrivateFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ slotIds: z.array(z.string().uuid()).max(200) }).parse(d))
-  .handler(async ({ data, context }) => {
-    const { data: rows } = await context.supabase.rpc("get_slots_private", { _slot_ids: data.slotIds });
-    return (rows ?? []) as Array<{ slot_id: string; full_address: string; access_instructions: string }>;
-  });
