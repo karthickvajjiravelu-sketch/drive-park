@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useSlot,
   useMyVehicles,
@@ -14,9 +14,8 @@ import { checkWithinHours, SHORT_WEEKDAYS } from "@/lib/availability";
 import { supabase } from "@/integrations/supabase/client";
 import { sendBookingConfirmation } from "@/lib/emails.functions";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 import { RouteError, RouteNotFound } from "@/components/RouteError";
-// QR library is only needed after a booking is confirmed — load it on demand.
-const QRCodeSVG = lazy(() => import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })));
 import {
   ArrowLeft,
   Star,
@@ -328,13 +327,11 @@ function SlotDetail() {
 
         {booked ? (
           <div className="mt-6 rounded-2xl bg-primary/10 border-2 border-primary p-5 text-center">
-            <div className="text-xs font-bold uppercase tracking-wider text-primary">
+            <div className="text-xs font-bold uppercase tracking-wider text-primary-foreground/70">
               Reservation confirmed
             </div>
             <div className="mt-3 inline-block bg-white p-3 rounded-xl">
-              <Suspense fallback={<div className="w-[160px] h-[160px]" aria-hidden />}>
-                <QRCodeSVG value={reservationId!} size={160} aria-label="Booking QR code" />
-              </Suspense>
+              <QRCodeSVG value={reservationId!} size={160} />
             </div>
             <div className="mt-4 text-left space-y-2">
               <div>
