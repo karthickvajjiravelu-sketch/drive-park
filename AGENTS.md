@@ -8,3 +8,9 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Reservations are created/extended/ended/cancelled only via src/lib/bookings.server.ts (server fns + /api/public/bookings); clients never send prices — direct INSERT is revoked and guard triggers block price edits.
+- Slot full_address/access_instructions are column-revoked; read them only via get_slots_private (withPrivate in queries.ts) — always select SLOT_COLUMNS, never `*`, on slots.
+- Admin-only columns (profile verification/suspension/role, slot approval/rating) are enforced by is_privileged() guard triggers, not by UI.
+- Payment logic lives in src/lib/payments.server.ts, shared by server fns and /api/public/payments/* (Bearer JWT via src/lib/api-auth.ts) so the mobile app uses the same path.
+- Unpaid bookings carry payment_expires_at (15 min); expiry is applied lazily on each new booking, no cron.
