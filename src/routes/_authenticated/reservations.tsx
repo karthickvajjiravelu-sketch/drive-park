@@ -285,7 +285,7 @@ function ActiveCard({
       >
         End session (prorated)
       </button>
-      {(r as { pending_extension?: unknown }).pending_extension ? (
+      {r.pending_extension && new Date(r.pending_extension.expires_at).getTime() > Date.now() ? (
         <PayNowButton reservationId={r.id} amount={0} slotName={slot.name} />
       ) : null}
     </div>
