@@ -153,7 +153,7 @@ export async function endSession(userId: string, id: string) {
   const ratio = Math.min(1, Math.max(0, (now - start) / Math.max(1, end - start)));
   const finalPrice = Math.round(Number(r.total_price) * ratio);
   await db.from("reservations").update({
-    status: "completed", end_time: new Date(now).toISOString(), total_price: finalPrice,
+    status: "completed", end_time: new Date(now).toISOString(), total_price: finalPrice, grand_total: finalPrice,
   }).eq("id", id);
   return { finalPrice, refund: Number(r.total_price) - finalPrice };
 }
@@ -173,7 +173,7 @@ export async function extendBooking(userId: string, id: string, minutes: number)
   const extra = Math.round(perHour * (minutes / 60) * (pb?.finalPricePerHour ? 1.18 : 1));
   const newEnd = new Date(new Date(r.end_time).getTime() + minutes * 60e3).toISOString();
   const { error } = await db.from("reservations").update({
-    end_time: newEnd, total_price: Number(r.total_price) + extra,
+    end_time: newEnd, total_price: Number(r.total_price) + extra, grand_total: Number(r.total_price) + extra,
   }).eq("id", id);
   if (error) {
     if (/no_overlap|exclusion/i.test(error.message)) throw new BookingError("The slot is booked right after you", 409);
