@@ -16,6 +16,7 @@ function EditSlot() {
     <div className="pb-8">
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-5 flex items-center gap-3">
         <button
+          aria-label="Back to my slots"
           onClick={() => navigate({ to: "/my-slots" })}
           className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"
         >

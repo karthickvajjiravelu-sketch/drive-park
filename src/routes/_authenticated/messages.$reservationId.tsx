@@ -75,6 +75,7 @@ function MessagesPage() {
     <div className="flex flex-col" style={{ minHeight: "100dvh" }}>
       <div className="bg-[var(--surface-dark)] text-white px-4 pt-6 pb-4 flex items-center gap-3">
         <button
+          aria-label="Back"
           onClick={() => navigate({ to: "/reservations" })}
           className="w-10 h-10 rounded-full bg-white/10 grid place-items-center"
         >
