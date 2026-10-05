@@ -113,7 +113,14 @@ export async function pricingInputs(
     }
   }
   peers = peers.map((c) => ({ ...c, lat: Number(c.lat), lng: Number(c.lng) }));
-  const probe = demandFromRows({ id: slot.id ?? "", lot_id: slot.lot_id }, peers, lot, [], start, end);
+  const probe = demandFromRows(
+    { id: slot.id ?? "", lot_id: slot.lot_id },
+    peers,
+    lot,
+    [],
+    start,
+    end,
+  );
   let rows: OccupancyRow[] = [];
   if (!probe.demandNeutral && peers.length) {
     const { data } = await db
@@ -128,7 +135,14 @@ export async function pricingInputs(
       .gt("end_time", start.toISOString());
     rows = (data ?? []) as OccupancyRow[];
   }
-  const d = demandFromRows({ id: slot.id ?? "", lot_id: slot.lot_id }, peers, lot, rows, start, end);
+  const d = demandFromRows(
+    { id: slot.id ?? "", lot_id: slot.lot_id },
+    peers,
+    lot,
+    rows,
+    start,
+    end,
+  );
   const { data: holidays } = await db.from("public_holidays").select("date");
   return {
     tier: d.tier,

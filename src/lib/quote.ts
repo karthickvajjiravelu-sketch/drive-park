@@ -203,10 +203,7 @@ export function quoteFromData(
     return result("past", "Start time is in the past");
   if (slot.approval_status !== "approved" || slot.archived || !slot.is_available)
     return result("unavailable", "This slot isn't accepting bookings");
-  if (
-    slot.status !== "open" &&
-    start.getTime() < now.getTime() + FULL_FLAG_WINDOW_HOURS * HOUR_MS
-  )
+  if (slot.status !== "open" && start.getTime() < now.getTime() + FULL_FLAG_WINDOW_HOURS * HOUR_MS)
     return result("unavailable", "This slot is full right now");
   const hoursError = checkWithinHours(data.hours, asIstLocal(start), asIstLocal(end));
   if (hoursError) return result("closed", hoursError);
@@ -218,10 +215,9 @@ export function quoteFromData(
 export type SortMode = "distance" | "price" | "rating";
 
 /** Available first; then by the chosen sort. */
-export function sortResults<T extends { available: boolean; distance: number; price: number; rating: number }>(
-  items: readonly T[],
-  mode: SortMode,
-): T[] {
+export function sortResults<
+  T extends { available: boolean; distance: number; price: number; rating: number },
+>(items: readonly T[], mode: SortMode): T[] {
   return [...items].sort((a, b) => {
     if (a.available !== b.available) return a.available ? -1 : 1;
     if (mode === "price") return a.price - b.price || a.distance - b.distance;

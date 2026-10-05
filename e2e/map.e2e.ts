@@ -39,3 +39,24 @@ test.describe("map screen", () => {
     await expect(page.getByText("No slots match your filters.")).toHaveCount(0);
   });
 });
+
+test.describe("time-window search", () => {
+  test.skip(!EMAIL || !PASSWORD, "E2E_USER_EMAIL / E2E_USER_PASSWORD not set");
+
+  test("entering a window shows totals and greys unavailable slots", async ({ page }) => {
+    await page.route(/maps\.googleapis\.com/, (r) => r.abort());
+    await signIn(page);
+    await page.goto("/map");
+    await page.getByRole("button", { name: "List" }).click();
+    await page.getByLabel(/When\? Arrive/).fill("2030-01-15T11:00");
+    await page.getByLabel(/Length/).fill("2");
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(page.getByText(/free for your time/)).toBeVisible({ timeout: 15_000 });
+    const totals = page.getByText(/₹\d+\s*total/);
+    test.skip((await totals.count()) === 0, "no slots in this database");
+    await expect(totals.first()).toBeVisible();
+    // Any unavailable slot carries a reason label.
+    const reasons = page.getByText(/Booked at that time|Closed at that time|Not available/);
+    if (await reasons.count()) await expect(reasons.first()).toBeVisible();
+  });
+});

@@ -39,7 +39,11 @@ const UNIT_LABEL = { hourly: "hours", daily: "days", monthly: "months" } as cons
 const localInput = (ms: number) =>
   new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
-type WindowQuery = { startTime: string; duration: number; rateType: "hourly" | "daily" | "monthly" };
+type WindowQuery = {
+  startTime: string;
+  duration: number;
+  rateType: "hourly" | "daily" | "monthly";
+};
 
 function haversine(a: [number, number], b: [number, number]) {
   const R = 6371;
@@ -257,9 +261,7 @@ function MapPage() {
             <h1 className="text-2xl font-black mt-0.5">Find parking</h1>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-black text-primary">
-              {openCount}
-            </div>
+            <div className="text-2xl font-black text-primary">{openCount}</div>
             <div className="text-[10px] text-white/60 font-semibold uppercase">
               {windowActive ? "free then" : "spots open"}
             </div>

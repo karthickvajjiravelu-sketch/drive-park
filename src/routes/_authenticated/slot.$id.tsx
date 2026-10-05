@@ -421,16 +421,16 @@ function SlotDetail() {
               slotName={slot.name}
             />
 
-{slot.full_address && (
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2"
-            >
-              <Navigation2 className="w-4 h-4" />
-              Directions
-            </a>
+            {slot.full_address && (
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2"
+              >
+                <Navigation2 className="w-4 h-4" />
+                Directions
+              </a>
             )}
             <Link
               to="/reservations"

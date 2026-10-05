@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { createBookingSchema } from "../src/lib/bookings.schema";
-import { quoteFromData, sortResults, FULL_FLAG_WINDOW_HOURS, type QuoteSlot } from "../src/lib/quote";
+import {
+  quoteFromData,
+  sortResults,
+  FULL_FLAG_WINDOW_HOURS,
+  type QuoteSlot,
+} from "../src/lib/quote";
 import { quoteWindow } from "../src/lib/bookings.server";
 import { searchWindow } from "../src/lib/search.server";
 
@@ -84,7 +89,14 @@ describe("window quote", () => {
   });
   it("closed by opening hours (IST)", () => {
     const hours = [
-      { id: "h", slot_id: "a", weekday: 2, open_time: "09:00:00", close_time: "12:00:00", closed: false },
+      {
+        id: "h",
+        slot_id: "a",
+        weekday: 2,
+        open_time: "09:00:00",
+        close_time: "12:00:00",
+        closed: false,
+      },
     ];
     expect(q(slot("a"), ist("2026-06-09T11:00:00"), 2, { ...empty, hours }).reason).toBe("closed");
     expect(q(slot("a"), ist("2026-06-09T10:00:00"), 2, { ...empty, hours }).reason).toBe("ok");
@@ -154,7 +166,12 @@ describe("search quote equals booking quote", () => {
       );
       expect(found).toHaveLength(6);
       for (const s of slots) {
-        const booking = await quoteWindow(db as never, s, { startTime: start, duration, rateType }, NOW);
+        const booking = await quoteWindow(
+          db as never,
+          s,
+          { startTime: start, duration, rateType },
+          NOW,
+        );
         const r = found.find((f) => f.slotId === s.id)!;
         expect(r.totalPrice).toBe(booking.grandTotal);
         expect(r.available).toBe(booking.available);
