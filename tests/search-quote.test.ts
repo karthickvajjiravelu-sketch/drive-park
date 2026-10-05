@@ -4,10 +4,11 @@ import {
   quoteFromData,
   sortResults,
   FULL_FLAG_WINDOW_HOURS,
+  isFullGateActive,
   type QuoteSlot,
 } from "../src/lib/quote";
 import { quoteWindow } from "../src/lib/bookings.server";
-import { searchWindow } from "../src/lib/search.server";
+import { searchWindow, fetchAllPages } from "../src/lib/search.server";
 
 const ist = (s: string) => new Date(`${s}+05:30`);
 const NOW = ist("2026-06-09T10:00:00"); // Tuesday
@@ -127,9 +128,10 @@ function fakeDb(tables: Record<string, unknown[]>) {
     from(table: string) {
       let rows = [...(tables[table] ?? [])] as Record<string, unknown>[];
       const q: Record<string, unknown> = {};
-      for (const m of ["select", "neq", "lt", "gt", "gte", "lte", "limit"]) q[m] = () => q;
+      for (const m of ["select", "neq", "lt", "gt", "gte", "lte", "limit", "order"]) q[m] = () => q;
       q.eq = (c: string, v: unknown) => ((rows = rows.filter((r) => r[c] === v)), q);
       q.in = (c: string, vs: unknown[]) => ((rows = rows.filter((r) => vs.includes(r[c]))), q);
+      q.range = async (f: number, t: number) => ({ data: rows.slice(f, t + 1) });
       q.maybeSingle = async () => ({ data: rows[0] ?? null });
       q.then = (r: (v: { data: unknown[] }) => unknown) => r({ data: rows });
       return q;
@@ -181,4 +183,36 @@ describe("search quote equals booking quote", () => {
       expect(found.find((f) => f.slotId === "b")!.reason).toBe("booked");
     });
   }
+});
+
+describe("full gate (slot page)", () => {
+  it(`active only for starts within ${FULL_FLAG_WINDOW_HOURS} h`, () => {
+    expect(isFullGateActive("full", new Date(NOW.getTime() + 2 * H - 60e3), NOW)).toBe(true);
+    expect(isFullGateActive("full", new Date(NOW.getTime() + 2 * H), NOW)).toBe(false);
+    expect(isFullGateActive("full", new Date(NOW.getTime() + 2 * H + 60e3), NOW)).toBe(false);
+    expect(isFullGateActive("open", NOW, NOW)).toBe(false);
+    expect(isFullGateActive("full", new Date("nope"), NOW)).toBe(true);
+  });
+});
+
+describe("fetchAllPages", () => {
+  it("reads 2500 rows in pages of 1000", async () => {
+    const all = Array.from({ length: 2500 }, (_, i) => ({ id: i }));
+    const calls: [number, number][] = [];
+    const rows = await fetchAllPages(() => ({
+      range: async (f: number, t: number) => (calls.push([f, t]), { data: all.slice(f, t + 1) }),
+    }));
+    expect(rows).toHaveLength(2500);
+    expect(rows.map((r) => r.id)).toEqual(all.map((r) => r.id));
+    expect(calls).toEqual([
+      [0, 999],
+      [1000, 1999],
+      [2000, 2999],
+    ]);
+  });
+  it("throws on error", async () => {
+    await expect(
+      fetchAllPages(() => ({ range: async () => ({ data: null, error: new Error("x") }) })),
+    ).rejects.toThrow("x");
+  });
 });

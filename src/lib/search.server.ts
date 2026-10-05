@@ -1,7 +1,12 @@
 // Server-only: time-window search. Uses the same quoteFromData/demandFromRows rules as
 // createBooking, with batched reads. Exact coordinates and addresses never leave this file.
 import type { SearchWindowInput } from "@/lib/bookings.schema";
-import { haversineKm, type OccupancyRow, type PeerCandidate } from "@/lib/pricing";
+import {
+  haversineKm,
+  neighbourhoodPeers,
+  type OccupancyRow,
+  type PeerCandidate,
+} from "@/lib/pricing";
 import type { SlotAvailability } from "@/lib/queries";
 import {
   demandFromRows,
@@ -12,6 +17,45 @@ import {
 } from "@/lib/quote";
 
 export const SEARCH_RESULT_CAP = 100;
+/** PostgREST max rows per response; we page at this size. */
+export const PAGE_SIZE = 1000;
+/** Ids per `.in()` filter, keeps request URLs short. */
+export const ID_CHUNK = 100;
+
+/**
+ * Read every row of a query by paging with .range() until a short page comes back.
+ * `build` must return a fresh, deterministically ordered query each call.
+ */
+export async function fetchAllPages<T>(
+  build: () => {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }>;
+  },
+  pageSize: number = PAGE_SIZE,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await build().range(from, from + pageSize - 1);
+    if (error) throw error;
+    const rows = data ?? [];
+    out.push(...rows);
+    if (rows.length < pageSize) return out;
+  }
+}
+
+/** fetchAllPages over id chunks of ID_CHUNK (one `.in()` filter per chunk). */
+async function fetchByIds<T>(
+  ids: string[],
+  build: (chunk: string[]) => {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }>;
+  },
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < ids.length; i += ID_CHUNK) {
+    const chunk = ids.slice(i, i + ID_CHUNK);
+    out.push(...(await fetchAllPages(() => build(chunk))));
+  }
+  return out;
+}
 
 export type WindowResult = {
   slotId: string;
@@ -49,13 +93,15 @@ export async function searchWindow(
   const start = new Date(input.startTime);
   const end = new Date(start.getTime() + input.duration * UNIT_MS[input.rateType]);
 
-  const { data: all } = await db
-    .from("slots")
-    .select(
-      "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, approx_lat, approx_lng",
-    )
-    .limit(5000);
-  const slots = ((all ?? []) as SlotRow[]).map((s) => ({
+  const all = await fetchAllPages<SlotRow>(() =>
+    db
+      .from("slots")
+      .select(
+        "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, approx_lat, approx_lng",
+      )
+      .order("id"),
+  );
+  const slots = all.map((s) => ({
     ...s,
     lat: Number(s.lat),
     lng: Number(s.lng),
@@ -66,13 +112,29 @@ export async function searchWindow(
   if (!candidates.length) return [];
   const ids = candidates.map((c) => c.id);
 
-  const { data: hoursRows } = await db.from("slot_availability").select("*").in("slot_id", ids);
-  const { data: resRows } = await db
-    .from("reservations")
-    .select("slot_id, status, start_time, end_time, payment_expires_at")
-    .neq("status", "cancelled")
-    .lt("start_time", end.toISOString())
-    .gt("end_time", start.toISOString());
+  const hoursRows = await fetchByIds<SlotAvailability>(ids, (chunk) =>
+    db.from("slot_availability").select("*").in("slot_id", chunk).order("id"),
+  );
+  // Reservations on candidates plus their demand peers (same lot, or neighbourhood), so
+  // availability and demand match createBooking exactly.
+  const resSlotIds = new Set(ids);
+  for (const c of candidates) {
+    if (c.lot_id) {
+      for (const s of slots) if (s.lot_id === c.lot_id) resSlotIds.add(s.id);
+    } else {
+      for (const pid of neighbourhoodPeers(c, slots).peerIds) resSlotIds.add(pid);
+    }
+  }
+  const resRows = await fetchByIds<OccupancyRow & { id: string }>([...resSlotIds], (chunk) =>
+    db
+      .from("reservations")
+      .select("id, slot_id, status, start_time, end_time, payment_expires_at")
+      .in("slot_id", chunk)
+      .neq("status", "cancelled")
+      .lt("start_time", end.toISOString())
+      .gt("end_time", start.toISOString())
+      .order("id"),
+  );
   const { data: holidayRows } = await db.from("public_holidays").select("date");
   const lotIds = [...new Set(candidates.map((c) => c.lot_id).filter(Boolean))] as string[];
   const lots = new Map<string, { tier: string | null; total_slots: number }>();
