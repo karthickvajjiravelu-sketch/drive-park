@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { MAP3D_FLAG } from "@/lib/map3d-support";
+import { useMap3DEnabled } from "@/lib/map3d-support";
 const Slot3DButton = lazy(() => import("@/components/Slot3DButton"));
 import {
   useSlot,
@@ -87,6 +87,7 @@ function SlotDetail() {
   const [bookedTotal, setBookedTotal] = useState<number | null>(null);
   const createBooking = useServerFn(createBookingFn);
   const [busy, setBusy] = useState(false);
+  const map3dEnabled = useMap3DEnabled();
   const [priceEpoch, setPriceEpoch] = useState(0);
 
   const fetchPricingContext = useServerFn(getPricingContext);
@@ -329,7 +330,7 @@ function SlotDetail() {
           </div>
         </div>
       </div>
-      {MAP3D_FLAG && slot.full_address && (
+      {map3dEnabled && slot.full_address && (
         <Suspense fallback={null}>
           <Slot3DButton slot={slot} />
         </Suspense>

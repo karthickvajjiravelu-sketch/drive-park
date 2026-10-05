@@ -15,7 +15,7 @@ import {
   useSlotsPrivate,
   type Slot,
 } from "@/lib/queries";
-import { MAP3D_FLAG, canUse3D } from "@/lib/map3d-support";
+import { isMap3DEnabledHere, canUse3D } from "@/lib/map3d-support";
 import { cameraPolicy, ownSlotIds } from "@/lib/map3d-camera";
 import type { Map3DItem } from "@/components/Map3DDialog";
 import { demandFromOccupancy, occupancyPercent, type DemandLevel } from "@/lib/pricing";
@@ -234,8 +234,8 @@ function MapPage() {
   // requested only for own slots — never for other users' slots.
   const [open3D, setOpen3D] = useState(false);
   const [can3D, setCan3D] = useState(false);
-  useEffect(() => setCan3D(canUse3D()), []);
-  const show3DToggle = MAP3D_FLAG && can3D;
+  useEffect(() => setCan3D(isMap3DEnabledHere() && canUse3D()), []);
+  const show3DToggle = can3D;
   const { data: profile } = useProfile();
   const myIds = useMemo(
     () => (show3DToggle ? ownSlotIds(slots, profile?.user_id) : []),
