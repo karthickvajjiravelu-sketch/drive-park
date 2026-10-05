@@ -1,7 +1,7 @@
 // Server-only: time-window search. Uses the same quoteFromData/demandFromRows rules as
 // createBooking, with batched reads. Exact coordinates and addresses never leave this file.
 import type { SearchWindowInput } from "@/lib/bookings.schema";
-import { haversineKm, type OccupancyRow, type PeerCandidate } from "@/lib/pricing";
+import { haversineKm, neighbourhoodPeers, type OccupancyRow, type PeerCandidate } from "@/lib/pricing";
 import type { SlotAvailability } from "@/lib/queries";
 import {
   demandFromRows,
@@ -103,10 +103,17 @@ export async function searchWindow(
   const hoursRows = await fetchByIds<SlotAvailability>(ids, (chunk) =>
     db.from("slot_availability").select("*").in("slot_id", chunk).order("id"),
   );
-  // Only reservations on candidate slots: with ≤100 candidates and one non-lot neighbourhood
-  // these are also the demand peers that matter for candidates (peers outside the candidate
-  // set are non-approved/archived/unavailable or beyond the cap).
-  const resRows = await fetchByIds<OccupancyRow & { id: string }>(ids, (chunk) =>
+  // Reservations on candidates plus their demand peers (same lot, or neighbourhood), so
+  // availability and demand match createBooking exactly.
+  const resSlotIds = new Set(ids);
+  for (const c of candidates) {
+    if (c.lot_id) {
+      for (const s of slots) if (s.lot_id === c.lot_id) resSlotIds.add(s.id);
+    } else {
+      for (const pid of neighbourhoodPeers(c, slots).peerIds) resSlotIds.add(pid);
+    }
+  }
+  const resRows = await fetchByIds<OccupancyRow & { id: string }>([...resSlotIds], (chunk) =>
     db
       .from("reservations")
       .select("id, slot_id, status, start_time, end_time, payment_expires_at")
