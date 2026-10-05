@@ -34,6 +34,17 @@ const HOUR_MS = 3600e3;
 
 export type QuoteReason = "ok" | "booked" | "closed" | "unavailable" | "past";
 
+/**
+ * True when the host's manual "full" flag blocks a window starting at `start`
+ * (starts within FULL_FLAG_WINDOW_HOURS of now). An invalid start date blocks.
+ */
+export function isFullGateActive(status: string, start: Date, now: Date): boolean {
+  if (status === "open") return false;
+  const t = start.getTime();
+  if (!Number.isFinite(t)) return true;
+  return t < now.getTime() + FULL_FLAG_WINDOW_HOURS * HOUR_MS;
+}
+
 export type QuoteSlot = {
   id: string;
   status: string;
@@ -203,7 +214,7 @@ export function quoteFromData(
     return result("past", "Start time is in the past");
   if (slot.approval_status !== "approved" || slot.archived || !slot.is_available)
     return result("unavailable", "This slot isn't accepting bookings");
-  if (slot.status !== "open" && start.getTime() < now.getTime() + FULL_FLAG_WINDOW_HOURS * HOUR_MS)
+  if (isFullGateActive(slot.status, start, now))
     return result("unavailable", "This slot is full right now");
   const hoursError = checkWithinHours(data.hours, asIstLocal(start), asIstLocal(end));
   if (hoursError) return result("closed", hoursError);

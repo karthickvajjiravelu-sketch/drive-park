@@ -10,6 +10,7 @@ import {
   useSlotAvailability,
 } from "@/lib/queries";
 import { checkWithinHours, SHORT_WEEKDAYS } from "@/lib/availability";
+import { isFullGateActive } from "@/lib/quote";
 
 import { supabase } from "@/integrations/supabase/client";
 import { sendBookingConfirmation } from "@/lib/emails.functions";
@@ -93,6 +94,12 @@ function SlotDetail() {
     const t = setTimeout(() => setPricingWindow({ startTime, duration }), 400);
     return () => clearTimeout(t);
   }, [startTime, duration]);
+  // Re-evaluate the "full right now" gate once a minute.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60e3);
+    return () => clearInterval(t);
+  }, []);
   const pricingStartIso = (() => {
     const d = new Date(pricingWindow.startTime);
     return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
@@ -169,6 +176,7 @@ function SlotDetail() {
   }
   const booked = !!reservationId;
   const isFull = slot.status === "full";
+  const showFullGate = isFullGateActive(slot.status, new Date(startTime), new Date(nowTick));
 
   async function toggleFav() {
     const {
@@ -283,7 +291,7 @@ function SlotDetail() {
           </button>
           {isFull ? (
             <span className="px-3 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
-              FULL
+              {showFullGate ? "FULL" : "FULL NOW"}
             </span>
           ) : (
             <span className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/95 text-[10px] font-bold">
@@ -439,7 +447,7 @@ function SlotDetail() {
               View my bookings
             </Link>
           </div>
-        ) : isFull ? (
+        ) : showFullGate ? (
           <button
             onClick={notifyMe}
             className="mt-6 w-full rounded-2xl bg-foreground text-background py-4 font-bold"
@@ -448,6 +456,11 @@ function SlotDetail() {
           </button>
         ) : (
           <div className="mt-6 space-y-3">
+            {isFull && (
+              <p role="status" className="rounded-xl bg-muted px-3 py-2 text-sm">
+                This space is full right now. Bookings for later times are open.
+              </p>
+            )}
             {pricing && (
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
