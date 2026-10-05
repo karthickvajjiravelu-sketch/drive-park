@@ -26,7 +26,13 @@ export const REFUND_CONFIG = {
   /** Max concurrent unpaid holds per user (also enforced in the database trigger). */
   maxUnpaidHolds: 2,
   /** Per-user, per-minute request limits. */
-  rateLimits: { bookings_create: 5, bookings_action: 20, payments_order: 10, payments_verify: 20, admin_refund: 30 },
+  rateLimits: {
+    bookings_create: 5,
+    bookings_action: 20,
+    payments_order: 10,
+    payments_verify: 20,
+    admin_refund: 30,
+  },
   /** Payments stuck in created/authorized longer than this are reconciled with Razorpay. */
   reconcileAfterMinutes: 30,
   /** Refund retry backoff (minutes) by attempt number; last value repeats. */
@@ -52,12 +58,21 @@ export function policyBlurb(policy: CancellationPolicy): string {
  * Share (0..1) refunded on cancellation before start.
  * `graceFrom` is the later of booking creation and last payment time.
  */
-export function cancellationRefundShare(policy: string, startIso: string, now = Date.now(), graceFrom?: string | null): number {
+export function cancellationRefundShare(
+  policy: string,
+  startIso: string,
+  now = Date.now(),
+  graceFrom?: string | null,
+): number {
   const msBefore = new Date(startIso).getTime() - now;
   if (msBefore <= 0) return 0;
   if (graceFrom) {
     const since = now - new Date(graceFrom).getTime();
-    if (since >= 0 && since <= REFUND_CONFIG.graceMinutes * 60e3 && msBefore >= REFUND_CONFIG.graceMinStartHours * 3600e3)
+    if (
+      since >= 0 &&
+      since <= REFUND_CONFIG.graceMinutes * 60e3 &&
+      msBefore >= REFUND_CONFIG.graceMinStartHours * 3600e3
+    )
       return 1;
   }
   const c = REFUND_CONFIG.policies[policyOf(policy)];
@@ -69,7 +84,12 @@ export function cancellationRefundShare(policy: string, startIso: string, now = 
  * Amount kept (paise) when a session ends early: pro-rata for time used, with a minimum
  * charge of `minChargeHours`, never more than what was charged.
  */
-export function earlyEndChargePaise(chargedPaise: number, startMs: number, endMs: number, nowMs: number): number {
+export function earlyEndChargePaise(
+  chargedPaise: number,
+  startMs: number,
+  endMs: number,
+  nowMs: number,
+): number {
   const span = Math.max(1, endMs - startMs);
   const used = Math.min(span, Math.max(0, nowMs - startMs));
   const prorata = (chargedPaise * used) / span;
@@ -84,7 +104,11 @@ export function refundablePaise(paise: number): number {
 }
 
 /** GST portion of a refund, proportional to the GST in the amount charged. */
-export function gstShareOfRefund(refundPaise: number, chargedPaise: number, gstPaise: number): number {
+export function gstShareOfRefund(
+  refundPaise: number,
+  chargedPaise: number,
+  gstPaise: number,
+): number {
   if (chargedPaise <= 0 || gstPaise <= 0) return 0;
   return Math.floor((refundPaise * gstPaise) / chargedPaise);
 }
@@ -99,7 +123,11 @@ export function extensionPrice(perHourExGst: number, minutes: number, gstRate: n
  * Pricing v2 extension price (rupees, GST included): price(new duration) − price(old duration),
  * both computed with the same stored parameters. `totalForHours` returns the rounded grand total.
  */
-export function extensionPriceV2(totalForHours: (hours: number) => number, oldHours: number, newHours: number): number {
+export function extensionPriceV2(
+  totalForHours: (hours: number) => number,
+  oldHours: number,
+  newHours: number,
+): number {
   return Math.max(0, totalForHours(newHours) - totalForHours(oldHours));
 }
 

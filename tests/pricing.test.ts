@@ -21,7 +21,14 @@ const H = 3600e3;
 
 /** Neutral inputs: 50% booked → demand 1.0, independent slot. */
 const base = (rate: number, start: Date, hours: number, extra: object = {}) =>
-  calculatePrice({ baseRate: rate, occupiedSlots: 1, totalSlots: 2, startTime: start, durationHours: hours, ...extra });
+  calculatePrice({
+    baseRate: rate,
+    occupiedSlots: 1,
+    totalSlots: 2,
+    startTime: start,
+    durationHours: hours,
+    ...extra,
+  });
 
 describe("pricing v2 — base and location", () => {
   it("uses the host's hourly_rate as the base", () => {
@@ -89,7 +96,12 @@ describe("pricing v2 — marginal duration discount", () => {
   });
 
   it("is continuous and strictly increasing every 0.25 h from 0.25 to 48 h", () => {
-    for (const start of ["2026-06-09T05:59:00", "2026-06-09T16:00:00", "2026-06-12T23:00:00", "2026-06-09T11:00:00"]) {
+    for (const start of [
+      "2026-06-09T05:59:00",
+      "2026-06-09T16:00:00",
+      "2026-06-12T23:00:00",
+      "2026-06-09T11:00:00",
+    ]) {
       const s = ist(start);
       let prev = 0;
       for (let q = 1; q <= 192; q++) {
@@ -107,11 +119,24 @@ describe("pricing v2 — marginal duration discount", () => {
 
 describe("pricing v2 — cap", () => {
   it("clamps the combined multiplier to the cap and reports it", () => {
-    const hi = calculatePrice({ baseRate: 40, tier: "T1", occupiedSlots: 99, totalSlots: 100, startTime: ist("2026-06-13T18:00:00"), durationHours: 1 });
+    const hi = calculatePrice({
+      baseRate: 40,
+      tier: "T1",
+      occupiedSlots: 99,
+      totalSlots: 100,
+      startTime: ist("2026-06-13T18:00:00"),
+      durationHours: 1,
+    });
     expect(hi.rawMultiplier).toBeGreaterThan(MULTIPLIER_CAP.max);
     expect(hi.combinedMultiplier).toBe(MULTIPLIER_CAP.max);
     expect(hi.capApplied).toBe("max");
-    const lo = calculatePrice({ baseRate: 40, occupiedSlots: 0, totalSlots: 10, startTime: ist("2026-06-09T01:00:00"), durationHours: 1 });
+    const lo = calculatePrice({
+      baseRate: 40,
+      occupiedSlots: 0,
+      totalSlots: 10,
+      startTime: ist("2026-06-09T01:00:00"),
+      durationHours: 1,
+    });
     expect(lo.rawMultiplier).toBeCloseTo(0.56, 9);
     expect(lo.combinedMultiplier).toBe(MULTIPLIER_CAP.min);
     expect(lo.capApplied).toBe("min");
@@ -129,8 +154,18 @@ describe("occupancy overlap", () => {
   const now = ist("2026-06-09T10:00:00");
   const start = ist("2026-06-09T12:00:00");
   const end = ist("2026-06-09T14:00:00");
-  const row = (slot_id: string, s: string, e: string, extra: Partial<OccupancyRow> = {}): OccupancyRow => ({
-    slot_id, status: "upcoming", start_time: ist(s).toISOString(), end_time: ist(e).toISOString(), payment_expires_at: null, ...extra,
+  const row = (
+    slot_id: string,
+    s: string,
+    e: string,
+    extra: Partial<OccupancyRow> = {},
+  ): OccupancyRow => ({
+    slot_id,
+    status: "upcoming",
+    start_time: ist(s).toISOString(),
+    end_time: ist(e).toISOString(),
+    payment_expires_at: null,
+    ...extra,
   });
   it("counts distinct slots overlapping the window only", () => {
     const rows = [
@@ -140,8 +175,12 @@ describe("occupancy overlap", () => {
       row("c", "2026-06-09T08:00:00", "2026-06-09T12:00:00"), // ends at start: no overlap
       row("d", "2026-06-10T12:00:00", "2026-06-10T14:00:00"), // future day
       row("e", "2026-06-09T12:00:00", "2026-06-09T13:00:00", { status: "cancelled" }),
-      row("f", "2026-06-09T12:00:00", "2026-06-09T13:00:00", { payment_expires_at: ist("2026-06-09T09:50:00").toISOString() }), // expired hold
-      row("g", "2026-06-09T12:00:00", "2026-06-09T13:00:00", { payment_expires_at: ist("2026-06-09T10:10:00").toISOString() }), // live hold
+      row("f", "2026-06-09T12:00:00", "2026-06-09T13:00:00", {
+        payment_expires_at: ist("2026-06-09T09:50:00").toISOString(),
+      }), // expired hold
+      row("g", "2026-06-09T12:00:00", "2026-06-09T13:00:00", {
+        payment_expires_at: ist("2026-06-09T10:10:00").toISOString(),
+      }), // live hold
     ];
     expect(countOccupiedSlots(rows, start, end, now)).toBe(2); // a, g
   });
@@ -150,7 +189,11 @@ describe("occupancy overlap", () => {
 describe("early end and extension (v2 recompute, v1 fallback)", () => {
   const start = ist("2026-06-09T09:00:00");
   const b12 = base(40, start, 12);
-  const r12 = { start_time: start.toISOString(), end_time: new Date(start.getTime() + 12 * H).toISOString(), price_breakdown: JSON.parse(JSON.stringify(b12)) };
+  const r12 = {
+    start_time: start.toISOString(),
+    end_time: new Date(start.getTime() + 12 * H).toISOString(),
+    price_breakdown: JSON.parse(JSON.stringify(b12)),
+  };
 
   it("book 12 h, leave after 1 h: pays the 1-hour price, not a discounted pro-rata", () => {
     const charged = b12.grandTotal * 100;
@@ -163,7 +206,9 @@ describe("early end and extension (v2 recompute, v1 fallback)", () => {
 
   it("minimum 1 h, never above charged", () => {
     const charged = b12.grandTotal * 100;
-    expect(earlyEndKeptPaise(r12, charged, start.getTime() + 10 * 60e3)).toBe(priceWithParams(b12, start, 1).grandTotal * 100);
+    expect(earlyEndKeptPaise(r12, charged, start.getTime() + 10 * 60e3)).toBe(
+      priceWithParams(b12, start, 1).grandTotal * 100,
+    );
     expect(earlyEndKeptPaise(r12, charged, start.getTime() + 12 * H)).toBe(charged);
     expect(earlyEndKeptPaise(r12, 100, start.getTime() + 2 * H)).toBe(100);
   });
@@ -179,6 +224,8 @@ describe("early end and extension (v2 recompute, v1 fallback)", () => {
     expect(extensionCost(v1, 60)).toBeNull();
     // v1 pro-rata: 2 of 12 hours of 1200 paise = 200
     expect(earlyEndKeptPaise(v1, 1200, start.getTime() + 2 * H)).toBe(200);
-    expect(earlyEndKeptPaise({ ...r12, price_breakdown: null }, 1200, start.getTime() + 2 * H)).toBe(200);
+    expect(
+      earlyEndKeptPaise({ ...r12, price_breakdown: null }, 1200, start.getTime() + 2 * H),
+    ).toBe(200);
   });
 });

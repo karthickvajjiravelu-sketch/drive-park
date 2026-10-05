@@ -109,7 +109,10 @@ export function PriceBreakdownCard({
       <div className="border-t border-border my-2" />
       <Row label="Average price / hour" value={formatRupees(breakdown.finalPricePerHour)} />
       <Row label="Subtotal" value={formatRupees(breakdown.subtotal)} />
-      <Row label={`GST (${Math.round(breakdown.gstRate * 100)}%)`} value={formatRupees(breakdown.gst)} />
+      <Row
+        label={`GST (${Math.round(breakdown.gstRate * 100)}%)`}
+        value={formatRupees(breakdown.gst)}
+      />
 
       <div className="flex items-baseline justify-between pt-2">
         <span className="font-bold">Grand total</span>

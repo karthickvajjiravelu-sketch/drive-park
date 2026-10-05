@@ -27,7 +27,11 @@ export const getPricingContext = createServerFn({ method: "GET" })
       .object({
         slotId: z.string().uuid(),
         startTime: z.string().datetime().optional(),
-        durationHours: z.number().positive().max(24 * 31).optional(),
+        durationHours: z
+          .number()
+          .positive()
+          .max(24 * 31)
+          .optional(),
       })
       .parse(data),
   )

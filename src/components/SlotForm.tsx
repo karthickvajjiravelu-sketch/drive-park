@@ -160,9 +160,7 @@ export function SlotForm({ initial, mode }: { initial?: Partial<Slot>; mode: Mod
         </div>
       </div>
       <div>
-        <span className="text-xs font-semibold text-muted-foreground uppercase">
-          Slot type
-        </span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase">Slot type</span>
         <select
           aria-label="Slot type"
           value={form.slot_type}

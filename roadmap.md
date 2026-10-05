@@ -1,2 +1,2 @@
-- [ ] Pricing v2 fixes (A–F)
+- [x] Pricing v2 fixes (A–F)
 - [x] 3D view plan (plan only, not implemented)

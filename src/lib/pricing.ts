@@ -105,7 +105,12 @@ export type OccupancyRow = {
  * Distinct slots with a reservation that overlaps [start, end), ignoring cancelled bookings
  * and unpaid holds that have already expired.
  */
-export function countOccupiedSlots(rows: readonly OccupancyRow[], start: Date, end: Date, now: Date = new Date()): number {
+export function countOccupiedSlots(
+  rows: readonly OccupancyRow[],
+  start: Date,
+  end: Date,
+  now: Date = new Date(),
+): number {
   const s = start.getTime();
   const e = end.getTime();
   const n = now.getTime();
@@ -113,7 +118,8 @@ export function countOccupiedSlots(rows: readonly OccupancyRow[], start: Date, e
   for (const r of rows) {
     if (r.status === "cancelled") continue;
     if (r.payment_expires_at && new Date(r.payment_expires_at).getTime() <= n) continue;
-    if (new Date(r.start_time).getTime() < e && new Date(r.end_time).getTime() > s) ids.add(r.slot_id);
+    if (new Date(r.start_time).getTime() < e && new Date(r.end_time).getTime() > s)
+      ids.add(r.slot_id);
   }
   return ids.size;
 }
@@ -166,15 +172,26 @@ export function windowFactors(
   if (endMs <= startMs) {
     const t = timeFactor(start);
     const d = dayFactor(start, holidayDates);
-    return { time: t.multiplier, day: d.multiplier, combined: t.multiplier * d.multiplier, timeLabel: t.label, dayLabel: d.label };
+    return {
+      time: t.multiplier,
+      day: d.multiplier,
+      combined: t.multiplier * d.multiplier,
+      timeLabel: t.label,
+      dayLabel: d.label,
+    };
   }
-  let t = 0, d = 0, c = 0;
+  let t = 0,
+    d = 0,
+    c = 0;
   const timeW = new Map<string, number>();
   const dayW = new Map<string, number>();
   let cur = startMs;
   while (cur < endMs) {
     // IST is a whole-half-hour offset, so IST hour boundaries are UTC :30 marks.
-    const next = Math.min(endMs, Math.floor((cur + IST_OFFSET_MS) / HOUR_MS + 1) * HOUR_MS - IST_OFFSET_MS);
+    const next = Math.min(
+      endMs,
+      Math.floor((cur + IST_OFFSET_MS) / HOUR_MS + 1) * HOUR_MS - IST_OFFSET_MS,
+    );
     const w = next - cur;
     const at = new Date(cur);
     const tf = timeFactor(at);
@@ -188,7 +205,13 @@ export function windowFactors(
   }
   const total = endMs - startMs;
   const label = (m: Map<string, number>) => (m.size === 1 ? [...m.keys()][0] : "Mixed");
-  return { time: t / total, day: d / total, combined: c / total, timeLabel: label(timeW), dayLabel: label(dayW) };
+  return {
+    time: t / total,
+    day: d / total,
+    combined: c / total,
+    timeLabel: label(timeW),
+    dayLabel: label(dayW),
+  };
 }
 
 /* ------------------------------------------------------------ duration bands */
@@ -263,7 +286,9 @@ export type PriceBreakdown = PricingParams & {
   computedAt: number;
 };
 
-export function pricingParams(input: Omit<PricingInput, "startTime" | "durationHours">): PricingParams {
+export function pricingParams(
+  input: Omit<PricingInput, "startTime" | "durationHours">,
+): PricingParams {
   const occupancy = occupancyPercent(input.occupiedSlots, input.totalSlots);
   const demand = demandFromOccupancy(occupancy);
   return {
@@ -281,7 +306,11 @@ export function pricingParams(input: Omit<PricingInput, "startTime" | "durationH
 }
 
 /** The single v2 price function: used by preview, createBooking, endSession and extendBooking. */
-export function priceWithParams(params: PricingParams, startTime: Date, durationHours: number): PriceBreakdown {
+export function priceWithParams(
+  params: PricingParams,
+  startTime: Date,
+  durationHours: number,
+): PriceBreakdown {
   const w = windowFactors(startTime, durationHours, params.holidayDates);
   const raw = params.demandMultiplier * params.locationMultiplier * w.combined;
   const min = params.cap?.min ?? MULTIPLIER_CAP.min;
