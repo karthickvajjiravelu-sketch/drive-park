@@ -110,10 +110,10 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
   let subtotal: number;
   let gst: number;
   if (input.rateType === "hourly") {
-    const p = await pricingInputs(db, slot);
+    const p = await pricingInputs(db, slot, start, end);
     breakdown = calculatePrice({
       slotType: (slot.slot_type ?? "standard_car") as SlotType,
-      baseRate: Number(slot.base_rate),
+      baseRate: Number(slot.hourly_rate),
       tier: p.tier, occupiedSlots: p.occupied, totalSlots: p.total,
       startTime: start, durationHours: input.duration, holidayDates: p.holidays,
     });
