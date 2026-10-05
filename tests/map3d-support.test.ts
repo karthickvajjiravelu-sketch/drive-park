@@ -41,7 +41,10 @@ describe("canUse3D matrix", () => {
 describe("advisory usage guard", () => {
   const mem = () => {
     const m = new Map<string, string>();
-    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
+    return {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+    };
   };
   it("blocks a second load for the same slot", () => {
     const s = mem();
@@ -80,18 +83,28 @@ describe("loadMaps3d", () => {
 
 describe("Slot3DButton visibility", () => {
   it("gate requires flag, unlocked address and support", () => {
-    expect(slot3DButtonVisible({ flag: true, fullAddress: "12 Main St", supported: true })).toBe(true);
-    expect(slot3DButtonVisible({ flag: false, fullAddress: "12 Main St", supported: true })).toBe(false);
+    expect(slot3DButtonVisible({ flag: true, fullAddress: "12 Main St", supported: true })).toBe(
+      true,
+    );
+    expect(slot3DButtonVisible({ flag: false, fullAddress: "12 Main St", supported: true })).toBe(
+      false,
+    );
     expect(slot3DButtonVisible({ flag: true, fullAddress: "", supported: true })).toBe(false);
     expect(slot3DButtonVisible({ flag: true, fullAddress: "  ", supported: true })).toBe(false);
-    expect(slot3DButtonVisible({ flag: true, fullAddress: undefined, supported: true })).toBe(false);
-    expect(slot3DButtonVisible({ flag: true, fullAddress: "12 Main St", supported: false })).toBe(false);
+    expect(slot3DButtonVisible({ flag: true, fullAddress: undefined, supported: true })).toBe(
+      false,
+    );
+    expect(slot3DButtonVisible({ flag: true, fullAddress: "12 Main St", supported: false })).toBe(
+      false,
+    );
   });
   const slot = { id: "x", name: "N", approx_area: "A", hourly_rate: 40, lat: 13, lng: 80 };
   it("renders nothing (empty markup) when locked or flag off", () => {
     expect(renderToString(createElement(Slot3DButton, { slot, flag: true }))).toBe("");
     expect(
-      renderToString(createElement(Slot3DButton, { slot: { ...slot, full_address: "X" }, flag: false })),
+      renderToString(
+        createElement(Slot3DButton, { slot: { ...slot, full_address: "X" }, flag: false }),
+      ),
     ).toBe("");
   });
 });

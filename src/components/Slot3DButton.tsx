@@ -20,7 +20,13 @@ type SlotLike = {
  * Renders nothing unless the flag is on, the slot is unlocked (full_address came back from
  * get_slots_private, so lat/lng are exact) and the device can run 3D.
  */
-export default function Slot3DButton({ slot, flag = MAP3D_FLAG }: { slot: SlotLike; flag?: boolean }) {
+export default function Slot3DButton({
+  slot,
+  flag = MAP3D_FLAG,
+}: {
+  slot: SlotLike;
+  flag?: boolean;
+}) {
   const [supported, setSupported] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => setSupported(canUse3D(flag)), [flag]);

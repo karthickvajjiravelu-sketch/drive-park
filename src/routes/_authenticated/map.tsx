@@ -559,7 +559,11 @@ function MapPage() {
               >
                 2D
               </button>
-              <button aria-pressed={open3D} onClick={start3D} className={`min-h-11 min-w-11 px-3 rounded-full ${open3D ? "bg-primary text-primary-foreground" : ""}`}>
+              <button
+                aria-pressed={open3D}
+                onClick={start3D}
+                className={`min-h-11 min-w-11 px-3 rounded-full ${open3D ? "bg-primary text-primary-foreground" : ""}`}
+              >
                 3D
               </button>
             </div>

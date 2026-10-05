@@ -119,7 +119,10 @@ export function circlePath(c: LatLng, radiusM: number, n = 48): LatLng[] {
 }
 
 /** Slots whose exact data the map screen may request: only the caller's own. */
-export function ownSlotIds(slots: readonly { id: string; owner_id: string }[], userId?: string | null) {
+export function ownSlotIds(
+  slots: readonly { id: string; owner_id: string }[],
+  userId?: string | null,
+) {
   if (!userId) return [];
   return slots.filter((s) => s.owner_id === userId).map((s) => s.id);
 }

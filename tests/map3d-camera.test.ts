@@ -35,13 +35,9 @@ describe("3D camera policy (privacy)", () => {
     expect(cameraPolicy({ approx, exact, unlocked: true }).locked).toBe(false);
     expect(cameraPolicy({ approx, exact, unlocked: true }).center).toEqual(exact);
     expect(cameraPolicy({ approx, exact: null, unlocked: true }).locked).toBe(true);
-    expect(
-      cameraPolicy({ approx, exact: { lat: NaN, lng: 1 }, unlocked: true }).locked,
-    ).toBe(true);
+    expect(cameraPolicy({ approx, exact: { lat: NaN, lng: 1 }, unlocked: true }).locked).toBe(true);
     // truthy non-boolean must not unlock
-    expect(
-      cameraPolicy({ approx, exact, unlocked: 1 as unknown as boolean }).locked,
-    ).toBe(true);
+    expect(cameraPolicy({ approx, exact, unlocked: 1 as unknown as boolean }).locked).toBe(true);
     const u = cameraPolicy({ approx, exact, unlocked: true });
     expect(u.minRange).toBe(80);
     expect(u.maxTilt).toBe(67.5);
