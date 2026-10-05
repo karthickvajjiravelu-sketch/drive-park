@@ -29,10 +29,11 @@ export function isMap3DEnabled(
   if (flag) return true;
   if (!isPreviewHost(hostname)) return false;
   const q = new URLSearchParams(search).get("map3d");
+  if (!storage) return q === "1";
   try {
-    if (q === "1") storage?.setItem(OVERRIDE_KEY, "1");
-    else if (q === "0") storage?.removeItem(OVERRIDE_KEY);
-    return storage?.getItem(OVERRIDE_KEY) === "1";
+    if (q === "1") storage.setItem(OVERRIDE_KEY, "1");
+    else if (q === "0") storage.removeItem(OVERRIDE_KEY);
+    return storage.getItem(OVERRIDE_KEY) === "1";
   } catch {
     return q === "1";
   }

@@ -59,7 +59,8 @@ describe("isMap3DEnabled override", () => {
     expect(isMap3DEnabled("www.usop.in", "?map3d=0", mem(), true)).toBe(true);
   });
   it("works without storage", () => {
-    expect(isMap3DEnabled("localhost", "?map3d=1", null, false)).toBe(false);
+    expect(isMap3DEnabled("localhost", "?map3d=1", null, false)).toBe(true);
+    expect(isMap3DEnabled("www.usop.in", "?map3d=1", null, false)).toBe(false);
   });
 });
 
@@ -79,7 +80,9 @@ describe("locked circle covers the real spot", () => {
       const ang = ((i * 37) % 360) * (Math.PI / 180);
       const aLat = Math.round((lat + (dist * Math.cos(ang)) / 111320) * 1000) / 1000;
       const aLng =
-        Math.round((lng + (dist * Math.sin(ang)) / (111320 * Math.cos((lat * Math.PI) / 180))) * 1000) / 1000;
+        Math.round(
+          (lng + (dist * Math.sin(ang)) / (111320 * Math.cos((lat * Math.PI) / 180))) * 1000,
+        ) / 1000;
       const dy = (aLat - lat) * 111320;
       const dx = (aLng - lng) * 111320 * Math.cos((lat * Math.PI) / 180);
       const off = Math.hypot(dx, dy);

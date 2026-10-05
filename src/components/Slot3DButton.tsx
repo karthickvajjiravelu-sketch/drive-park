@@ -20,13 +20,7 @@ type SlotLike = {
  * Renders nothing unless the flag is on, the slot is unlocked (full_address came back from
  * get_slots_private, so lat/lng are exact) and the device can run 3D.
  */
-export default function Slot3DButton({
-  slot,
-  flag,
-}: {
-  slot: SlotLike;
-  flag?: boolean;
-}) {
+export default function Slot3DButton({ slot, flag }: { slot: SlotLike; flag?: boolean }) {
   const [supported, setSupported] = useState(false);
   const [open, setOpen] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -46,7 +40,8 @@ export default function Slot3DButton({
     [slot.lat, slot.lng, unlocked],
   );
 
-  if (!slot3DButtonVisible({ flag: enabled, fullAddress: slot.full_address, supported })) return null;
+  if (!slot3DButtonVisible({ flag: enabled, fullAddress: slot.full_address, supported }))
+    return null;
 
   return (
     <div className="px-5 pt-4">
