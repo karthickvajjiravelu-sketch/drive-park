@@ -35,6 +35,50 @@ export function loadGoogleMaps(): Promise<typeof google> {
   return loaderPromise;
 }
 
+export type Maps3D = google.maps.Maps3DLibrary;
+
+/** Race a promise against a timeout. */
+export function withTimeout<T>(p: Promise<T>, ms: number, label = "timeout"): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(label)), ms);
+    p.then(
+      (v) => (clearTimeout(t), resolve(v)),
+      (e) => (clearTimeout(t), reject(e instanceof Error ? e : new Error(String(e)))),
+    );
+  });
+}
+
+/** Pure part of loadMaps3d (testable): import the maps3d library via the given loader. */
+export function importMaps3dWith(
+  loader: () => Promise<{ maps: { importLibrary: (n: string) => Promise<unknown> } }>,
+  timeoutMs = 10_000,
+): Promise<Maps3D> {
+  return withTimeout(
+    loader().then(async (g) => {
+      const lib = (await g.maps.importLibrary("maps3d")) as Maps3D | undefined;
+      if (!lib?.Map3DElement) throw new Error("maps3d unavailable");
+      return lib;
+    }),
+    timeoutMs,
+    "3D map timed out",
+  );
+}
+
+let maps3dPromise: Promise<Maps3D> | null = null;
+
+/** Lazily load photorealistic 3D. Additive: the 2D loader and its URL are unchanged. */
+export function loadMaps3d(timeoutMs = 10_000): Promise<Maps3D> {
+  if (!maps3dPromise)
+    maps3dPromise = importMaps3dWith(
+      loadGoogleMaps as unknown as Parameters<typeof importMaps3dWith>[0],
+      timeoutMs,
+    ).catch((e) => {
+      maps3dPromise = null;
+      throw e;
+    });
+  return maps3dPromise;
+}
+
 // Muted Usop map style (dark accents, subtle roads)
 export const USOP_MAP_STYLE: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#f5f5f2" }] },

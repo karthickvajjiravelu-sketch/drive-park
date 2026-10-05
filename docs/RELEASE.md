@@ -25,3 +25,11 @@ See `.env.example` for every name. Public `VITE_*`/Supabase publishable values l
 - [ ] Lovable Cloud logs: server function errors, auth errors.
 - [ ] Email delivery logs for booking confirmations.
 - [ ] Weekly: dependency scan, security scan.
+
+## 3D map view (flag `VITE_FEATURE_MAP_3D`, default off)
+
+- Uses Google's photorealistic 3D maps (`maps3d` library, loaded only when a user taps 3D). Billed by Google under the **"Immersive Maps"** SKU (Pro tier, usage-based). Confirm the current free allowance and price on Google's Maps Platform pricing page before turning the flag on; this repo does not record numbers.
+- **Before enabling:** set a Google Cloud budget alert and an API quota on the Maps project. That is the real cost control.
+- The in-app usage guard (one 3D load per space per browser session, max 5 per session, `sessionStorage`) is **advisory only**: it is client-side and trivially bypassed.
+- Privacy: locked spaces (not owner/admin/fully paid) only ever use the approximate point, a 600 m minimum range, 45° max tilt and ~800 m bounds, with a ~250 m shaded circle. Exact views come only from data `get_slots_private` already returned.
+- Fallback: library error, key/auth failure, missing WebGL or a 10 s timeout shows a message and keeps the 2D map.

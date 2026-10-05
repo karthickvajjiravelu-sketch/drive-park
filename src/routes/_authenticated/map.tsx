@@ -7,7 +7,17 @@ import { searchSlotsForWindow } from "@/lib/search.functions";
 import { sortResults, type SortMode, type QuoteReason } from "@/lib/quote";
 import { DURATION_LIMITS } from "@/lib/bookings.schema";
 import { supabase } from "@/integrations/supabase/client";
-import { useSlots, useMyFavorites, useLotOccupancy, type Slot } from "@/lib/queries";
+import {
+  useSlots,
+  useMyFavorites,
+  useLotOccupancy,
+  useProfile,
+  useSlotsPrivate,
+  type Slot,
+} from "@/lib/queries";
+import { MAP3D_FLAG, canUse3D } from "@/lib/map3d-support";
+import { cameraPolicy, ownSlotIds } from "@/lib/map3d-camera";
+import type { Map3DItem } from "@/components/Map3DDialog";
 import { demandFromOccupancy, occupancyPercent, type DemandLevel } from "@/lib/pricing";
 import { DemandBadge } from "@/components/PriceBreakdownCard";
 import { ClientOnly } from "@/components/ClientOnly";
@@ -19,6 +29,7 @@ import { toast } from "sonner";
 import { ThemeQuickToggle } from "@/components/ThemeToggle";
 
 const SlotMap = lazy(() => import("@/components/SlotMap"));
+const Map3DDialog = lazy(() => import("@/components/Map3DDialog"));
 
 export const Route = createFileRoute("/_authenticated/map")({
   component: MapPage,
@@ -218,6 +229,43 @@ function MapPage() {
   const openCount = windowActive
     ? sorted.filter((s) => results.get(s.id)?.available).length
     : sorted.filter((s) => s.status === "open").length;
+
+  // 3D (flagged). Locked policy for every slot except the caller's own; exact data is
+  // requested only for own slots — never for other users' slots.
+  const [open3D, setOpen3D] = useState(false);
+  const [can3D, setCan3D] = useState(false);
+  useEffect(() => setCan3D(canUse3D()), []);
+  const show3DToggle = MAP3D_FLAG && can3D;
+  const { data: profile } = useProfile();
+  const myIds = useMemo(
+    () => (show3DToggle ? ownSlotIds(slots, profile?.user_id) : []),
+    [show3DToggle, slots, profile?.user_id],
+  );
+  const { data: ownPrivate } = useSlotsPrivate(myIds);
+  const items3D = useMemo<Map3DItem[]>(() => {
+    if (!open3D) return [];
+    return sorted.slice(0, 20).map((s) => {
+      const own = myIds.includes(s.id)
+        ? (ownPrivate?.[s.id] as { lat?: number; lng?: number } | undefined)
+        : undefined;
+      const exact =
+        own && typeof own.lat === "number" && typeof own.lng === "number"
+          ? { lat: own.lat, lng: own.lng }
+          : null;
+      return {
+        id: s.id,
+        name: s.name,
+        approxArea: s.approx_area,
+        rateLabel: `₹${s[`${rate}_rate`]}/${rate === "hourly" ? "hr" : rate === "daily" ? "day" : "month"}`,
+        policy: cameraPolicy({ approx: { lat: s.lat, lng: s.lng }, exact, unlocked: !!exact }),
+      };
+    });
+  }, [open3D, sorted, myIds, ownPrivate, rate]);
+  function start3D() {
+    if (!canUse3D()) return toast.error("3D isn't available on this device. Showing the 2D map.");
+    if (sorted.length === 0) return toast.error("No spaces to show in 3D.");
+    setOpen3D(true);
+  }
 
   function openSlot(id: string) {
     navigate({
@@ -498,6 +546,40 @@ function MapPage() {
 
       {view === "map" ? (
         <div className="flex-1 min-h-[60vh] relative">
+          {show3DToggle && (
+            <div
+              role="group"
+              aria-label="Map view"
+              className="absolute top-3 right-3 z-10 flex rounded-full bg-card/95 shadow p-1 text-xs font-bold"
+            >
+              <button
+                aria-pressed={!open3D}
+                onClick={() => setOpen3D(false)}
+                className={`min-h-11 min-w-11 px-3 rounded-full ${!open3D ? "bg-primary text-primary-foreground" : ""}`}
+              >
+                2D
+              </button>
+              <button
+                aria-pressed={open3D}
+                onClick={start3D}
+                className={`min-h-11 min-w-11 px-3 rounded-full ${open3D ? "bg-primary text-primary-foreground" : ""}`}
+              >
+                3D
+              </button>
+            </div>
+          )}
+          {open3D && (
+            <Suspense fallback={null}>
+              <Map3DDialog
+                items={items3D}
+                onClose={() => setOpen3D(false)}
+                onFallback={(m) => {
+                  toast.error(`${m} Showing the 2D map.`);
+                  setOpen3D(false);
+                }}
+              />
+            </Suspense>
+          )}
           <ClientOnly
             fallback={<div className="p-6 text-sm text-muted-foreground">Loading map…</div>}
           >

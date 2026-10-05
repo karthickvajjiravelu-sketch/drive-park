@@ -25,3 +25,4 @@
 - Hourly prices come only from priceWithParams() in src/lib/pricing.ts; reservations store its params in price_breakdown (pricingVersion 2) so end/extend recompute with the same inputs, and bookings without a version keep the v1 rules — keeps preview, booking, end and extend consistent.
 - Demand for independent slots uses approved slots within DEMAND_RADIUS_KM of the exact position (server-side admin read, never returned); below MIN_DEMAND_PEERS demand is neutral 1.0 — avoids a meaningless self-only occupancy.
 - Reservations price/availability come only from quoteFromData() in src/lib/quote.ts, used by createBooking (via quoteWindow) and searchWindow — search and booking can't disagree.
+- The 3D view (src/lib/map3d-*.ts, SlotMap3D) is behind VITE_FEATURE_MAP_3D and builds its camera only from cameraPolicy(): locked slots use the approximate point; exact only from data get_slots_private already returned — 3D never adds a data path.
