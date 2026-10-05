@@ -51,7 +51,7 @@ function addMarker(lib: Maps3D, map: HTMLElement, p: CameraPolicy): boolean {
   }
 }
 
-/** Locked: translucent ~250 m circle (fallback marker). Unlocked: exact marker (fallback small circle). */
+/** Locked: translucent 400 m circle (fallback marker). Unlocked: exact marker (fallback small circle). */
 function addOverlay(lib: Maps3D, map: HTMLElement, p: CameraPolicy): OverlayKind {
   if (p.locked) {
     if (addCircle(lib, map, p, LOCKED_LIMITS.circleRadiusM)) return "circle";

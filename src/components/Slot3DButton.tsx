@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Box } from "lucide-react";
 import { toast } from "sonner";
 import { cameraPolicy } from "@/lib/map3d-camera";
-import { MAP3D_FLAG, canUse3D, slot3DButtonVisible } from "@/lib/map3d-support";
+import { isMap3DEnabledHere, canUse3D, slot3DButtonVisible } from "@/lib/map3d-support";
 
 const Map3DDialog = lazy(() => import("@/components/Map3DDialog"));
 
@@ -20,16 +20,15 @@ type SlotLike = {
  * Renders nothing unless the flag is on, the slot is unlocked (full_address came back from
  * get_slots_private, so lat/lng are exact) and the device can run 3D.
  */
-export default function Slot3DButton({
-  slot,
-  flag = MAP3D_FLAG,
-}: {
-  slot: SlotLike;
-  flag?: boolean;
-}) {
+export default function Slot3DButton({ slot, flag }: { slot: SlotLike; flag?: boolean }) {
   const [supported, setSupported] = useState(false);
   const [open, setOpen] = useState(false);
-  useEffect(() => setSupported(canUse3D(flag)), [flag]);
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const on = flag ?? isMap3DEnabledHere();
+    setEnabled(on);
+    setSupported(canUse3D(on));
+  }, [flag]);
   const unlocked = !!slot.full_address && slot.full_address.trim() !== "";
   const policy = useMemo(
     () =>
@@ -41,7 +40,8 @@ export default function Slot3DButton({
     [slot.lat, slot.lng, unlocked],
   );
 
-  if (!slot3DButtonVisible({ flag, fullAddress: slot.full_address, supported })) return null;
+  if (!slot3DButtonVisible({ flag: enabled, fullAddress: slot.full_address, supported }))
+    return null;
 
   return (
     <div className="px-5 pt-4">

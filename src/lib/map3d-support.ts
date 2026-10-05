@@ -1,5 +1,62 @@
 /** Feature flag + device checks + advisory per-session usage guard for the 3D view. */
+import { useEffect, useState } from "react";
+
+/** Build-time flag. Never changed at runtime. */
 export const MAP3D_FLAG = import.meta.env.VITE_FEATURE_MAP_3D === "true";
+
+/* ------------- preview-only override (?map3d=1 / ?map3d=0) */
+
+const OVERRIDE_KEY = "usop:map3d-override";
+
+/** Hosts where the override may apply: localhost, *.lovable.app, *.lovableproject.com. */
+export function isPreviewHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, "");
+  return h === "localhost" || h.endsWith(".lovable.app") || h.endsWith(".lovableproject.com");
+}
+
+type OverrideStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/**
+ * Single source of truth for "is 3D enabled here". Build flag, or on preview hosts only,
+ * a session override set by ?map3d=1 (cleared by ?map3d=0). Ignored on every other host.
+ */
+export function isMap3DEnabled(
+  hostname: string,
+  search: string,
+  storage: OverrideStore | null,
+  flag = MAP3D_FLAG,
+): boolean {
+  if (flag) return true;
+  if (!isPreviewHost(hostname)) return false;
+  const q = new URLSearchParams(search).get("map3d");
+  if (!storage) return q === "1";
+  try {
+    if (q === "1") storage.setItem(OVERRIDE_KEY, "1");
+    else if (q === "0") storage.removeItem(OVERRIDE_KEY);
+    return storage.getItem(OVERRIDE_KEY) === "1";
+  } catch {
+    return q === "1";
+  }
+}
+
+/** Client-only evaluation. Server/SSR always gets the build-time flag. */
+export function isMap3DEnabledHere(): boolean {
+  if (typeof window === "undefined") return MAP3D_FLAG;
+  let store: OverrideStore | null = null;
+  try {
+    store = window.sessionStorage;
+  } catch {
+    store = null;
+  }
+  return isMap3DEnabled(window.location.hostname, window.location.search, store);
+}
+
+/** false on the server and first render; evaluated after mount (no hydration mismatch). */
+export function useMap3DEnabled(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => setOn(isMap3DEnabledHere()), []);
+  return on;
+}
 
 export type Map3DEnv = {
   flag: boolean;
@@ -32,7 +89,7 @@ function hasWebGL(): boolean {
   }
 }
 
-export function detectEnv(flag = MAP3D_FLAG): Map3DEnv {
+export function detectEnv(flag = isMap3DEnabledHere()): Map3DEnv {
   if (typeof window === "undefined") return { flag, webgl: false };
   const nav = navigator as Navigator & {
     deviceMemory?: number;
@@ -47,7 +104,7 @@ export function detectEnv(flag = MAP3D_FLAG): Map3DEnv {
   };
 }
 
-export const canUse3D = (flag = MAP3D_FLAG) => canUse3DWith(detectEnv(flag)).ok;
+export const canUse3D = (flag = isMap3DEnabledHere()) => canUse3DWith(detectEnv(flag)).ok;
 
 /* ------------- advisory usage guard (client-side only, trivially bypassed) */
 
