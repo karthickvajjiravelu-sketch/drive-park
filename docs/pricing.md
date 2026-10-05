@@ -12,10 +12,9 @@ The server always calculates the price; the app only shows a preview. Code: `src
    - Time: 00–06 0.7x, 06–10 1.5x, 10–16 1.0x, 16–21 1.8x, 21–24 1.0x.
    - Day: weekday 1.0x, weekend 1.3x, public holiday 1.5x.
    Each hour gets its own time and day factor, and part-hours count for their share.
-5. **Limit.** For each hour, demand x location x time x day together is kept between **0.7x and 2.5x**. The price breakdown says so when the limit applies to any hour, and shows the average.
+5. **Limit.** Demand x location x time x day together is kept between **0.7x and 2.5x**. The price breakdown says so when the limit applies.
 6. **Longer-stay discount**, applied only to the hours inside each band:
    first hour 100%, hour 1–2 95%, hours 2–4 90%, hours 4–8 85%, hours 8–12 80%, beyond 12 hours 70%.
-   Each hour of your stay is charged at its own (limited) factor times its discounted share, and the hours are added up.
    So a longer stay always costs more in total than a shorter one, with no sudden drops.
 7. **GST** of 18% is added (not yet confirmed by an accountant). The total is rounded to the nearest rupee.
 

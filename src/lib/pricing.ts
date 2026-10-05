@@ -7,10 +7,7 @@
  *   - AVG(TIME x DAY): averaged hour by hour over the whole booking window in IST,
  *     weighted by the length of each block.
  *   - BILLABLE_HOURS: marginal duration discount — each band only discounts the hours inside it.
- *
- * Computed as a sum over IST hour blocks: each block is billed at
- * HOURLY_RATE x clamp(DEMAND x LOCATION x TIME x DAY) x (billable hours inside that block),
- * so the total is continuous and strictly increasing with duration by construction.
+ *     Continuity and monotonicity are checked by the week-long sweep in tests/pricing-demand.test.ts.
  *
  * No intermediate rounding: only the grand total is rounded, to the nearest rupee.
  * The server (bookings.server.ts) is authoritative; the client preview only displays.
@@ -394,20 +391,15 @@ export function priceWithParams(
   const holidayDays = new Set(
     params.holidayDates.map((d) => Math.floor(Date.parse(`${d}T00:00:00Z`) / DAY_MS)),
   );
-  // Sum over IST hour blocks; each block gets its own clamped multiplier and the
-  // billable (marginally discounted) hours that fall inside it.
+  // Duration-weighted averages over IST hour blocks (same result as windowFactors, faster).
   const startMs = startTime.getTime();
   const endMs = startMs + Math.max(0, durationHours) * HOUR_MS;
-  let weighted = 0; // sum of clamped multiplier x billable hours
   let tSum = 0,
     dSum = 0,
     cSum = 0;
   const tLabels = new Set<string>();
   const dLabels = new Set<string>();
-  let hitMax = false;
-  let hitMin = false;
   let cur = startMs;
-  let prevBill = 0;
   while (cur < endMs) {
     const next = Math.min(
       endMs,
@@ -420,12 +412,6 @@ export function priceWithParams(
     cSum += f.t * f.d * span;
     tLabels.add(f.tl);
     dLabels.add(f.dl);
-    const m = dl * f.t * f.d;
-    if (m > max) hitMax = true;
-    if (m < min) hitMin = true;
-    const bill = billableHours((next - startMs) / HOUR_MS);
-    weighted += Math.min(max, Math.max(min, m)) * (bill - prevBill);
-    prevBill = bill;
     cur = next;
   }
   const totalMs = endMs - startMs;
@@ -441,10 +427,10 @@ export function priceWithParams(
     };
   } else w = windowFactors(startTime, 0, params.holidayDates);
   const raw = dl * w.combined;
+  const combined = Math.min(max, Math.max(min, raw));
+  const capApplied = raw < min ? "min" : raw > max ? "max" : null;
   const billable = billableHours(durationHours);
-  const combined = billable > 0 ? weighted / billable : Math.min(max, Math.max(min, raw));
-  const capApplied = hitMax ? "max" : hitMin ? "min" : null;
-  const subtotal = params.baseRate * weighted;
+  const subtotal = params.baseRate * combined * billable;
   const gst = subtotal * params.gstRate;
   return {
     ...params,
