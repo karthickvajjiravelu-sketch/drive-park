@@ -191,7 +191,48 @@ function gstRatio(r: { gst_amount: number | null; subtotal_amount: number | null
   return gst > 0 && sub + gst > 0 ? gst / (sub + gst) : 0;
 }
 
-/** End an active session early; keep the pro-rata amount (1-hour minimum, capped at charged) and refund the rest. */
+type PricedReservation = { start_time: string; end_time: string; price_breakdown: unknown };
+
+/**
+ * Amount kept (paise) when ending early. Pricing v2: the price recomputed for the time actually
+ * used with the stored parameters (1-hour minimum, capped at charged). Older bookings without a
+ * pricingVersion keep the v1 pro-rata rule.
+ */
+export function earlyEndKeptPaise(r: PricedReservation, chargedPaise: number, nowMs: number): number {
+  const startMs = new Date(r.start_time).getTime();
+  const endMs = new Date(r.end_time).getTime();
+  const pb = r.price_breakdown;
+  if (isV2Breakdown(pb)) {
+    const start = new Date(startMs);
+    return earlyEndChargePaiseV2(chargedPaise, (h) => priceWithParams(pb, start, h).grandTotal * 100, startMs, endMs, nowMs);
+  }
+  return earlyEndChargePaise(chargedPaise, startMs, endMs, nowMs);
+}
+
+/** Pricing v2 extension cost in rupees, or null for older bookings (use the v1 rule). */
+export function extensionCost(r: PricedReservation, minutes: number): number | null {
+  const pb = r.price_breakdown;
+  if (!isV2Breakdown(pb)) return null;
+  const start = new Date(r.start_time);
+  const oldH = (new Date(r.end_time).getTime() - start.getTime()) / 3600e3;
+  return extensionPriceV2((h) => priceWithParams(pb, start, h).grandTotal, oldH, oldH + minutes / 60);
+}
+
+/** Pricing v1 extension rule, unchanged, for reservations created before pricingVersion 2. */
+async function legacyExtensionCost(db: Db, r: { price_breakdown: unknown; slot_id: string; rate_type: string }, minutes: number) {
+  const pb = r.price_breakdown as { finalPricePerHour?: number; gst?: number; subtotal?: number } | null;
+  let perHour = pb?.finalPricePerHour;
+  let gstRate = pb?.subtotal && pb.gst ? pb.gst / pb.subtotal : 0;
+  if (!perHour) {
+    const { data: s } = await db.from("slots").select("hourly_rate, daily_rate, monthly_rate").eq("id", r.slot_id).single();
+    perHour = r.rate_type === "hourly" ? Number(s!.hourly_rate)
+      : r.rate_type === "daily" ? Number(s!.daily_rate) / 24 : Number(s!.monthly_rate) / 720;
+    gstRate = 0;
+  }
+  return extensionPrice(perHour, minutes, gstRate);
+}
+
+/** End an active session early; keep the recomputed (v2) or pro-rata (v1) amount and refund the rest. */
 export async function endSession(userId: string, id: string) {
   const { rateLimit } = await import("@/lib/payments.server");
   await rateLimit(userId, "bookings_action");
@@ -202,7 +243,7 @@ export async function endSession(userId: string, id: string) {
   if (startMs > Date.now()) throw new BookingError("Only an active session can be ended");
 
   const chargedPaise = toPaise(Number(r.total_price));
-  const keptPaise = earlyEndChargePaise(chargedPaise, startMs, endMs, nowMs);
+  const keptPaise = earlyEndKeptPaise(r, chargedPaise, nowMs);
   const paid = (await capturedPayments(id)).length > 0;
   const refundPaise = paid ? refundablePaise(chargedPaise - keptPaise) : 0;
   const billedPaise = paid ? chargedPaise - refundPaise : keptPaise;
@@ -247,16 +288,7 @@ export async function extendBooking(userId: string, id: string, minutes: number)
     .lt("start_time", newEnd.toISOString()).gt("end_time", r.end_time);
   if ((clash ?? 0) > 0) throw new BookingError("The slot is booked right after you", 409);
 
-  const pb = r.price_breakdown as { finalPricePerHour?: number; gst?: number; subtotal?: number } | null;
-  let perHour = pb?.finalPricePerHour;
-  let gstRate = pb?.subtotal && pb.gst ? pb.gst / pb.subtotal : 0;
-  if (!perHour) {
-    const { data: s } = await db.from("slots").select("hourly_rate, daily_rate, monthly_rate").eq("id", r.slot_id).single();
-    perHour = r.rate_type === "hourly" ? Number(s!.hourly_rate)
-      : r.rate_type === "daily" ? Number(s!.daily_rate) / 24 : Number(s!.monthly_rate) / 720;
-    gstRate = 0;
-  }
-  const extra = extensionPrice(perHour, minutes, gstRate);
+  const extra = extensionCost(r, minutes) ?? (await legacyExtensionCost(db, r, minutes));
   const paid = (await capturedPayments(id)).length > 0;
 
   if (extra <= 0 || !paid) {
