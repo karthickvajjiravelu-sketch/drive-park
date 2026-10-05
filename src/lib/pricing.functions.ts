@@ -13,6 +13,8 @@ export type PricingContext = {
   totalSlots: number;
   holidayDates: string[];
   lotName: string | null;
+  /** True when too few nearby spaces exist for dynamic demand (demand fixed at 1.0). */
+  demandNeutral: boolean;
 };
 
 /**
@@ -38,7 +40,7 @@ export const getPricingContext = createServerFn({ method: "GET" })
   .handler(async ({ data, context }): Promise<PricingContext> => {
     const { data: slot, error } = await context.supabase
       .from("slots")
-      .select("id, slot_type, hourly_rate, lot_id, approx_area")
+      .select("id, slot_type, hourly_rate, lot_id")
       .eq("id", data.slotId)
       .single();
     if (error || !slot) throw new Error("Slot not found");
@@ -69,5 +71,6 @@ export const getPricingContext = createServerFn({ method: "GET" })
       totalSlots: p.total,
       holidayDates: p.holidays,
       lotName,
+      demandNeutral: p.demandNeutral,
     };
   });

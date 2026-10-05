@@ -79,7 +79,11 @@ export function PriceBreakdownCard({
         value={`${formatRupees(breakdown.baseRate, 0)}/hr`}
       />
       <Row
-        label={`Demand · ${breakdown.occupancy.toFixed(0)}% booked`}
+        label={
+          breakdown.demandNote
+            ? `Demand · ${breakdown.demandNote}`
+            : `Demand · ${breakdown.occupancy.toFixed(0)}% booked`
+        }
         value={`${breakdown.demandMultiplier}x`}
       />
       <Row
@@ -100,7 +104,7 @@ export function PriceBreakdownCard({
           value={`${breakdown.rawMultiplier.toFixed(2)}x → ${breakdown.combinedMultiplier.toFixed(2)}x`}
         />
       )}
-      <Row label="Combined multiplier" value={`${breakdown.combinedMultiplier.toFixed(2)}x`} />
+      <Row label="Combined multiplier (avg)" value={`${breakdown.combinedMultiplier.toFixed(2)}x`} />
       <Row
         label={`Longer-stay discount · ${breakdown.billableHours.toFixed(2)} of ${breakdown.durationHours} h billed`}
         value={`-${Math.round(breakdown.durationDiscount * 100)}%`}

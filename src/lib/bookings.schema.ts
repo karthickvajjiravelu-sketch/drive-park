@@ -7,6 +7,8 @@ export const createBookingSchema = z.object({
   // Hourly bookings allow half-hour steps (matches the web form); daily/monthly are whole units.
   duration: z.number().min(0.5).max(24 * 31),
   vehicleId: z.string().uuid().nullable().optional(),
+  /** Optional: the total (₹, before promo) the driver saw; a >₹1 mismatch is rejected with 409. */
+  expectedTotal: z.number().nonnegative().max(10_000_000).optional(),
   promoCode: z.string().trim().min(1).max(40).nullable().optional(),
 }).superRefine((d, ctx) => {
   const ok = d.rateType === "hourly" ? Number.isInteger(d.duration * 2) : Number.isInteger(d.duration) && d.duration >= 1;

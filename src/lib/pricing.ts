@@ -6,8 +6,11 @@
  *   - LOCATION: 1.0 unless the slot belongs to a lot with an explicit tier.
  *   - AVG(TIME x DAY): averaged hour by hour over the whole booking window in IST,
  *     weighted by the length of each block.
- *   - BILLABLE_HOURS: marginal duration discount — each band only discounts the hours inside it,
- *     so the total is continuous and strictly increasing with duration.
+ *   - BILLABLE_HOURS: marginal duration discount — each band only discounts the hours inside it.
+ *
+ * Computed as a sum over IST hour blocks: each block is billed at
+ * HOURLY_RATE x clamp(DEMAND x LOCATION x TIME x DAY) x (billable hours inside that block),
+ * so the total is continuous and strictly increasing with duration by construction.
  *
  * No intermediate rounding: only the grand total is rounded, to the nearest rupee.
  * The server (bookings.server.ts) is authoritative; the client preview only displays.
@@ -72,6 +75,47 @@ export function locationMultiplier(tier: LocationTier | null | undefined): numbe
 }
 
 export type DemandLevel = "Low" | "Normal" | "High" | "Surge" | "Peak";
+
+/** Independent slots: neighbourhood radius and minimum spaces (incl. itself) for dynamic demand. */
+export const DEMAND_RADIUS_KM = 1.0;
+export const MIN_DEMAND_PEERS = 5;
+export const SPARSE_DEMAND_NOTE = "Not enough nearby spaces for dynamic demand";
+
+export type PeerCandidate = {
+  id: string;
+  lat: number;
+  lng: number;
+  approval_status: string | null;
+  archived: boolean | null;
+};
+
+export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371;
+  const r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r;
+  const dLng = (b.lng - a.lng) * r;
+  const s =
+    Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+/**
+ * Peers of an independent slot: approved, non-archived slots within DEMAND_RADIUS_KM of its
+ * exact position (server-side only), always including the slot itself.
+ * `sparse` = fewer than MIN_DEMAND_PEERS, so demand is neutral (1.0).
+ */
+export function neighbourhoodPeers(
+  self: { id: string; lat: number; lng: number },
+  candidates: readonly PeerCandidate[],
+): { peerIds: string[]; sparse: boolean } {
+  const ids = new Set<string>([self.id]);
+  for (const c of candidates) {
+    if (c.id === self.id) continue;
+    if (c.approval_status !== "approved" || c.archived) continue;
+    if (haversineKm(self, c) <= DEMAND_RADIUS_KM) ids.add(c.id);
+  }
+  return { peerIds: [...ids], sparse: ids.size < MIN_DEMAND_PEERS };
+}
 
 /** Lower bound inclusive bands. */
 export function demandFromOccupancy(occupancyPercent: number): {
@@ -247,6 +291,8 @@ export type PricingParams = {
   holidayDates: string[];
   gstRate: number;
   cap: { min: number; max: number };
+  /** Set when demand is held at 1.0 because the neighbourhood is too small. */
+  demandNote?: string | null;
 };
 
 export type PricingInput = {
@@ -260,6 +306,8 @@ export type PricingInput = {
   startTime: Date;
   durationHours: number;
   holidayDates?: readonly string[];
+  /** Too few nearby spaces: demand is fixed at 1.0 "Normal". */
+  demandNeutral?: boolean;
 };
 
 export type PriceBreakdown = PricingParams & {
@@ -290,7 +338,9 @@ export function pricingParams(
   input: Omit<PricingInput, "startTime" | "durationHours">,
 ): PricingParams {
   const occupancy = occupancyPercent(input.occupiedSlots, input.totalSlots);
-  const demand = demandFromOccupancy(occupancy);
+  const demand = input.demandNeutral
+    ? { multiplier: 1.0, level: "Normal" as DemandLevel }
+    : demandFromOccupancy(occupancy);
   return {
     pricingVersion: PRICING_VERSION,
     baseRate: input.baseRate,
@@ -302,6 +352,7 @@ export function pricingParams(
     holidayDates: [...(input.holidayDates ?? [])],
     gstRate: GST_RATE,
     cap: { min: MULTIPLIER_CAP.min, max: MULTIPLIER_CAP.max },
+    demandNote: input.demandNeutral ? SPARSE_DEMAND_NOTE : null,
   };
 }
 
@@ -312,13 +363,37 @@ export function priceWithParams(
   durationHours: number,
 ): PriceBreakdown {
   const w = windowFactors(startTime, durationHours, params.holidayDates);
-  const raw = params.demandMultiplier * params.locationMultiplier * w.combined;
   const min = params.cap?.min ?? MULTIPLIER_CAP.min;
   const max = params.cap?.max ?? MULTIPLIER_CAP.max;
-  const combined = Math.min(max, Math.max(min, raw));
-  const capApplied = raw < min ? "min" : raw > max ? "max" : null;
+  const dl = params.demandMultiplier * params.locationMultiplier;
+  const raw = dl * w.combined;
+  // Sum over IST hour blocks; each block gets its own clamped multiplier and the
+  // billable (marginally discounted) hours that fall inside it.
+  const startMs = startTime.getTime();
+  const endMs = startMs + Math.max(0, durationHours) * HOUR_MS;
+  let weighted = 0; // sum of clamped multiplier x billable hours
+  let hitMax = false;
+  let hitMin = false;
+  let cur = startMs;
+  while (cur < endMs) {
+    const next = Math.min(
+      endMs,
+      Math.floor((cur + IST_OFFSET_MS) / HOUR_MS + 1) * HOUR_MS - IST_OFFSET_MS,
+    );
+    const at = new Date(cur);
+    const m =
+      dl * timeFactor(at).multiplier * dayFactor(at, params.holidayDates).multiplier;
+    if (m > max) hitMax = true;
+    if (m < min) hitMin = true;
+    const portion =
+      billableHours((next - startMs) / HOUR_MS) - billableHours((cur - startMs) / HOUR_MS);
+    weighted += Math.min(max, Math.max(min, m)) * portion;
+    cur = next;
+  }
   const billable = billableHours(durationHours);
-  const subtotal = params.baseRate * combined * billable;
+  const combined = billable > 0 ? weighted / billable : Math.min(max, Math.max(min, raw));
+  const capApplied = hitMax ? "max" : hitMin ? "min" : null;
+  const subtotal = params.baseRate * weighted;
   const gst = subtotal * params.gstRate;
   return {
     ...params,
