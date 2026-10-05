@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { Slot } from "@/lib/queries";
-import { loadGoogleMaps, mapStyleFor, pinIcon } from "@/lib/google-maps";
+import {
+  loadGoogleMaps,
+  mapStyleFor,
+  onGoogleMapsAuthFailure,
+  pinIcon,
+  pricePinIcon,
+  resetGoogleMapsLoader,
+  type RateKind,
+} from "@/lib/google-maps";
 import { useTheme } from "next-themes";
-import { Search } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { locationSchema, validate } from "@/lib/validation";
 
 export default function SlotMap({
@@ -10,11 +18,16 @@ export default function SlotMap({
   center,
   onSelect,
   onDestinationChange,
+  rate = "hourly",
+  onShowList,
 }: {
   slots: Slot[];
   center: [number, number];
   onSelect: (id: string) => void;
   onDestinationChange?: (loc: { lat: number; lng: number; label: string }) => void;
+  /** Rate type whose listed price is shown on each pin. */
+  rate?: RateKind;
+  onShowList?: () => void;
 }) {
   const mapEl = useRef<HTMLDivElement>(null);
   const searchEl = useRef<HTMLInputElement>(null);
@@ -24,16 +37,25 @@ export default function SlotMap({
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState<null | "load" | "auth">(null);
+  const [attempt, setAttempt] = useState(0);
+  // Latest requested center, applied whenever the map becomes ready.
+  const centerRef = useRef(center);
+  centerRef.current = center;
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
+  useEffect(() => onGoogleMapsAuthFailure(() => setLoadError("auth")), []);
+
   useEffect(() => {
     let cancelled = false;
+    setLoadError((e) => (e === "auth" ? e : null));
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !mapEl.current) return;
+        const c = centerRef.current;
         mapRef.current = new g.maps.Map(mapEl.current, {
-          center: { lat: center[0], lng: center[1] },
+          center: { lat: c[0], lng: c[1] },
           zoom: 14,
           styles: mapStyleFor(document.documentElement.classList.contains("dark")),
           disableDefaultUI: true,
@@ -46,6 +68,7 @@ export default function SlotMap({
         if (searchEl.current && g.maps.places?.Autocomplete) {
           const ac = new g.maps.places.Autocomplete(searchEl.current, {
             fields: ["geometry", "name", "formatted_address"],
+            componentRestrictions: { country: "in" },
           });
           ac.bindTo("bounds", mapRef.current);
           ac.addListener("place_changed", () => {
@@ -78,23 +101,29 @@ export default function SlotMap({
         }
         setReady(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setLoadError((e) => e ?? "load");
+      });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
+
+  function retry() {
+    resetGoogleMapsLoader();
+    setLoadError(null);
+    setAttempt((n) => n + 1);
+  }
 
   useEffect(() => {
     mapRef.current?.setOptions({ styles: mapStyleFor(isDark) });
   }, [isDark, ready]);
 
-  const centeredOnce = useRef(false);
   useEffect(() => {
-    if (!mapRef.current || centeredOnce.current) return;
+    if (!ready || !mapRef.current) return;
     mapRef.current.setCenter({ lat: center[0], lng: center[1] });
-    centeredOnce.current = true;
-  }, [center]);
+  }, [center[0], center[1], ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!ready || !mapRef.current || !(window as unknown as { google?: typeof google }).google)
@@ -106,11 +135,20 @@ export default function SlotMap({
     slots.forEach((s) => {
       seen.add(s.id);
       const isFull = s.status === "full";
+      const listed = Number((s as unknown as Record<string, number>)[`${rate}_rate`]) || 0;
+      const priceText = `₹${listed}`;
+      const unit = rate === "hourly" ? "hour" : rate === "daily" ? "day" : "month";
+      const pin = pricePinIcon(
+        isFull ? "#E85D3D" : "#1FA35A",
+        priceText,
+        isDark ? "#F0ECF8" : "#241F3D",
+      );
       const icon = {
-        url: pinIcon(isFull ? "#E85D3D" : "#1FA35A", "#241F3D"),
-        scaledSize: new g.maps.Size(36, 44),
-        anchor: new g.maps.Point(18, 42),
+        url: pin.url,
+        scaledSize: new g.maps.Size(pin.width, 38),
+        anchor: new g.maps.Point(pin.width / 2, 36),
       };
+      const title = `${s.name} · listed rate ${priceText} per ${unit} · ${isFull ? "Full" : "Open"}`;
       let m = existing.get(s.id);
       if (!m) {
         m = new g.maps.Marker({
@@ -118,7 +156,7 @@ export default function SlotMap({
           map: mapRef.current!,
           icon,
           opacity: isFull ? 0.65 : 1,
-          title: s.name,
+          title,
         });
         m.addListener("click", () => {
           const ink = isDark ? "#F0ECF8" : "#2A2438";
@@ -142,7 +180,8 @@ export default function SlotMap({
       } else {
         m.setPosition({ lat: s.lat, lng: s.lng });
         m.setIcon(icon);
-        m.setOpacity(isFull ? 0.6 : 1);
+        m.setOpacity(isFull ? 0.65 : 1);
+        m.setTitle(title);
       }
     });
 
@@ -152,11 +191,49 @@ export default function SlotMap({
         existing.delete(id);
       }
     });
-  }, [slots, ready, onSelect, isDark]);
+  }, [slots, ready, onSelect, isDark, rate]);
 
   return (
     <div className="relative w-full h-full min-h-[60vh]">
       <div ref={mapEl} className="absolute inset-0" />
+      {loadError && (
+        <div
+          role="alert"
+          className="absolute inset-0 z-20 grid place-items-center bg-background/95 p-6"
+        >
+          <div className="max-w-sm text-center space-y-3">
+            <AlertTriangle className="w-8 h-8 mx-auto text-destructive" aria-hidden />
+            <p className="font-bold">
+              {loadError === "auth"
+                ? "The map is unavailable right now (map access was refused)."
+                : "The map couldn't load."}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {loadError === "auth"
+                ? "This is a setup problem on our side, such as the map key or billing. You can still browse spaces as a list."
+                : "Check your connection and try again, or browse spaces as a list."}
+            </p>
+            <div className="flex gap-2 justify-center">
+              {loadError === "load" && (
+                <button
+                  onClick={retry}
+                  className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold text-sm"
+                >
+                  Retry
+                </button>
+              )}
+              {onShowList && (
+                <button
+                  onClick={onShowList}
+                  className="min-h-11 px-4 rounded-full border border-border font-semibold text-sm"
+                >
+                  Show list instead
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="absolute top-3 left-3 right-3 z-10">
         <div className="flex items-center gap-2 bg-card text-card-foreground rounded-full shadow-lg px-3 py-2 border border-border">
           <Search className="w-4 h-4 text-muted-foreground" />

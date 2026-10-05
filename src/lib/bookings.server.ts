@@ -8,7 +8,10 @@ import {
   priceWithParams,
   type LocationTier,
   type OccupancyRow,
+  type PeerCandidate,
   type SlotType,
+  DEMAND_RADIUS_KM,
+  neighbourhoodPeers,
 } from "@/lib/pricing";
 import { checkWithinHours } from "@/lib/availability";
 import type { SlotAvailability } from "@/lib/queries";
@@ -37,6 +40,12 @@ export class BookingError extends Error {
   }
 }
 
+export class PriceChangedError extends BookingError {
+  constructor(public newTotal: number) {
+    super(`Price changed to ₹${newTotal}. Please review and confirm again.`, 409);
+  }
+}
+
 export { createBookingSchema };
 
 async function admin() {
@@ -53,15 +62,16 @@ type Db = Awaited<ReturnType<typeof admin>>;
 /**
  * Pricing inputs for a booking window. Occupancy counts only reservations overlapping
  * [start, end) that are not cancelled and not expired unpaid holds: distinct slots in the lot
- * (vs total_slots) or, for independent slots, peers in the same approx_area.
- * Location tier only applies when the slot belongs to a lot with an explicit tier.
+ * (vs total_slots) or, for independent slots, approved non-archived slots within
+ * DEMAND_RADIUS_KM of the slot's exact position. Fewer than MIN_DEMAND_PEERS nearby spaces
+ * → demand is neutral. Exact coordinates are read here with the admin client only and are
+ * never returned. Location tier only applies when the slot belongs to a lot with an explicit tier.
  */
 export async function pricingInputs(
   db: Db,
   slot: {
     id?: string;
     lot_id: string | null;
-    approx_area: string;
   },
   start: Date,
   end: Date,
@@ -69,6 +79,7 @@ export async function pricingInputs(
   let tier: LocationTier | null = null;
   let total = 0;
   let peerIds: string[] = [];
+  let demandNeutral = false;
   if (slot.lot_id) {
     const { data: lot } = await db
       .from("parking_lots")
@@ -83,17 +94,40 @@ export async function pricingInputs(
     }
   }
   if (total === 0) {
-    const { data: peers } = await db
-      .from("slots")
-      .select("id")
-      .eq("approx_area", slot.approx_area)
-      .eq("archived", false);
-    peerIds = (peers ?? []).map((p) => p.id);
-    if (slot.id && !peerIds.includes(slot.id)) peerIds.push(slot.id);
+    demandNeutral = true;
+    if (slot.id) {
+      const { data: self } = await db
+        .from("slots")
+        .select("id, lat, lng")
+        .eq("id", slot.id)
+        .maybeSingle();
+      if (self) {
+        // Bounding box prefilter (~1 km in latitude), exact distance check in code.
+        const dLat = DEMAND_RADIUS_KM / 111 + 0.001;
+        const dLng = dLat / Math.max(0.1, Math.cos((Number(self.lat) * Math.PI) / 180));
+        const { data: near } = await db
+          .from("slots")
+          .select("id, lat, lng, approval_status, archived")
+          .gte("lat", Number(self.lat) - dLat)
+          .lte("lat", Number(self.lat) + dLat)
+          .gte("lng", Number(self.lng) - dLng)
+          .lte("lng", Number(self.lng) + dLng);
+        const n = neighbourhoodPeers(
+          { id: self.id, lat: Number(self.lat), lng: Number(self.lng) },
+          ((near ?? []) as PeerCandidate[]).map((c) => ({
+            ...c,
+            lat: Number(c.lat),
+            lng: Number(c.lng),
+          })),
+        );
+        peerIds = n.peerIds;
+        demandNeutral = n.sparse;
+      }
+    }
     total = peerIds.length || 1;
   }
   let occupied = 0;
-  if (peerIds.length) {
+  if (peerIds.length && !demandNeutral) {
     const { data: rows } = await db
       .from("reservations")
       .select("slot_id, status, start_time, end_time, payment_expires_at")
@@ -104,7 +138,13 @@ export async function pricingInputs(
     occupied = countOccupiedSlots((rows ?? []) as OccupancyRow[], start, end);
   }
   const { data: holidays } = await db.from("public_holidays").select("date");
-  return { tier, occupied, total, holidays: (holidays ?? []).map((h) => h.date as string) };
+  return {
+    tier,
+    occupied,
+    total,
+    demandNeutral,
+    holidays: (holidays ?? []).map((h) => h.date as string),
+  };
 }
 
 export async function createBooking(userId: string, input: CreateBookingInput) {
@@ -164,6 +204,7 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
       startTime: start,
       durationHours: input.duration,
       holidayDates: p.holidays,
+      demandNeutral: p.demandNeutral,
     });
     subtotal = breakdown.subtotal;
     gst = breakdown.gst;
@@ -173,6 +214,9 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
     gst = 0;
   }
   const grandTotal = Math.round(subtotal + gst);
+  // Never silently charge a different amount than the driver confirmed.
+  if (input.expectedTotal != null && Math.abs(grandTotal - input.expectedTotal) > 1)
+    throw new PriceChangedError(grandTotal);
   const status = start.getTime() <= Date.now() ? "active" : "upcoming";
 
   const { data: row, error } = await db

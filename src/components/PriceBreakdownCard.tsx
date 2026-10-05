@@ -79,7 +79,11 @@ export function PriceBreakdownCard({
         value={`${formatRupees(breakdown.baseRate, 0)}/hr`}
       />
       <Row
-        label={`Demand · ${breakdown.occupancy.toFixed(0)}% booked`}
+        label={
+          breakdown.demandNote
+            ? `Demand · ${breakdown.demandNote}`
+            : `Demand · ${breakdown.occupancy.toFixed(0)}% booked`
+        }
         value={`${breakdown.demandMultiplier}x`}
       />
       <Row

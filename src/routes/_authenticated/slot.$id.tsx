@@ -40,7 +40,6 @@ import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 import { PayNowButton } from "@/components/PayNowButton";
 
-
 export const Route = createFileRoute("/_authenticated/slot/$id")({
   component: SlotDetail,
   errorComponent: RouteError,
@@ -73,9 +72,26 @@ function SlotDetail() {
   const [priceEpoch, setPriceEpoch] = useState(0);
 
   const fetchPricingContext = useServerFn(getPricingContext);
+  // Debounced window so the preview measures demand for the chosen time, like the server.
+  const [pricingWindow, setPricingWindow] = useState({ startTime, duration });
+  useEffect(() => {
+    const t = setTimeout(() => setPricingWindow({ startTime, duration }), 400);
+    return () => clearTimeout(t);
+  }, [startTime, duration]);
+  const pricingStartIso = (() => {
+    const d = new Date(pricingWindow.startTime);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  })();
+  const pricingHours =
+    pricingWindow.duration > 0 && pricingWindow.duration <= 24 * 31
+      ? pricingWindow.duration
+      : undefined;
   const { data: pricing, refetch: refetchPricing } = useQuery({
-    queryKey: ["pricing-context", id],
-    queryFn: () => fetchPricingContext({ data: { slotId: id } }),
+    queryKey: ["pricing-context", id, pricingStartIso, pricingHours],
+    queryFn: () =>
+      fetchPricingContext({
+        data: { slotId: id, startTime: pricingStartIso, durationHours: pricingHours },
+      }),
     refetchInterval: 5 * 60 * 1000,
   });
 
@@ -117,6 +133,7 @@ function SlotDetail() {
           startTime: new Date(startTime),
           durationHours: duration,
           holidayDates: pricing.holidayDates,
+          demandNeutral: pricing.demandNeutral,
         })
       : null;
   void priceEpoch;
@@ -128,7 +145,6 @@ function SlotDetail() {
     new Date(startTime),
     new Date(new Date(startTime).getTime() + duration * msPerUnit),
   );
-
 
   async function refreshPrice() {
     const previous = breakdown?.grandTotal;
@@ -173,6 +189,7 @@ function SlotDetail() {
           rateType,
           duration,
           vehicleId: vehicle?.id ?? null,
+          expectedTotal: total,
         },
       });
       setReservationId(data.reservationId);
@@ -185,6 +202,9 @@ function SlotDetail() {
       const msg = e instanceof Error ? e.message : "Failed";
       if (/no_overlap|conflicting key value|exclusion/i.test(msg)) {
         toast.error("That time is already booked. Try a different slot or time.");
+      } else if (/^Price changed to/.test(msg)) {
+        toast.error(msg);
+        void refetchPricing();
       } else {
         toast.error(msg);
       }
@@ -417,6 +437,7 @@ function SlotDetail() {
                       totalSlots: pricing.totalSlots,
                       startTime: new Date(),
                       durationHours: 1,
+                      demandNeutral: pricing.demandNeutral,
                     }).demandLevel
                   }
                 />
@@ -523,7 +544,6 @@ function SlotDetail() {
             >
               {busy ? "…" : "Reserve now"}
             </button>
-
           </div>
         )}
 
@@ -586,7 +606,6 @@ function SlotDetail() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

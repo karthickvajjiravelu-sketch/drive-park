@@ -7,7 +7,8 @@ import { useSlots, useMyFavorites, useLotOccupancy, type Slot } from "@/lib/quer
 import { demandFromOccupancy, occupancyPercent, type DemandLevel } from "@/lib/pricing";
 import { DemandBadge } from "@/components/PriceBreakdownCard";
 import { ClientOnly } from "@/components/ClientOnly";
-import { MapPin, List as ListIcon, Filter, Heart, Navigation2 } from "lucide-react";
+import { MapPin, List as ListIcon, Filter, Heart, Navigation2, LocateFixed } from "lucide-react";
+import { distanceLabel, priceSliderRange } from "@/lib/google-maps";
 import { AMENITIES, slotAmenities, type AmenityKey } from "@/lib/amenities";
 import { SLOT_TYPE_LABELS, type SlotType } from "@/lib/pricing";
 import { toast } from "sonner";
@@ -47,6 +48,8 @@ function MapPage() {
   const qc = useQueryClient();
   const [view, setView] = useState<"map" | "list">("map");
   const [origin, setOrigin] = useState<[number, number]>(CHENNAI);
+  const [located, setLocated] = useState(false);
+  const [locNotice, setLocNotice] = useState<string | null>(null);
   const [destination, setDestination] = useState<{
     lat: number;
     lng: number;
@@ -54,20 +57,43 @@ function MapPage() {
   } | null>(null);
   const [vehicle, setVehicle] = useState<"all" | "car" | "bike" | "both">("all");
   const [rate, setRate] = useState<"hourly" | "daily" | "monthly">("hourly");
-  const [maxPrice, setMaxPrice] = useState(500);
+  const range = useMemo(() => priceSliderRange(slots, rate), [slots, rate]);
+  // null = no limit chosen yet → the slider sits at the max, hiding nothing.
+  const [maxPriceChoice, setMaxPriceChoice] = useState<number | null>(null);
+  const maxPrice = maxPriceChoice ?? range.max;
+  useEffect(() => setMaxPriceChoice(null), [rate]);
   const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
   const [slotTypes, setSlotTypes] = useState<Set<SlotType>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
   const favSet = useMemo(() => new Set(favorites.map((f) => f.slot_id)), [favorites]);
 
-  useEffect(() => {
-    if (!navigator.geolocation) return;
+  function locate(userAsked: boolean) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      if (userAsked) setLocNotice("Location isn't available on this device.");
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setOrigin([pos.coords.latitude, pos.coords.longitude]),
-      () => {},
-      { timeout: 5000 },
+      (pos) => {
+        setOrigin([pos.coords.latitude, pos.coords.longitude]);
+        setLocated(true);
+        setLocNotice(null);
+        if (userAsked) setDestination(null);
+      },
+      (err) => {
+        if (userAsked || err.code === err.PERMISSION_DENIED)
+          setLocNotice(
+            err.code === err.PERMISSION_DENIED
+              ? "Location permission is off. Allow it in your browser settings to see spaces near you."
+              : "Couldn't get your location. Showing Chennai.",
+          );
+      },
+      { timeout: 8000 },
     );
+  }
+
+  useEffect(() => {
+    locate(false);
   }, []);
 
   useEffect(() => {
@@ -132,8 +158,12 @@ function MapPage() {
       <div className="bg-[var(--surface-dark)] text-white px-5 pt-8 pb-5 rounded-b-3xl">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs text-white/60 font-semibold uppercase tracking-wider">
-              Chennai · Live
+            <div className="text-xs text-white/60 font-semibold uppercase tracking-wider truncate max-w-[60vw]">
+              {destination
+                ? `Near ${destination.label}`
+                : located
+                  ? "Near you"
+                  : "Showing Chennai (location off)"}
             </div>
             <h1 className="text-2xl font-black mt-0.5">Find parking</h1>
           </div>
@@ -183,8 +213,21 @@ function MapPage() {
             <Filter className="w-3.5 h-3.5" />
             Filter
           </button>
+          <button
+            onClick={() => locate(true)}
+            aria-label="My location"
+            title="My location"
+            className="w-11 h-11 grid place-items-center rounded-full bg-white/10 shrink-0"
+          >
+            <LocateFixed className="w-4 h-4" />
+          </button>
           <ThemeQuickToggle className="bg-white/10 text-white shrink-0" />
         </div>
+        {locNotice && (
+          <p role="status" className="mt-2 text-xs text-white/80">
+            {locNotice}
+          </p>
+        )}
 
         {showFilters && (
           <div className="mt-4 space-y-3 text-xs animate-in fade-in slide-in-from-top-2 duration-200">
@@ -278,11 +321,12 @@ function MapPage() {
               </div>
               <input
                 type="range"
-                min={50}
-                max={10000}
-                step={50}
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(+e.target.value)}
+                aria-label={`Maximum ${rate} price`}
+                min={range.min}
+                max={range.max}
+                step={range.step}
+                value={Math.min(maxPrice, range.max)}
+                onChange={(e) => setMaxPriceChoice(+e.target.value)}
                 className="w-full accent-primary"
               />
             </label>
@@ -301,6 +345,8 @@ function MapPage() {
               <SlotMap
                 slots={sorted}
                 center={origin}
+                rate={rate}
+                onShowList={() => setView("list")}
                 onSelect={(id) => navigate({ to: "/slot/$id", params: { id } })}
                 onDestinationChange={setDestination}
               />
@@ -350,7 +396,8 @@ function SlotCard({
   onFav: () => void;
   onClick: () => void;
 }) {
-  const dist = haversine(anchor, [slot.lat, slot.lng]).toFixed(1);
+  // Coordinates are approximate until paid, so the distance is rounded.
+  const dist = distanceLabel(haversine(anchor, [slot.lat, slot.lng]));
   const full = slot.status === "full";
   return (
     <div
@@ -392,7 +439,7 @@ function SlotCard({
               <div className="font-black truncate text-[15px]">{slot.name}</div>
               <div className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3 h-3" />
-                {slot.approx_area} · {dist} km away
+                {slot.approx_area} · {dist} away
               </div>
             </div>
             {slot.rating > 0 && (

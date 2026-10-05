@@ -26,7 +26,10 @@ export function loadGoogleMaps(): Promise<typeof google> {
     if (CHANNEL) params.set("channel", CHANNEL);
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
-    s.onerror = () => reject(new Error("Google Maps failed to load"));
+    s.onerror = () => {
+      loaderPromise = null;
+      reject(new Error("Google Maps failed to load"));
+    };
     document.head.appendChild(s);
   });
   return loaderPromise;
@@ -73,4 +76,67 @@ export function pinIcon(color: string, stroke = "#241F3D") {
     <circle cx='18' cy='17' r='6' fill='${stroke}'/>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+/* -------------------------------------------------- pure helpers for the map screen */
+
+export type RateKind = "hourly" | "daily" | "monthly";
+
+/** Price slider for a rate type: max = highest listed rate (rounded up to the step), default = max. */
+export function priceSliderRange(
+  slots: readonly { hourly_rate: number; daily_rate: number; monthly_rate: number }[],
+  rate: RateKind,
+): { min: number; max: number; step: number } {
+  const step = rate === "hourly" ? 10 : rate === "daily" ? 50 : 500;
+  const highest = slots.reduce((m, s) => Math.max(m, Number(s[`${rate}_rate`]) || 0), 0);
+  const max = Math.max(step, Math.ceil(highest / step) * step);
+  return { min: step, max, step };
+}
+
+/**
+ * Slot coordinates are approximate (150–300 m off) until paid, so distances are rounded:
+ * under 5 km to the nearest 0.5 km ("about 0.5 km"), otherwise to the nearest 1 km.
+ */
+export function distanceLabel(km: number): string {
+  if (!Number.isFinite(km)) return "";
+  if (km < 5) {
+    const r = Math.max(0.5, Math.round(km * 2) / 2);
+    return `about ${r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)} km`;
+  }
+  return `about ${Math.round(km)} km`;
+}
+
+/** Pin with a price label, as a data URL. */
+export function pricePinIcon(color: string, label: string, ink = "#241F3D") {
+  const w = Math.max(44, 14 + label.length * 8);
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='38' viewBox='0 0 ${w} 38'>
+    <rect x='1' y='1' width='${w - 2}' height='26' rx='13' fill='${color}' stroke='${ink}' stroke-width='2'/>
+    <path d='M${w / 2 - 6} 26 L${w / 2} 36 L${w / 2 + 6} 26 z' fill='${color}' stroke='${ink}' stroke-width='2' stroke-linejoin='round'/>
+    <rect x='${w / 2 - 5}' y='22' width='10' height='5' fill='${color}'/>
+    <text x='${w / 2}' y='18.5' text-anchor='middle' font-family='Arial,sans-serif' font-size='13' font-weight='800' fill='#ffffff'>${label.replace(/[<&>]/g, "")}</text>
+  </svg>`;
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, width: w };
+}
+
+/** Google calls window.gm_authFailure on key/billing/referrer problems. */
+export function onGoogleMapsAuthFailure(cb: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const w = window as unknown as { gm_authFailure?: () => void };
+  const prev = w.gm_authFailure;
+  w.gm_authFailure = () => {
+    prev?.();
+    cb();
+  };
+  return () => {
+    w.gm_authFailure = prev;
+  };
+}
+
+/** Allow a retry after a failed script load. */
+export function resetGoogleMapsLoader() {
+  loaderPromise = null;
+  if (typeof document !== "undefined")
+    document.querySelectorAll('script[src*="maps.googleapis.com/maps/api/js"]').forEach((s) => {
+      if (!(window as unknown as { google?: typeof google }).google?.maps?.Map) s.remove();
+    });
 }
