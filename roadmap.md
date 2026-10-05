@@ -1,2 +1,3 @@
 - [x] Pricing v2 fixes (A–F)
 - [x] 3D view plan (plan only, not implemented)
+- [x] Pricing v2 corrections (neighbourhood demand, preview window, price-changed 409, monotonic sweep) and map fixes B1–B7
