@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { MAP3D_FLAG } from "@/lib/map3d-support";
+const Slot3DButton = lazy(() => import("@/components/Slot3DButton"));
 import {
   useSlot,
   useMyVehicles,
@@ -327,6 +329,11 @@ function SlotDetail() {
           </div>
         </div>
       </div>
+      {MAP3D_FLAG && slot.full_address && (
+        <Suspense fallback={null}>
+          <Slot3DButton slot={slot} />
+        </Suspense>
+      )}
 
       <div className="px-5 py-5">
         <div className="grid grid-cols-2 gap-2 text-sm">
