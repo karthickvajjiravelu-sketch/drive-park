@@ -1,10 +1,16 @@
 /**
- * Usop dynamic pricing engine.
+ * Usop dynamic pricing engine — version 2. Plain-language rules: docs/pricing.md.
  *
- * FINAL_PRICE_PER_HOUR = BASE_RATE x DEMAND x LOCATION x TIME x DAY x DURATION_DISCOUNT
- * TOTAL = FINAL_PRICE_PER_HOUR x DURATION
+ * SUBTOTAL = HOURLY_RATE x clamp(DEMAND x LOCATION x AVG(TIME x DAY), CAP) x BILLABLE_HOURS
+ *   - HOURLY_RATE: the host's listed hourly_rate (the slot's base_rate column is NOT used).
+ *   - LOCATION: 1.0 unless the slot belongs to a lot with an explicit tier.
+ *   - AVG(TIME x DAY): averaged hour by hour over the whole booking window in IST,
+ *     weighted by the length of each block.
+ *   - BILLABLE_HOURS: marginal duration discount — each band only discounts the hours inside it,
+ *     so the total is continuous and strictly increasing with duration.
  *
  * No intermediate rounding: only the grand total is rounded, to the nearest rupee.
+ * The server (bookings.server.ts) is authoritative; the client preview only displays.
  */
 
 export type SlotType =
@@ -18,18 +24,23 @@ export type SlotType =
 
 export type LocationTier = "T1" | "T2" | "T3" | "T4";
 
+export const PRICING_VERSION = 2;
+// TODO(accountant): confirm GST treatment — currently 18% on hourly bookings, none on daily/monthly.
 export const GST_RATE = 0.18;
 export const PRICE_LOCK_MS = 2 * 60 * 1000;
 
-export const BASE_RATES: Record<SlotType, number> = {
-  standard_car: 30,
-  compact_car: 20,
-  suv: 50,
-  two_wheeler: 10,
-  ev: 60,
-  premium_covered: 80,
-  valet_handicapped: 40,
-};
+/** Combined demand x location x time x day multiplier is clamped to this range. */
+export const MULTIPLIER_CAP = { min: 0.7, max: 2.5 } as const;
+
+/** Marginal duration bands: hours inside [from, to) are billed at `factor`. */
+export const DURATION_BANDS: readonly { from: number; to: number; factor: number }[] = [
+  { from: 0, to: 1, factor: 1.0 },
+  { from: 1, to: 2, factor: 0.95 },
+  { from: 2, to: 4, factor: 0.9 },
+  { from: 4, to: 8, factor: 0.85 },
+  { from: 8, to: 12, factor: 0.8 },
+  { from: 12, to: Infinity, factor: 0.7 },
+];
 
 export const SLOT_TYPE_LABELS: Record<SlotType, string> = {
   standard_car: "Standard Car",
@@ -55,6 +66,11 @@ export const TIER_LABELS: Record<LocationTier, string> = {
   T4: "Outer city / Industrial",
 };
 
+/** Location multiplier: only lots with an explicit tier get one; independent slots are 1.0. */
+export function locationMultiplier(tier: LocationTier | null | undefined): number {
+  return tier ? TIER_MULTIPLIERS[tier] : 1.0;
+}
+
 export type DemandLevel = "Low" | "Normal" | "High" | "Surge" | "Peak";
 
 /** Lower bound inclusive bands. */
@@ -75,9 +91,37 @@ export function occupancyPercent(booked: number, total: number): number {
   return (booked / total) * 100;
 }
 
+/* ------------------------------------------------------------------ occupancy */
+
+export type OccupancyRow = {
+  slot_id: string;
+  status: string;
+  start_time: string;
+  end_time: string;
+  payment_expires_at: string | null;
+};
+
+/**
+ * Distinct slots with a reservation that overlaps [start, end), ignoring cancelled bookings
+ * and unpaid holds that have already expired.
+ */
+export function countOccupiedSlots(rows: readonly OccupancyRow[], start: Date, end: Date, now: Date = new Date()): number {
+  const s = start.getTime();
+  const e = end.getTime();
+  const n = now.getTime();
+  const ids = new Set<string>();
+  for (const r of rows) {
+    if (r.status === "cancelled") continue;
+    if (r.payment_expires_at && new Date(r.payment_expires_at).getTime() <= n) continue;
+    if (new Date(r.start_time).getTime() < e && new Date(r.end_time).getTime() > s) ids.add(r.slot_id);
+  }
+  return ids.size;
+}
+
 /* ------------------------------------------------------------------- IST time */
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+const HOUR_MS = 3600e3;
 
 /** Calendar parts of an instant, as seen in IST. */
 export function istParts(date: Date): { hour: number; weekday: number; isoDate: string } {
@@ -89,8 +133,8 @@ export function istParts(date: Date): { hour: number; weekday: number; isoDate: 
   };
 }
 
-export function timeFactor(startTime: Date): { multiplier: number; label: string } {
-  const { hour } = istParts(startTime);
+export function timeFactor(at: Date): { multiplier: number; label: string } {
+  const { hour } = istParts(at);
   if (hour < 6) return { multiplier: 0.7, label: "Late night" };
   if (hour < 10) return { multiplier: 1.5, label: "Morning rush" };
   if (hour < 16) return { multiplier: 1.0, label: "Daytime" };
@@ -99,32 +143,95 @@ export function timeFactor(startTime: Date): { multiplier: number; label: string
 }
 
 export function dayFactor(
-  startTime: Date,
+  at: Date,
   holidayDates: readonly string[] = [],
 ): { multiplier: number; label: string } {
-  const { weekday, isoDate } = istParts(startTime);
+  const { weekday, isoDate } = istParts(at);
   if (holidayDates.includes(isoDate)) return { multiplier: 1.5, label: "Public holiday" };
   if (weekday === 0 || weekday === 6) return { multiplier: 1.3, label: "Weekend" };
   return { multiplier: 1.0, label: "Weekday" };
 }
 
-/** Lower bound inclusive bands. */
-export function durationDiscount(hours: number): number {
-  if (hours < 1) return 1.0;
-  if (hours < 2) return 0.95;
-  if (hours < 4) return 0.9;
-  if (hours < 8) return 0.85;
-  if (hours < 12) return 0.8;
-  return 0.7;
+/**
+ * Duration-weighted averages of the time and day multipliers over [start, start + hours),
+ * split at every IST hour boundary. `combined` is the average of time x day per block.
+ */
+export function windowFactors(
+  start: Date,
+  hours: number,
+  holidayDates: readonly string[] = [],
+): { time: number; day: number; combined: number; timeLabel: string; dayLabel: string } {
+  const startMs = start.getTime();
+  const endMs = startMs + Math.max(0, hours) * HOUR_MS;
+  if (endMs <= startMs) {
+    const t = timeFactor(start);
+    const d = dayFactor(start, holidayDates);
+    return { time: t.multiplier, day: d.multiplier, combined: t.multiplier * d.multiplier, timeLabel: t.label, dayLabel: d.label };
+  }
+  let t = 0, d = 0, c = 0;
+  const timeW = new Map<string, number>();
+  const dayW = new Map<string, number>();
+  let cur = startMs;
+  while (cur < endMs) {
+    // IST is a whole-half-hour offset, so IST hour boundaries are UTC :30 marks.
+    const next = Math.min(endMs, Math.floor((cur + IST_OFFSET_MS) / HOUR_MS + 1) * HOUR_MS - IST_OFFSET_MS);
+    const w = next - cur;
+    const at = new Date(cur);
+    const tf = timeFactor(at);
+    const df = dayFactor(at, holidayDates);
+    t += tf.multiplier * w;
+    d += df.multiplier * w;
+    c += tf.multiplier * df.multiplier * w;
+    timeW.set(tf.label, (timeW.get(tf.label) ?? 0) + w);
+    dayW.set(df.label, (dayW.get(df.label) ?? 0) + w);
+    cur = next;
+  }
+  const total = endMs - startMs;
+  const label = (m: Map<string, number>) => (m.size === 1 ? [...m.keys()][0] : "Mixed");
+  return { time: t / total, day: d / total, combined: c / total, timeLabel: label(timeW), dayLabel: label(dayW) };
+}
+
+/* ------------------------------------------------------------ duration bands */
+
+/** Hours actually billed after the marginal discount (continuous, strictly increasing). */
+export function billableHours(hours: number): number {
+  const h = Math.max(0, hours);
+  let sum = 0;
+  for (const b of DURATION_BANDS) {
+    if (h <= b.from) break;
+    sum += (Math.min(h, b.to) - b.from) * b.factor;
+  }
+  return sum;
+}
+
+export function clampMultiplier(raw: number): { value: number; capped: "min" | "max" | null } {
+  if (raw < MULTIPLIER_CAP.min) return { value: MULTIPLIER_CAP.min, capped: "min" };
+  if (raw > MULTIPLIER_CAP.max) return { value: MULTIPLIER_CAP.max, capped: "max" };
+  return { value: raw, capped: null };
 }
 
 /* --------------------------------------------------------------------- engine */
 
+/** Everything needed to recompute a v2 price later (stored in price_breakdown). */
+export type PricingParams = {
+  pricingVersion: 2;
+  baseRate: number;
+  demandMultiplier: number;
+  demandLevel: DemandLevel;
+  occupancy: number;
+  locationMultiplier: number;
+  tier: LocationTier | null;
+  holidayDates: string[];
+  gstRate: number;
+  cap: { min: number; max: number };
+};
+
 export type PricingInput = {
-  slotType: SlotType;
-  /** Optional override of the catalogue base rate. */
-  baseRate?: number;
-  tier: LocationTier;
+  slotType?: SlotType;
+  /** The host's hourly_rate. */
+  baseRate: number;
+  /** Explicit lot tier; null/undefined for independent slots (multiplier 1.0). */
+  tier?: LocationTier | null;
   occupiedSlots: number;
   totalSlots: number;
   startTime: Date;
@@ -132,17 +239,21 @@ export type PricingInput = {
   holidayDates?: readonly string[];
 };
 
-export type PriceBreakdown = {
-  baseRate: number;
-  demandMultiplier: number;
-  demandLevel: DemandLevel;
-  occupancy: number;
-  locationMultiplier: number;
-  tier: LocationTier;
+export type PriceBreakdown = PricingParams & {
+  startTime: string;
   timeMultiplier: number;
   timeLabel: string;
   dayMultiplier: number;
   dayLabel: string;
+  /** Average of time x day over the window. */
+  timeDayMultiplier: number;
+  /** demand x location x timeDay before the cap. */
+  rawMultiplier: number;
+  /** After the cap. */
+  combinedMultiplier: number;
+  capApplied: "min" | "max" | null;
+  billableHours: number;
+  /** Effective discount vs. full price for the whole duration (0..1). */
   durationDiscount: number;
   finalPricePerHour: number;
   durationHours: number;
@@ -152,40 +263,63 @@ export type PriceBreakdown = {
   computedAt: number;
 };
 
-export function calculatePrice(input: PricingInput): PriceBreakdown {
-  const baseRate = input.baseRate ?? BASE_RATES[input.slotType];
+export function pricingParams(input: Omit<PricingInput, "startTime" | "durationHours">): PricingParams {
   const occupancy = occupancyPercent(input.occupiedSlots, input.totalSlots);
   const demand = demandFromOccupancy(occupancy);
-  const location = TIER_MULTIPLIERS[input.tier];
-  const time = timeFactor(input.startTime);
-  const day = dayFactor(input.startTime, input.holidayDates);
-  const discount = durationDiscount(input.durationHours);
-
-  const finalPricePerHour =
-    baseRate * demand.multiplier * location * time.multiplier * day.multiplier * discount;
-  const subtotal = finalPricePerHour * input.durationHours;
-  const gst = subtotal * GST_RATE;
-  const grandTotal = Math.round(subtotal + gst);
-
   return {
-    baseRate,
+    pricingVersion: PRICING_VERSION,
+    baseRate: input.baseRate,
     demandMultiplier: demand.multiplier,
     demandLevel: demand.level,
     occupancy,
-    locationMultiplier: location,
-    tier: input.tier,
-    timeMultiplier: time.multiplier,
-    timeLabel: time.label,
-    dayMultiplier: day.multiplier,
-    dayLabel: day.label,
-    durationDiscount: discount,
-    finalPricePerHour,
-    durationHours: input.durationHours,
+    locationMultiplier: locationMultiplier(input.tier),
+    tier: input.tier ?? null,
+    holidayDates: [...(input.holidayDates ?? [])],
+    gstRate: GST_RATE,
+    cap: { min: MULTIPLIER_CAP.min, max: MULTIPLIER_CAP.max },
+  };
+}
+
+/** The single v2 price function: used by preview, createBooking, endSession and extendBooking. */
+export function priceWithParams(params: PricingParams, startTime: Date, durationHours: number): PriceBreakdown {
+  const w = windowFactors(startTime, durationHours, params.holidayDates);
+  const raw = params.demandMultiplier * params.locationMultiplier * w.combined;
+  const min = params.cap?.min ?? MULTIPLIER_CAP.min;
+  const max = params.cap?.max ?? MULTIPLIER_CAP.max;
+  const combined = Math.min(max, Math.max(min, raw));
+  const capApplied = raw < min ? "min" : raw > max ? "max" : null;
+  const billable = billableHours(durationHours);
+  const subtotal = params.baseRate * combined * billable;
+  const gst = subtotal * params.gstRate;
+  return {
+    ...params,
+    startTime: startTime.toISOString(),
+    timeMultiplier: w.time,
+    timeLabel: w.timeLabel,
+    dayMultiplier: w.day,
+    dayLabel: w.dayLabel,
+    timeDayMultiplier: w.combined,
+    rawMultiplier: raw,
+    combinedMultiplier: combined,
+    capApplied,
+    billableHours: billable,
+    durationDiscount: durationHours > 0 ? 1 - billable / durationHours : 0,
+    finalPricePerHour: durationHours > 0 ? subtotal / durationHours : 0,
+    durationHours,
     subtotal,
     gst,
-    grandTotal,
+    grandTotal: Math.round(subtotal + gst),
     computedAt: Date.now(),
   };
+}
+
+export function calculatePrice(input: PricingInput): PriceBreakdown {
+  return priceWithParams(pricingParams(input), input.startTime, input.durationHours);
+}
+
+/** True when a stored price_breakdown can be recomputed with the v2 engine. */
+export function isV2Breakdown(pb: unknown): pb is PriceBreakdown {
+  return !!pb && typeof pb === "object" && (pb as { pricingVersion?: number }).pricingVersion === 2;
 }
 
 export function formatRupees(value: number, decimals = 2): string {
