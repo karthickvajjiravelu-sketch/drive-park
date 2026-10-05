@@ -75,29 +75,41 @@ export function PriceBreakdownCard({
       </div>
 
       <Row
-        label={`Base rate${slotTypeLabel ? ` · ${slotTypeLabel}` : ""}`}
-        value={formatRupees(breakdown.baseRate, 0)}
+        label={`Host hourly rate${slotTypeLabel ? ` · ${slotTypeLabel}` : ""}`}
+        value={`${formatRupees(breakdown.baseRate, 0)}/hr`}
       />
       <Row
-        label={`Demand · ${breakdown.occupancy.toFixed(0)}% full`}
+        label={`Demand · ${breakdown.occupancy.toFixed(0)}% booked`}
         value={`${breakdown.demandMultiplier}x`}
       />
       <Row
-        label={`Location · ${TIER_LABELS[breakdown.tier]}`}
+        label={`Location · ${breakdown.tier ? TIER_LABELS[breakdown.tier] : "Included in host rate"}`}
         value={`${breakdown.locationMultiplier}x`}
       />
-      <Row label={`Time · ${breakdown.timeLabel}`} value={`${breakdown.timeMultiplier}x`} />
-      <Row label={`Day · ${breakdown.dayLabel}`} value={`${breakdown.dayMultiplier}x`} />
       <Row
-        label="Duration discount"
-        value={`-${Math.round((1 - breakdown.durationDiscount) * 100)}%`}
+        label={`Time of day (avg) · ${breakdown.timeLabel}`}
+        value={`${breakdown.timeMultiplier.toFixed(2)}x`}
+      />
+      <Row
+        label={`Day (avg) · ${breakdown.dayLabel}`}
+        value={`${breakdown.dayMultiplier.toFixed(2)}x`}
+      />
+      {breakdown.capApplied && (
+        <Row
+          label={`Limit applied (${breakdown.cap.min}x–${breakdown.cap.max}x)`}
+          value={`${breakdown.rawMultiplier.toFixed(2)}x → ${breakdown.combinedMultiplier.toFixed(2)}x`}
+        />
+      )}
+      <Row label="Combined multiplier" value={`${breakdown.combinedMultiplier.toFixed(2)}x`} />
+      <Row
+        label={`Longer-stay discount · ${breakdown.billableHours.toFixed(2)} of ${breakdown.durationHours} h billed`}
+        value={`-${Math.round(breakdown.durationDiscount * 100)}%`}
       />
 
       <div className="border-t border-border my-2" />
-      <Row label="Final price / hour" value={formatRupees(breakdown.finalPricePerHour)} />
-      <Row label="Duration" value={`${breakdown.durationHours} hours`} />
+      <Row label="Average price / hour" value={formatRupees(breakdown.finalPricePerHour)} />
       <Row label="Subtotal" value={formatRupees(breakdown.subtotal)} />
-      <Row label="GST (18%)" value={formatRupees(breakdown.gst)} />
+      <Row label={`GST (${Math.round(breakdown.gstRate * 100)}%)`} value={formatRupees(breakdown.gst)} />
 
       <div className="flex items-baseline justify-between pt-2">
         <span className="font-bold">Grand total</span>
