@@ -22,3 +22,4 @@
 - Route error/404 screens use src/components/RouteError.tsx — users never see raw error text.
 - Playwright specs live in e2e/\*.e2e.ts (not .test/.spec) so vitest never picks them up.
 - Slot exact lat/lng are column-revoked; clients read approx_lat/approx_lng (aliased as lat/lng in SLOT_COLUMNS) and get exact values only via get_slots_private, which requires owner, admin or a fully paid booking — keeps location private until payment.
+- Hourly prices come only from priceWithParams() in src/lib/pricing.ts; reservations store its params in price_breakdown (pricingVersion 2) so end/extend recompute with the same inputs, and bookings without a version keep the v1 rules — keeps preview, booking, end and extend consistent.
