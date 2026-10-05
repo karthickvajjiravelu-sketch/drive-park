@@ -13,7 +13,7 @@ Amounts are **paise** (integers) in payment responses; the client never sends pr
 
 Body: `{ "action": "create" | "extend" | "end" | "cancel", ... }`
 
-- `create`: `{ slotId, startTime (ISO), duration, rateType: "hourly"|"daily"|"monthly", vehicleId?, promoCode? }`. Hourly durations in 0.5h steps; daily/monthly whole numbers. Returns the reservation with a 15‑minute `payment_expires_at` hold. Max 2 unexpired unpaid holds per user.
+- `create`: `{ slotId, startTime (ISO), duration, rateType: "hourly"|"daily"|"monthly", vehicleId?, promoCode? }`. `duration` limits: hourly 0.5–24 in 0.5 h steps; daily 1–30 whole days; monthly 1–12 whole months (400 otherwise). Optional `expectedTotal` (₹, before promo): if the server price differs by more than ₹1 the call fails with 409 "Price changed to ₹X…". A slot marked full by its host blocks only bookings starting within the next 2 hours. Returns the reservation with a 15‑minute `payment_expires_at` hold. Max 2 unexpired unpaid holds per user.
 - `extend`: `{ reservationId, minutes }`. Stores a `pending_extension` (one at a time, 10‑minute expiry). The end time moves **only after** the extra payment is captured. If the slot was taken meanwhile, the extension payment is refunded automatically.
 - `end`: `{ reservationId }`. Pro‑rata charge for time used, minimum 1 hour but never more than charged. Returns `{ finalPrice, refund }`.
 - `cancel`: `{ reservationId }`. Only before start. Refund share follows the slot policy (see below). Returns `{ refunded }`.

@@ -32,6 +32,8 @@ export const REFUND_CONFIG = {
     payments_order: 10,
     payments_verify: 20,
     admin_refund: 30,
+    /** Time-window searches per minute. */
+    search_window: 30,
   },
   /** Payments stuck in created/authorized longer than this are reconciled with Razorpay. */
   reconcileAfterMinutes: 30,

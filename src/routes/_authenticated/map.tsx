@@ -1,7 +1,11 @@
 import { RouteError, RouteNotFound } from "@/components/RouteError";
 import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { searchSlotsForWindow } from "@/lib/search.functions";
+import { sortResults, type SortMode, type QuoteReason } from "@/lib/quote";
+import { DURATION_LIMITS } from "@/lib/bookings.schema";
 import { supabase } from "@/integrations/supabase/client";
 import { useSlots, useMyFavorites, useLotOccupancy, type Slot } from "@/lib/queries";
 import { demandFromOccupancy, occupancyPercent, type DemandLevel } from "@/lib/pricing";
@@ -23,6 +27,23 @@ export const Route = createFileRoute("/_authenticated/map")({
 });
 
 const CHENNAI: [number, number] = [13.05, 80.24];
+
+const REASON_TEXT: Record<QuoteReason, string | null> = {
+  ok: null,
+  booked: "Booked at that time",
+  closed: "Closed at that time",
+  unavailable: "Not available",
+  past: "Start time has passed",
+};
+const UNIT_LABEL = { hourly: "hours", daily: "days", monthly: "months" } as const;
+const localInput = (ms: number) =>
+  new Date(ms - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+type WindowQuery = {
+  startTime: string;
+  duration: number;
+  rateType: "hourly" | "daily" | "monthly";
+};
 
 function haversine(a: [number, number], b: [number, number]) {
   const R = 6371;
@@ -65,6 +86,57 @@ function MapPage() {
   const [amenities, setAmenities] = useState<Set<AmenityKey>>(new Set());
   const [slotTypes, setSlotTypes] = useState<Set<SlotType>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+
+  // "When?" time-window search.
+  const [arrive, setArrive] = useState(() => localInput(Date.now() + 15 * 60000));
+  const [length, setLength] = useState(2);
+  const [win, setWin] = useState<WindowQuery | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("distance");
+  const lim = DURATION_LIMITS[rate];
+  const lengthOk =
+    length >= lim.min && length <= lim.max && Number.isInteger(length / lim.step + 1e-9);
+  const runSearch = useServerFn(searchSlotsForWindow);
+  const search = useQuery({
+    queryKey: ["window-search", win],
+    enabled: !!win,
+    queryFn: () => runSearch({ data: win! }),
+    staleTime: 60_000,
+    retry: false,
+  });
+  // A new rate type invalidates the window (lengths mean different units).
+  useEffect(() => {
+    setWin(null);
+    setLength(rate === "hourly" ? 2 : 1);
+  }, [rate]);
+  function submitWindow() {
+    const ms = Date.parse(arrive);
+    if (Number.isNaN(ms) || !lengthOk) return;
+    setWin({ startTime: new Date(ms).toISOString(), duration: length, rateType: rate });
+  }
+  const results = useMemo(
+    () => new Map((search.data ?? []).map((r) => [r.slotId, r])),
+    [search.data],
+  );
+  const windowActive = !!win && search.isSuccess;
+  const windowPrices = useMemo(
+    () =>
+      windowActive
+        ? new Map(
+            slots.map((s) => {
+              const r = results.get(s.id);
+              return [
+                s.id,
+                {
+                  total: r?.totalPrice ?? 0,
+                  available: !!r?.available,
+                  reasonText: r ? REASON_TEXT[r.reason] : "Not available",
+                },
+              ] as const;
+            }),
+          )
+        : undefined,
+    [windowActive, slots, results],
+  );
 
   const favSet = useMemo(() => new Set(favorites.map((f) => f.slot_id)), [favorites]);
 
@@ -118,21 +190,42 @@ function MapPage() {
     return slots.filter((s) => {
       if (vehicle !== "all" && s.vehicle_type !== vehicle && s.vehicle_type !== "both")
         return false;
-      if ((s as unknown as Record<string, number>)[rateKey] > maxPrice) return false;
+      const price = windowActive
+        ? (results.get(s.id)?.totalPrice ?? 0)
+        : (s as unknown as Record<string, number>)[rateKey];
+      if (!windowActive && price > maxPrice) return false;
       if (slotTypes.size && !slotTypes.has((s.slot_type ?? "standard_car") as SlotType))
         return false;
       for (const a of amenities) if (!s[a]) return false;
       return true;
     });
-  }, [slots, vehicle, rate, maxPrice, amenities, slotTypes]);
+  }, [slots, vehicle, rate, maxPrice, amenities, slotTypes, windowActive, results]);
 
-  const sorted = useMemo(
-    () =>
-      [...filtered].sort(
-        (a, b) => haversine(anchor, [a.lat, a.lng]) - haversine(anchor, [b.lat, b.lng]),
-      ),
-    [filtered, anchor],
-  );
+  const sorted = useMemo(() => {
+    const rateKey = `${rate}_rate` as const;
+    const items = filtered.map((s) => {
+      const r = results.get(s.id);
+      return {
+        s,
+        available: windowActive ? !!r?.available : true,
+        distance: haversine(anchor, [s.lat, s.lng]),
+        price: windowActive ? (r?.totalPrice ?? Infinity) : Number(s[rateKey]),
+        rating: Number(s.rating) || 0,
+      };
+    });
+    return sortResults(items, sortMode).map((i) => i.s);
+  }, [filtered, anchor, results, windowActive, sortMode, rate]);
+  const openCount = windowActive
+    ? sorted.filter((s) => results.get(s.id)?.available).length
+    : sorted.filter((s) => s.status === "open").length;
+
+  function openSlot(id: string) {
+    navigate({
+      to: "/slot/$id",
+      params: { id },
+      search: win ? { start: win.startTime, length: win.duration, rate: win.rateType } : {},
+    });
+  }
 
   async function toggleFav(slotId: string) {
     const {
@@ -168,10 +261,10 @@ function MapPage() {
             <h1 className="text-2xl font-black mt-0.5">Find parking</h1>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-black text-primary">
-              {sorted.filter((s) => s.status === "open").length}
+            <div className="text-2xl font-black text-primary">{openCount}</div>
+            <div className="text-[10px] text-white/60 font-semibold uppercase">
+              {windowActive ? "free then" : "spots open"}
             </div>
-            <div className="text-[10px] text-white/60 font-semibold uppercase">spots open</div>
           </div>
         </div>
 
@@ -185,6 +278,75 @@ function MapPage() {
             </div>
             <button onClick={() => setDestination(null)} className="text-white/60 font-semibold">
               Clear
+            </button>
+          </div>
+        )}
+
+        <form
+          className="mt-3 flex flex-wrap items-end gap-2 text-xs"
+          aria-label="When do you need parking?"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitWindow();
+          }}
+        >
+          <label className="flex-1 min-w-[10rem]">
+            <span className="block text-white/60 font-semibold uppercase text-[10px] mb-1">
+              When? Arrive
+            </span>
+            <input
+              type="datetime-local"
+              value={arrive}
+              onChange={(e) => setArrive(e.target.value)}
+              className="w-full min-h-11 rounded-xl bg-white/10 px-2 text-white [color-scheme:dark]"
+            />
+          </label>
+          <label className="w-24">
+            <span className="block text-white/60 font-semibold uppercase text-[10px] mb-1">
+              Length ({UNIT_LABEL[rate]})
+            </span>
+            <input
+              type="number"
+              min={lim.min}
+              max={lim.max}
+              step={lim.step}
+              value={length}
+              onChange={(e) => setLength(+e.target.value)}
+              aria-invalid={!lengthOk}
+              className="w-full min-h-11 rounded-xl bg-white/10 px-2 text-white"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={!lengthOk}
+            className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-semibold disabled:opacity-60"
+          >
+            Search
+          </button>
+          {win && (
+            <button
+              type="button"
+              onClick={() => setWin(null)}
+              className="min-h-11 px-3 rounded-full bg-white/10 font-semibold"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+        {!lengthOk && (
+          <p className="mt-1 text-xs text-white/80">
+            Length must be {lim.min}–{lim.max} {UNIT_LABEL[rate]}
+            {rate === "hourly" ? " in half-hour steps" : ""}.
+          </p>
+        )}
+        {win && search.isError && (
+          <div role="alert" className="mt-2 flex items-center gap-2 text-xs">
+            <span>{(search.error as Error)?.message || "Search failed."}</span>
+            <button
+              onClick={() => search.refetch()}
+              className="min-h-11 px-3 rounded-full bg-white/10 font-semibold"
+            >
+              Retry
             </button>
           </div>
         )}
@@ -346,8 +508,9 @@ function MapPage() {
                 slots={sorted}
                 center={origin}
                 rate={rate}
+                windowPrices={windowPrices}
                 onShowList={() => setView("list")}
-                onSelect={(id) => navigate({ to: "/slot/$id", params: { id } })}
+                onSelect={openSlot}
                 onDestinationChange={setDestination}
               />
             </Suspense>
@@ -355,10 +518,37 @@ function MapPage() {
         </div>
       ) : (
         <div className="px-4 py-4 space-y-3">
-          <div className="text-xs text-muted-foreground font-semibold px-1">
-            {sorted.length} {sorted.length === 1 ? "spot" : "spots"}{" "}
-            {destination ? `near ${destination.label}` : "near you"}
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div role="status" className="text-xs text-muted-foreground font-semibold">
+              {sorted.length} {sorted.length === 1 ? "spot" : "spots"}{" "}
+              {destination ? `near ${destination.label}` : "near you"}
+              {windowActive ? ` · ${openCount} free for your time` : ""}
+            </div>
+            <label className="text-xs flex items-center gap-1">
+              <span className="text-muted-foreground">Sort</span>
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                className="min-h-11 rounded-lg border border-input bg-background px-2"
+              >
+                <option value="distance">Distance</option>
+                <option value="price">Price low to high</option>
+                <option value="rating">Rating</option>
+              </select>
+            </label>
           </div>
+          {win && search.isFetching && (
+            <div aria-hidden className="space-y-3">
+              {[0, 1].map((i) => (
+                <div key={i} className="h-40 rounded-2xl bg-muted animate-pulse" />
+              ))}
+            </div>
+          )}
+          {windowActive && sorted.length > 0 && openCount === 0 && (
+            <p role="status" className="text-center text-sm text-muted-foreground py-4">
+              Nothing available for that time. Try a different time.
+            </p>
+          )}
           {sorted.map((s) => (
             <SlotCard
               demand={demandFor(s)}
@@ -367,7 +557,8 @@ function MapPage() {
               anchor={anchor}
               favorited={favSet.has(s.id)}
               onFav={() => toggleFav(s.id)}
-              onClick={() => navigate({ to: "/slot/$id", params: { id: s.id } })}
+              onClick={() => openSlot(s.id)}
+              windowResult={windowActive ? (results.get(s.id) ?? null) : undefined}
             />
           ))}
           {sorted.length === 0 && (
@@ -388,7 +579,15 @@ function SlotCard({
   favorited,
   onFav,
   onClick,
+  windowResult,
 }: {
+  windowResult?: {
+    available: boolean;
+    reason: QuoteReason;
+    totalPrice: number;
+    peak: boolean;
+    label: string | null;
+  } | null;
   demand?: DemandLevel;
   slot: Slot;
   anchor: [number, number];
@@ -398,7 +597,13 @@ function SlotCard({
 }) {
   // Coordinates are approximate until paid, so the distance is rounded.
   const dist = distanceLabel(haversine(anchor, [slot.lat, slot.lng]));
-  const full = slot.status === "full";
+  const windowMode = windowResult !== undefined;
+  const full = windowMode ? !windowResult?.available : slot.status === "full";
+  const reasonText = windowMode
+    ? windowResult
+      ? REASON_TEXT[windowResult.reason]
+      : "Not available"
+    : null;
   return (
     <div
       className={`relative card-elevated overflow-hidden transition ${full ? "opacity-60" : ""}`}
@@ -413,10 +618,24 @@ function SlotCard({
             </div>
           )}
           <div className="absolute top-2 right-2 price-pill">
-            ₹{slot.hourly_rate}
-            <span className="opacity-70 font-semibold">/hr</span>
+            {windowMode && windowResult ? (
+              <>
+                ₹{windowResult.totalPrice}
+                <span className="opacity-70 font-semibold"> total</span>
+              </>
+            ) : (
+              <>
+                ₹{slot.hourly_rate}
+                <span className="opacity-70 font-semibold">/hr</span>
+              </>
+            )}
           </div>
-          {full && (
+          {windowMode && full && (
+            <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
+              {reasonText}
+            </div>
+          )}
+          {!windowMode && full && (
             <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-foreground text-background text-[10px] font-black tracking-wider">
               FULL
             </div>
@@ -457,6 +676,11 @@ function SlotCard({
                 {a.label}
               </span>
             ))}
+            {windowResult?.peak && windowResult.available && (
+              <span className="chip" title={windowResult.label ?? undefined}>
+                Peak pricing
+              </span>
+            )}
             <span className="chip">Daily ₹{slot.daily_rate}</span>
           </div>
         </div>

@@ -20,6 +20,7 @@ export default function SlotMap({
   onDestinationChange,
   rate = "hourly",
   onShowList,
+  windowPrices,
 }: {
   slots: Slot[];
   center: [number, number];
@@ -28,6 +29,8 @@ export default function SlotMap({
   /** Rate type whose listed price is shown on each pin. */
   rate?: RateKind;
   onShowList?: () => void;
+  /** Active time window: total for the window per slot (replaces the listed rate on pins). */
+  windowPrices?: Map<string, { total: number; available: boolean; reasonText: string | null }>;
 }) {
   const mapEl = useRef<HTMLDivElement>(null);
   const searchEl = useRef<HTMLInputElement>(null);
@@ -136,26 +139,27 @@ export default function SlotMap({
       seen.add(s.id);
       const isFull = s.status === "full";
       const listed = Number((s as unknown as Record<string, number>)[`${rate}_rate`]) || 0;
-      const priceText = `₹${listed}`;
+      const w = windowPrices?.get(s.id);
       const unit = rate === "hourly" ? "hour" : rate === "daily" ? "day" : "month";
-      const pin = pricePinIcon(
-        isFull ? "#E85D3D" : "#1FA35A",
-        priceText,
-        isDark ? "#F0ECF8" : "#241F3D",
-      );
+      const priceText = w ? `₹${w.total}` : `₹${listed}`;
+      const unavailable = w ? !w.available : isFull;
+      const color = w ? (w.available ? "#1FA35A" : "#8A8496") : isFull ? "#E85D3D" : "#1FA35A";
+      const pin = pricePinIcon(color, priceText, isDark ? "#F0ECF8" : "#241F3D");
       const icon = {
         url: pin.url,
         scaledSize: new g.maps.Size(pin.width, 38),
         anchor: new g.maps.Point(pin.width / 2, 36),
       };
-      const title = `${s.name} · listed rate ${priceText} per ${unit} · ${isFull ? "Full" : "Open"}`;
+      const title = w
+        ? `${s.name} · ${priceText} total for your time · ${w.available ? "Available" : (w.reasonText ?? "Not available")}`
+        : `${s.name} · listed rate ${priceText} per ${unit} · ${isFull ? "Full" : "Open"}`;
       let m = existing.get(s.id);
       if (!m) {
         m = new g.maps.Marker({
           position: { lat: s.lat, lng: s.lng },
           map: mapRef.current!,
           icon,
-          opacity: isFull ? 0.65 : 1,
+          opacity: unavailable ? 0.55 : 1,
           title,
         });
         m.addListener("click", () => {
@@ -180,7 +184,7 @@ export default function SlotMap({
       } else {
         m.setPosition({ lat: s.lat, lng: s.lng });
         m.setIcon(icon);
-        m.setOpacity(isFull ? 0.65 : 1);
+        m.setOpacity(unavailable ? 0.55 : 1);
         m.setTitle(title);
       }
     });
@@ -191,7 +195,7 @@ export default function SlotMap({
         existing.delete(id);
       }
     });
-  }, [slots, ready, onSelect, isDark, rate]);
+  }, [slots, ready, onSelect, isDark, rate, windowPrices]);
 
   return (
     <div className="relative w-full h-full min-h-[60vh]">

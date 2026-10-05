@@ -24,3 +24,4 @@
 - Slot exact lat/lng are column-revoked; clients read approx_lat/approx_lng (aliased as lat/lng in SLOT_COLUMNS) and get exact values only via get_slots_private, which requires owner, admin or a fully paid booking — keeps location private until payment.
 - Hourly prices come only from priceWithParams() in src/lib/pricing.ts; reservations store its params in price_breakdown (pricingVersion 2) so end/extend recompute with the same inputs, and bookings without a version keep the v1 rules — keeps preview, booking, end and extend consistent.
 - Demand for independent slots uses approved slots within DEMAND_RADIUS_KM of the exact position (server-side admin read, never returned); below MIN_DEMAND_PEERS demand is neutral 1.0 — avoids a meaningless self-only occupancy.
+- Reservations price/availability come only from quoteFromData() in src/lib/quote.ts, used by createBooking (via quoteWindow) and searchWindow — search and booking can't disagree.

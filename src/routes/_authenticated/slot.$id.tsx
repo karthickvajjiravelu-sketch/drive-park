@@ -40,7 +40,18 @@ import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 import { PayNowButton } from "@/components/PayNowButton";
 
+type SlotSearch = { start?: string; length?: number; rate?: "hourly" | "daily" | "monthly" };
+
 export const Route = createFileRoute("/_authenticated/slot/$id")({
+  // Optional prefill from the map's time-window search; absent params change nothing.
+  validateSearch: (s: Record<string, unknown>): SlotSearch => {
+    const out: SlotSearch = {};
+    if (typeof s.start === "string" && !Number.isNaN(Date.parse(s.start))) out.start = s.start;
+    const len = Number(s.length);
+    if (Number.isFinite(len) && len > 0 && len <= 744) out.length = len;
+    if (s.rate === "hourly" || s.rate === "daily" || s.rate === "monthly") out.rate = s.rate;
+    return out;
+  },
   component: SlotDetail,
   errorComponent: RouteError,
   notFoundComponent: RouteNotFound,
@@ -48,6 +59,7 @@ export const Route = createFileRoute("/_authenticated/slot/$id")({
 
 function SlotDetail() {
   const { id } = Route.useParams();
+  const prefill = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: slot, isLoading } = useSlot(id);
@@ -58,11 +70,14 @@ function SlotDetail() {
   const { data: hours = [] } = useSlotAvailability(id);
   const { data: favorites = [] } = useMyFavorites();
 
-  const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">("hourly");
-  const [duration, setDuration] = useState(2);
+  const [rateType, setRateType] = useState<"hourly" | "daily" | "monthly">(
+    prefill.rate ?? "hourly",
+  );
+  const [duration, setDuration] = useState(prefill.length ?? 2);
   const [vehicleId, setVehicleId] = useState<string>("");
   const [startTime, setStartTime] = useState(() => {
-    const d = new Date(Date.now() + 15 * 60000 - new Date().getTimezoneOffset() * 60000);
+    const base = prefill.start ? Date.parse(prefill.start) : Date.now() + 15 * 60000;
+    const d = new Date(base - new Date().getTimezoneOffset() * 60000);
     return d.toISOString().slice(0, 16);
   });
   const [reservationId, setReservationId] = useState<string | null>(null);
@@ -358,12 +373,22 @@ function SlotDetail() {
                 <div className="text-xs font-semibold text-muted-foreground uppercase">
                   Full address
                 </div>
-                <div className="font-semibold">{slot.full_address}</div>
+                {slot.full_address ? (
+                  <div className="font-semibold">{slot.full_address}</div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Address and access instructions unlock after payment
+                  </div>
+                )}
               </div>
-              <div>
-                <div className="text-xs font-semibold text-muted-foreground uppercase">Access</div>
-                <div>{slot.access_instructions || "None"}</div>
-              </div>
+              {slot.full_address && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase">
+                    Access
+                  </div>
+                  <div>{slot.access_instructions || "None"}</div>
+                </div>
+              )}
               {owner && (
                 <div>
                   <div className="text-xs font-semibold text-muted-foreground uppercase">Host</div>
@@ -396,15 +421,17 @@ function SlotDetail() {
               slotName={slot.name}
             />
 
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address ?? slot.approx_area)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2"
-            >
-              <Navigation2 className="w-4 h-4" />
-              Directions
-            </a>
+            {slot.full_address && (
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(slot.full_address)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 w-full rounded-xl bg-primary text-primary-foreground py-3 font-bold flex items-center justify-center gap-2"
+              >
+                <Navigation2 className="w-4 h-4" />
+                Directions
+              </a>
+            )}
             <Link
               to="/reservations"
               className="mt-2 inline-block w-full rounded-xl bg-muted py-3 font-semibold"
@@ -538,7 +565,9 @@ function SlotDetail() {
               <p className="text-xs text-destructive">{hoursError} Pick another time.</p>
             )}
             <button
-              disabled={busy || !!durationError || !!hoursError}
+              disabled={
+                busy || !!durationError || !!hoursError || (rateType === "hourly" && !breakdown)
+              }
               onClick={reserve}
               className="w-full rounded-2xl bg-primary py-4 font-bold text-primary-foreground disabled:opacity-60"
             >

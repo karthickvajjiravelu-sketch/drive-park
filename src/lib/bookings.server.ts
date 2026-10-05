@@ -2,8 +2,6 @@
 // All money values are computed here from database state; clients never supply prices.
 import { createBookingSchema, type CreateBookingInput } from "@/lib/bookings.schema";
 import {
-  calculatePrice,
-  countOccupiedSlots,
   isV2Breakdown,
   priceWithParams,
   type LocationTier,
@@ -11,9 +9,17 @@ import {
   type PeerCandidate,
   type SlotType,
   DEMAND_RADIUS_KM,
-  neighbourhoodPeers,
 } from "@/lib/pricing";
 import { checkWithinHours } from "@/lib/availability";
+import {
+  asIstLocal,
+  demandFromRows,
+  quoteFromData,
+  UNIT_MS,
+  type DemandInputs,
+  type QuoteSlot,
+  type RateType,
+} from "@/lib/quote";
 import type { SlotAvailability } from "@/lib/queries";
 import {
   REFUND_CONFIG,
@@ -28,8 +34,6 @@ import {
 
 export const MAX_UNPAID_HOLDS = REFUND_CONFIG.maxUnpaidHolds;
 export const PAYMENT_HOLD_MS = REFUND_CONFIG.holdMinutes * 60 * 1000;
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-const UNIT_MS = { hourly: 3600e3, daily: 86400e3, monthly: 30 * 86400e3 } as const;
 
 export class BookingError extends Error {
   constructor(
@@ -53,10 +57,6 @@ async function admin() {
   return supabaseAdmin;
 }
 
-/** Shift an instant so a UTC runtime's local getters read IST wall-clock time. */
-const asIstLocal = (d: Date) =>
-  new Date(d.getTime() + IST_OFFSET_MS + d.getTimezoneOffset() * 60e3);
-
 type Db = Awaited<ReturnType<typeof admin>>;
 
 /**
@@ -76,75 +76,120 @@ export async function pricingInputs(
   start: Date,
   end: Date,
 ) {
-  let tier: LocationTier | null = null;
-  let total = 0;
-  let peerIds: string[] = [];
-  let demandNeutral = false;
+  let lot: { tier: string | null; total_slots: number } | null = null;
   if (slot.lot_id) {
-    const { data: lot } = await db
+    const { data } = await db
       .from("parking_lots")
       .select("tier, total_slots")
       .eq("id", slot.lot_id)
       .maybeSingle();
-    if (lot) {
-      tier = (lot.tier as LocationTier | null) ?? null;
-      total = lot.total_slots;
-      const { data: inLot } = await db.from("slots").select("id").eq("lot_id", slot.lot_id);
-      peerIds = (inLot ?? []).map((s) => s.id);
-    }
+    lot = data ?? null;
   }
-  if (total === 0) {
-    demandNeutral = true;
-    if (slot.id) {
-      const { data: self } = await db
+  let peers: (PeerCandidate & { lot_id: string | null })[] = [];
+  if (lot && lot.total_slots > 0) {
+    const { data: inLot } = await db
+      .from("slots")
+      .select("id, lat, lng, approval_status, archived, lot_id")
+      .eq("lot_id", slot.lot_id!);
+    peers = (inLot ?? []) as typeof peers;
+  } else if (slot.id) {
+    const { data: self } = await db
+      .from("slots")
+      .select("id, lat, lng, approval_status, archived, lot_id")
+      .eq("id", slot.id)
+      .maybeSingle();
+    if (self) {
+      // Bounding box prefilter (~1 km in latitude), exact distance check in code.
+      const dLat = DEMAND_RADIUS_KM / 111 + 0.001;
+      const dLng = dLat / Math.max(0.1, Math.cos((Number(self.lat) * Math.PI) / 180));
+      const { data: near } = await db
         .from("slots")
-        .select("id, lat, lng")
-        .eq("id", slot.id)
-        .maybeSingle();
-      if (self) {
-        // Bounding box prefilter (~1 km in latitude), exact distance check in code.
-        const dLat = DEMAND_RADIUS_KM / 111 + 0.001;
-        const dLng = dLat / Math.max(0.1, Math.cos((Number(self.lat) * Math.PI) / 180));
-        const { data: near } = await db
-          .from("slots")
-          .select("id, lat, lng, approval_status, archived")
-          .gte("lat", Number(self.lat) - dLat)
-          .lte("lat", Number(self.lat) + dLat)
-          .gte("lng", Number(self.lng) - dLng)
-          .lte("lng", Number(self.lng) + dLng);
-        const n = neighbourhoodPeers(
-          { id: self.id, lat: Number(self.lat), lng: Number(self.lng) },
-          ((near ?? []) as PeerCandidate[]).map((c) => ({
-            ...c,
-            lat: Number(c.lat),
-            lng: Number(c.lng),
-          })),
-        );
-        peerIds = n.peerIds;
-        demandNeutral = n.sparse;
-      }
+        .select("id, lat, lng, approval_status, archived, lot_id")
+        .gte("lat", Number(self.lat) - dLat)
+        .lte("lat", Number(self.lat) + dLat)
+        .gte("lng", Number(self.lng) - dLng)
+        .lte("lng", Number(self.lng) + dLng);
+      peers = [self, ...(near ?? []).filter((n) => n.id !== self.id)] as typeof peers;
     }
-    total = peerIds.length || 1;
   }
-  let occupied = 0;
-  if (peerIds.length && !demandNeutral) {
-    const { data: rows } = await db
+  peers = peers.map((c) => ({ ...c, lat: Number(c.lat), lng: Number(c.lng) }));
+  const probe = demandFromRows(
+    { id: slot.id ?? "", lot_id: slot.lot_id },
+    peers,
+    lot,
+    [],
+    start,
+    end,
+  );
+  let rows: OccupancyRow[] = [];
+  if (!probe.demandNeutral && peers.length) {
+    const { data } = await db
       .from("reservations")
       .select("slot_id, status, start_time, end_time, payment_expires_at")
-      .in("slot_id", peerIds)
+      .in(
+        "slot_id",
+        peers.map((p) => p.id),
+      )
       .neq("status", "cancelled")
       .lt("start_time", end.toISOString())
       .gt("end_time", start.toISOString());
-    occupied = countOccupiedSlots((rows ?? []) as OccupancyRow[], start, end);
+    rows = (data ?? []) as OccupancyRow[];
   }
+  const d = demandFromRows(
+    { id: slot.id ?? "", lot_id: slot.lot_id },
+    peers,
+    lot,
+    rows,
+    start,
+    end,
+  );
   const { data: holidays } = await db.from("public_holidays").select("date");
   return {
-    tier,
-    occupied,
-    total,
-    demandNeutral,
+    tier: d.tier,
+    occupied: d.occupied,
+    total: d.total,
+    demandNeutral: d.demandNeutral,
     holidays: (holidays ?? []).map((h) => h.date as string),
   };
+}
+
+/**
+ * Availability + price for one slot and window — the single quote used by createBooking
+ * (and mirrored in batch by search.server.ts through the same quoteFromData).
+ */
+export async function quoteWindow(
+  db: Db,
+  slot: QuoteSlot,
+  input: { startTime: Date; duration: number; rateType: RateType },
+  now: Date = new Date(),
+) {
+  const end = new Date(input.startTime.getTime() + input.duration * UNIT_MS[input.rateType]);
+  const { data: hours } = await db.from("slot_availability").select("*").eq("slot_id", slot.id);
+  const { data: overlapping } = await db
+    .from("reservations")
+    .select("slot_id, status, start_time, end_time, payment_expires_at")
+    .eq("slot_id", slot.id)
+    .neq("status", "cancelled")
+    .lt("start_time", end.toISOString())
+    .gt("end_time", input.startTime.toISOString());
+  let demand: DemandInputs | null = null;
+  let holidays: string[] = [];
+  if (input.rateType === "hourly") {
+    const p = await pricingInputs(db, slot, input.startTime, end);
+    demand = p;
+    holidays = p.holidays;
+  }
+  return quoteFromData(
+    slot,
+    input,
+    {
+      hours: (hours ?? []) as SlotAvailability[],
+      reservations: (overlapping ?? []) as OccupancyRow[],
+      holidays,
+      demand,
+    },
+    now,
+  );
 }
 
 export async function createBooking(userId: string, input: CreateBookingInput) {
@@ -161,22 +206,16 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
     .eq("id", input.slotId)
     .maybeSingle();
   if (!slot) throw new BookingError("Slot not found", 404);
-  if (slot.approval_status !== "approved" || slot.archived || !slot.is_available)
-    throw new BookingError("This slot isn't accepting bookings");
-  if (slot.status !== "open") throw new BookingError("This slot is full");
   if (slot.owner_id === userId) throw new BookingError("You can't book your own slot");
 
-  const start = new Date(input.startTime);
-  if (start.getTime() < Date.now() - 5 * 60e3) throw new BookingError("Start time is in the past");
-  const end = new Date(start.getTime() + input.duration * UNIT_MS[input.rateType]);
-
-  const { data: hours } = await db.from("slot_availability").select("*").eq("slot_id", slot.id);
-  const hoursError = checkWithinHours(
-    (hours ?? []) as SlotAvailability[],
-    asIstLocal(start),
-    asIstLocal(end),
-  );
-  if (hoursError) throw new BookingError(hoursError);
+  const quote = await quoteWindow(db, slot, {
+    startTime: new Date(input.startTime),
+    duration: input.duration,
+    rateType: input.rateType,
+  });
+  if (!quote.available)
+    throw new BookingError(quote.message ?? "Not available", quote.reason === "booked" ? 409 : 400);
+  const { start, end } = quote;
 
   let vehiclePlate: string | null = null;
   if (input.vehicleId) {
@@ -190,30 +229,10 @@ export async function createBooking(userId: string, input: CreateBookingInput) {
     vehiclePlate = v.plate;
   }
 
-  let breakdown: ReturnType<typeof calculatePrice> | null = null;
-  let subtotal: number;
-  let gst: number;
-  if (input.rateType === "hourly") {
-    const p = await pricingInputs(db, slot, start, end);
-    breakdown = calculatePrice({
-      slotType: (slot.slot_type ?? "standard_car") as SlotType,
-      baseRate: Number(slot.hourly_rate),
-      tier: p.tier,
-      occupiedSlots: p.occupied,
-      totalSlots: p.total,
-      startTime: start,
-      durationHours: input.duration,
-      holidayDates: p.holidays,
-      demandNeutral: p.demandNeutral,
-    });
-    subtotal = breakdown.subtotal;
-    gst = breakdown.gst;
-  } else {
-    const rate = Number(slot[`${input.rateType}_rate`]);
-    subtotal = rate * input.duration;
-    gst = 0;
-  }
-  const grandTotal = Math.round(subtotal + gst);
+  const breakdown = quote.breakdown;
+  const subtotal = quote.subtotal;
+  const gst = quote.gst;
+  const grandTotal = quote.grandTotal;
   // Never silently charge a different amount than the driver confirmed.
   if (input.expectedTotal != null && Math.abs(grandTotal - input.expectedTotal) > 1)
     throw new PriceChangedError(grandTotal);
