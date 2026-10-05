@@ -1,10 +1,16 @@
 // Server-only booking logic shared by server functions and the mobile HTTPS routes.
 // All money values are computed here from database state; clients never supply prices.
 import { createBookingSchema, type CreateBookingInput } from "@/lib/bookings.schema";
-import { calculatePrice, type LocationTier, type SlotType } from "@/lib/pricing";
+import {
+  calculatePrice, countOccupiedSlots, isV2Breakdown, priceWithParams,
+  type LocationTier, type OccupancyRow, type SlotType,
+} from "@/lib/pricing";
 import { checkWithinHours } from "@/lib/availability";
 import type { SlotAvailability } from "@/lib/queries";
-import { REFUND_CONFIG, cancellationRefundShare, earlyEndChargePaise, refundablePaise, extensionPrice, toPaise } from "@/lib/refund-policy";
+import {
+  REFUND_CONFIG, cancellationRefundShare, earlyEndChargePaise, earlyEndChargePaiseV2,
+  refundablePaise, extensionPrice, extensionPriceV2, toPaise,
+} from "@/lib/refund-policy";
 
 export const MAX_UNPAID_HOLDS = REFUND_CONFIG.maxUnpaidHolds;
 export const PAYMENT_HOLD_MS = REFUND_CONFIG.holdMinutes * 60 * 1000;
@@ -27,22 +33,44 @@ async function admin() {
 /** Shift an instant so a UTC runtime's local getters read IST wall-clock time. */
 const asIstLocal = (d: Date) => new Date(d.getTime() + IST_OFFSET_MS + d.getTimezoneOffset() * 60e3);
 
-async function pricingInputs(db: Awaited<ReturnType<typeof admin>>, slot: {
-  slot_type: string; base_rate: number; lot_id: string | null; approx_area: string;
-}) {
-  let tier: LocationTier = "T3";
-  let occupied = 0;
+type Db = Awaited<ReturnType<typeof admin>>;
+
+/**
+ * Pricing inputs for a booking window. Occupancy counts only reservations overlapping
+ * [start, end) that are not cancelled and not expired unpaid holds: distinct slots in the lot
+ * (vs total_slots) or, for independent slots, peers in the same approx_area.
+ * Location tier only applies when the slot belongs to a lot with an explicit tier.
+ */
+export async function pricingInputs(db: Db, slot: {
+  id?: string; lot_id: string | null; approx_area: string;
+}, start: Date, end: Date) {
+  let tier: LocationTier | null = null;
   let total = 0;
+  let peerIds: string[] = [];
   if (slot.lot_id) {
     const { data: lot } = await db.from("parking_lots")
-      .select("tier, total_slots, occupied_slots").eq("id", slot.lot_id).maybeSingle();
-    if (lot) { tier = lot.tier as LocationTier; total = lot.total_slots; occupied = lot.occupied_slots; }
+      .select("tier, total_slots").eq("id", slot.lot_id).maybeSingle();
+    if (lot) {
+      tier = (lot.tier as LocationTier | null) ?? null;
+      total = lot.total_slots;
+      const { data: inLot } = await db.from("slots").select("id").eq("lot_id", slot.lot_id);
+      peerIds = (inLot ?? []).map((s) => s.id);
+    }
   }
   if (total === 0) {
-    const { data: peers } = await db.from("slots").select("status")
+    const { data: peers } = await db.from("slots").select("id")
       .eq("approx_area", slot.approx_area).eq("archived", false);
-    total = peers?.length || 1;
-    occupied = (peers ?? []).filter((p) => p.status === "full").length;
+    peerIds = (peers ?? []).map((p) => p.id);
+    if (slot.id && !peerIds.includes(slot.id)) peerIds.push(slot.id);
+    total = peerIds.length || 1;
+  }
+  let occupied = 0;
+  if (peerIds.length) {
+    const { data: rows } = await db.from("reservations")
+      .select("slot_id, status, start_time, end_time, payment_expires_at")
+      .in("slot_id", peerIds).neq("status", "cancelled")
+      .lt("start_time", end.toISOString()).gt("end_time", start.toISOString());
+    occupied = countOccupiedSlots((rows ?? []) as OccupancyRow[], start, end);
   }
   const { data: holidays } = await db.from("public_holidays").select("date");
   return { tier, occupied, total, holidays: (holidays ?? []).map((h) => h.date as string) };
