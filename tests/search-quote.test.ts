@@ -1,0 +1,167 @@
+import { describe, it, expect } from "vitest";
+import { createBookingSchema } from "../src/lib/bookings.schema";
+import { quoteFromData, sortResults, FULL_FLAG_WINDOW_HOURS, type QuoteSlot } from "../src/lib/quote";
+import { quoteWindow } from "../src/lib/bookings.server";
+import { searchWindow } from "../src/lib/search.server";
+
+const ist = (s: string) => new Date(`${s}+05:30`);
+const NOW = ist("2026-06-09T10:00:00"); // Tuesday
+const H = 3600e3;
+const slot = (id: string, extra: Partial<QuoteSlot> = {}) => ({
+  id,
+  owner_id: "owner",
+  status: "open",
+  archived: false,
+  is_available: true,
+  approval_status: "approved",
+  slot_type: "standard_car",
+  lot_id: null,
+  hourly_rate: 40,
+  daily_rate: 300,
+  monthly_rate: 5000,
+  lat: 13.05,
+  lng: 80.24,
+  approx_lat: 13.051,
+  approx_lng: 80.241,
+  ...extra,
+});
+const empty = { hours: [], reservations: [], holidays: [], demand: null };
+const q = (s: QuoteSlot, start: Date, hours = 2, data = empty) =>
+  quoteFromData(s, { startTime: start, duration: hours, rateType: "hourly" }, data, NOW);
+const res = (slot_id: string, s: Date, e: Date, extra = {}) => ({
+  slot_id,
+  status: "upcoming",
+  start_time: s.toISOString(),
+  end_time: e.toISOString(),
+  payment_expires_at: null as string | null,
+  ...extra,
+});
+
+describe("schema durations", () => {
+  const base = { slotId: crypto.randomUUID(), startTime: NOW.toISOString() };
+  const ok = (rateType: string, duration: number) =>
+    createBookingSchema.safeParse({ ...base, rateType, duration }).success;
+  it("hourly 0.5 and 2.5 accepted, 25 rejected", () => {
+    expect(ok("hourly", 0.5)).toBe(true);
+    expect(ok("hourly", 2.5)).toBe(true);
+    expect(ok("hourly", 24)).toBe(true);
+    expect(ok("hourly", 25)).toBe(false);
+    expect(ok("hourly", 1.25)).toBe(false);
+  });
+  it("daily whole 1–30, monthly 1–12", () => {
+    expect(ok("daily", 1.5)).toBe(false);
+    expect(ok("daily", 30)).toBe(true);
+    expect(ok("daily", 31)).toBe(false);
+    expect(ok("monthly", 12)).toBe(true);
+    expect(ok("monthly", 13)).toBe(false);
+  });
+});
+
+describe("window quote", () => {
+  it("available", () => {
+    const r = q(slot("a"), ist("2026-06-09T11:00:00"));
+    expect(r.reason).toBe("ok");
+    expect(r.grandTotal).toBeGreaterThan(0);
+  });
+  it("booked by an overlapping reservation", () => {
+    const r = q(slot("a"), ist("2026-06-09T11:00:00"), 2, {
+      ...empty,
+      reservations: [res("a", ist("2026-06-09T12:00:00"), ist("2026-06-09T14:00:00"))],
+    });
+    expect(r.reason).toBe("booked");
+  });
+  it("an expired unpaid hold or cancelled booking counts as free", () => {
+    const r = q(slot("a"), ist("2026-06-09T11:00:00"), 2, {
+      ...empty,
+      reservations: [
+        res("a", ist("2026-06-09T11:00:00"), ist("2026-06-09T13:00:00"), {
+          payment_expires_at: ist("2026-06-09T09:50:00").toISOString(),
+        }),
+        res("a", ist("2026-06-09T11:00:00"), ist("2026-06-09T13:00:00"), { status: "cancelled" }),
+      ],
+    });
+    expect(r.reason).toBe("ok");
+  });
+  it("closed by opening hours (IST)", () => {
+    const hours = [
+      { id: "h", slot_id: "a", weekday: 2, open_time: "09:00:00", close_time: "12:00:00", closed: false },
+    ];
+    expect(q(slot("a"), ist("2026-06-09T11:00:00"), 2, { ...empty, hours }).reason).toBe("closed");
+    expect(q(slot("a"), ist("2026-06-09T10:00:00"), 2, { ...empty, hours }).reason).toBe("ok");
+  });
+  it("past start (5 min grace)", () => {
+    expect(q(slot("a"), new Date(NOW.getTime() - 4 * 60e3)).reason).toBe("ok");
+    expect(q(slot("a"), new Date(NOW.getTime() - 6 * 60e3)).reason).toBe("past");
+  });
+  it(`full flag blocks only starts within ${FULL_FLAG_WINDOW_HOURS} h`, () => {
+    const full = slot("a", { status: "full" });
+    expect(q(full, new Date(NOW.getTime() + 2 * H - 60e3)).reason).toBe("unavailable");
+    expect(q(full, new Date(NOW.getTime() + 2 * H)).reason).toBe("ok");
+  });
+  it("sort: available first, then by mode", () => {
+    const items = [
+      { id: "x", available: false, distance: 0.1, price: 10, rating: 5 },
+      { id: "y", available: true, distance: 3, price: 50, rating: 4 },
+      { id: "z", available: true, distance: 1, price: 90, rating: 3 },
+    ];
+    expect(sortResults(items, "distance").map((i) => i.id)).toEqual(["z", "y", "x"]);
+    expect(sortResults(items, "price").map((i) => i.id)).toEqual(["y", "z", "x"]);
+    expect(sortResults(items, "rating").map((i) => i.id)).toEqual(["y", "z", "x"]);
+  });
+});
+
+function fakeDb(tables: Record<string, unknown[]>) {
+  return {
+    from(table: string) {
+      let rows = [...(tables[table] ?? [])] as Record<string, unknown>[];
+      const q: Record<string, unknown> = {};
+      for (const m of ["select", "neq", "lt", "gt", "gte", "lte", "limit"]) q[m] = () => q;
+      q.eq = (c: string, v: unknown) => ((rows = rows.filter((r) => r[c] === v)), q);
+      q.in = (c: string, vs: unknown[]) => ((rows = rows.filter((r) => vs.includes(r[c]))), q);
+      q.maybeSingle = async () => ({ data: rows[0] ?? null });
+      q.then = (r: (v: { data: unknown[] }) => unknown) => r({ data: rows });
+      return q;
+    },
+  };
+}
+
+describe("search quote equals booking quote", () => {
+  // 6 slots within 1 km so dynamic demand applies; some booked.
+  const slots = ["a", "b", "c", "d", "e", "f"].map((id, i) =>
+    slot(id, { lat: 13.05 + i * 0.001, hourly_rate: 30 + i * 5 }),
+  );
+  const start = ist("2026-06-09T17:30:00");
+  const db = fakeDb({
+    slots,
+    slot_availability: [],
+    reservations: [
+      res("b", ist("2026-06-09T17:00:00"), ist("2026-06-09T19:00:00")),
+      res("c", ist("2026-06-09T18:00:00"), ist("2026-06-09T20:00:00")),
+    ],
+    public_holidays: [{ date: "2026-06-10" }],
+    parking_lots: [],
+  });
+  for (const [rateType, duration] of [
+    ["hourly", 2.5],
+    ["daily", 2],
+    ["monthly", 1],
+  ] as const) {
+    it(rateType, async () => {
+      const found = await searchWindow(
+        db,
+        { startTime: start.toISOString(), duration, rateType, lat: 13.05, lng: 80.24 },
+        NOW,
+      );
+      expect(found).toHaveLength(6);
+      for (const s of slots) {
+        const booking = await quoteWindow(db as never, s, { startTime: start, duration, rateType }, NOW);
+        const r = found.find((f) => f.slotId === s.id)!;
+        expect(r.totalPrice).toBe(booking.grandTotal);
+        expect(r.available).toBe(booking.available);
+        expect(r.reason).toBe(booking.reason);
+        expect(JSON.stringify(r)).not.toMatch(/"lat"|"lng"|address/);
+      }
+      expect(found.find((f) => f.slotId === "b")!.reason).toBe("booked");
+    });
+  }
+});
