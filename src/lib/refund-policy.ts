@@ -89,8 +89,33 @@ export function gstShareOfRefund(refundPaise: number, chargedPaise: number, gstP
   return Math.floor((refundPaise * gstPaise) / chargedPaise);
 }
 
-/** Extension price in rupees, using the same rounding/GST rule as the original booking. */
+/** Extension price in rupees, using the same rounding/GST rule as the original booking (pricing v1). */
 export function extensionPrice(perHourExGst: number, minutes: number, gstRate: number): number {
   const subtotal = perHourExGst * (minutes / 60);
   return Math.round(subtotal + subtotal * gstRate);
+}
+
+/**
+ * Pricing v2 extension price (rupees, GST included): price(new duration) − price(old duration),
+ * both computed with the same stored parameters. `totalForHours` returns the rounded grand total.
+ */
+export function extensionPriceV2(totalForHours: (hours: number) => number, oldHours: number, newHours: number): number {
+  return Math.max(0, totalForHours(newHours) - totalForHours(oldHours));
+}
+
+/**
+ * Pricing v2 early end (paise kept): the price recomputed for the time actually used
+ * (minimum `minChargeHours`, never more than the booked span), never more than what was charged.
+ */
+export function earlyEndChargePaiseV2(
+  chargedPaise: number,
+  totalPaiseForHours: (hours: number) => number,
+  startMs: number,
+  endMs: number,
+  nowMs: number,
+): number {
+  const spanH = Math.max(0, endMs - startMs) / 3600e3;
+  const usedH = Math.min(spanH, Math.max(0, nowMs - startMs) / 3600e3);
+  const billedH = Math.min(spanH, Math.max(usedH, REFUND_CONFIG.minChargeHours));
+  return Math.min(chargedPaise, Math.ceil(totalPaiseForHours(billedH)));
 }
