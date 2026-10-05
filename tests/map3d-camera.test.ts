@@ -51,7 +51,7 @@ describe("3D camera policy (privacy)", () => {
     const nan = clampCamera(p, { center: approx, range: NaN, tilt: NaN });
     expect(nan.range).toBe(600);
   });
-  it("circle overlay is ~250 m around the approx point", () => {
+  it("circlePath draws a 250 m ring accurately", () => {
     const ring = circlePath(approx, 250);
     expect(ring[0]).toEqual(ring[ring.length - 1]);
     for (const q of ring) {
