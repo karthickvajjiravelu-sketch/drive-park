@@ -258,6 +258,32 @@ export function windowFactors(
   };
 }
 
+const DAY_MS = 24 * HOUR_MS;
+
+/** Fast IST time/day factors for one instant (same rules as timeFactor/dayFactor). */
+function blockFactors(ms: number, holidayDays: Set<number>) {
+  const shifted = ms + IST_OFFSET_MS;
+  const dayNum = Math.floor(shifted / DAY_MS);
+  const hour = Math.floor((shifted - dayNum * DAY_MS) / HOUR_MS);
+  const weekday = (((dayNum + 4) % 7) + 7) % 7; // 1970-01-01 was a Thursday
+  const [t, tl] =
+    hour < 6
+      ? [0.7, "Late night"]
+      : hour < 10
+        ? [1.5, "Morning rush"]
+        : hour < 16
+          ? [1.0, "Daytime"]
+          : hour < 21
+            ? [1.8, "Evening rush"]
+            : [1.0, "Night"];
+  const [d, dl] = holidayDays.has(dayNum)
+    ? [1.5, "Public holiday"]
+    : weekday === 0 || weekday === 6
+      ? [1.3, "Weekend"]
+      : [1.0, "Weekday"];
+  return { t: t as number, tl: tl as string, d: d as number, dl: dl as string };
+}
+
 /* ------------------------------------------------------------ duration bands */
 
 /** Hours actually billed after the marginal discount (continuous, strictly increasing). */
@@ -362,34 +388,59 @@ export function priceWithParams(
   startTime: Date,
   durationHours: number,
 ): PriceBreakdown {
-  const w = windowFactors(startTime, durationHours, params.holidayDates);
   const min = params.cap?.min ?? MULTIPLIER_CAP.min;
   const max = params.cap?.max ?? MULTIPLIER_CAP.max;
   const dl = params.demandMultiplier * params.locationMultiplier;
-  const raw = dl * w.combined;
+  const holidayDays = new Set(
+    params.holidayDates.map((d) => Math.floor(Date.parse(`${d}T00:00:00Z`) / DAY_MS)),
+  );
   // Sum over IST hour blocks; each block gets its own clamped multiplier and the
   // billable (marginally discounted) hours that fall inside it.
   const startMs = startTime.getTime();
   const endMs = startMs + Math.max(0, durationHours) * HOUR_MS;
   let weighted = 0; // sum of clamped multiplier x billable hours
+  let tSum = 0,
+    dSum = 0,
+    cSum = 0;
+  const tLabels = new Set<string>();
+  const dLabels = new Set<string>();
   let hitMax = false;
   let hitMin = false;
   let cur = startMs;
+  let prevBill = 0;
   while (cur < endMs) {
     const next = Math.min(
       endMs,
       Math.floor((cur + IST_OFFSET_MS) / HOUR_MS + 1) * HOUR_MS - IST_OFFSET_MS,
     );
-    const at = new Date(cur);
-    const m =
-      dl * timeFactor(at).multiplier * dayFactor(at, params.holidayDates).multiplier;
+    const f = blockFactors(cur, holidayDays);
+    const span = next - cur;
+    tSum += f.t * span;
+    dSum += f.d * span;
+    cSum += f.t * f.d * span;
+    tLabels.add(f.tl);
+    dLabels.add(f.dl);
+    const m = dl * f.t * f.d;
     if (m > max) hitMax = true;
     if (m < min) hitMin = true;
-    const portion =
-      billableHours((next - startMs) / HOUR_MS) - billableHours((cur - startMs) / HOUR_MS);
-    weighted += Math.min(max, Math.max(min, m)) * portion;
+    const bill = billableHours((next - startMs) / HOUR_MS);
+    weighted += Math.min(max, Math.max(min, m)) * (bill - prevBill);
+    prevBill = bill;
     cur = next;
   }
+  const totalMs = endMs - startMs;
+  let w: ReturnType<typeof windowFactors>;
+  if (totalMs > 0) {
+    const one = (x: Set<string>) => (x.size === 1 ? [...x][0] : "Mixed");
+    w = {
+      time: tSum / totalMs,
+      day: dSum / totalMs,
+      combined: cSum / totalMs,
+      timeLabel: one(tLabels),
+      dayLabel: one(dLabels),
+    };
+  } else w = windowFactors(startTime, 0, params.holidayDates);
+  const raw = dl * w.combined;
   const billable = billableHours(durationHours);
   const combined = billable > 0 ? weighted / billable : Math.min(max, Math.max(min, raw));
   const capApplied = hitMax ? "max" : hitMin ? "min" : null;

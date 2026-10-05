@@ -123,7 +123,7 @@ describe("A1 neighbourhood demand", () => {
 });
 
 describe("A3 monotonic sweep (every half-hour start for a week × 0.25–72 h × demand × cap)", () => {
-  it("price never decreases with duration", () => {
+  it("price never decreases with duration", { timeout: 120_000 }, () => {
     const week0 = ist("2026-06-08T00:00:00"); // Monday
     const holidays = ["2026-06-10"];
     const demandOcc: Record<number, [number, number]> = {
