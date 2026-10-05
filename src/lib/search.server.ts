@@ -1,7 +1,12 @@
 // Server-only: time-window search. Uses the same quoteFromData/demandFromRows rules as
 // createBooking, with batched reads. Exact coordinates and addresses never leave this file.
 import type { SearchWindowInput } from "@/lib/bookings.schema";
-import { haversineKm, neighbourhoodPeers, type OccupancyRow, type PeerCandidate } from "@/lib/pricing";
+import {
+  haversineKm,
+  neighbourhoodPeers,
+  type OccupancyRow,
+  type PeerCandidate,
+} from "@/lib/pricing";
 import type { SlotAvailability } from "@/lib/queries";
 import {
   demandFromRows,
@@ -22,7 +27,9 @@ export const ID_CHUNK = 100;
  * `build` must return a fresh, deterministically ordered query each call.
  */
 export async function fetchAllPages<T>(
-  build: () => { range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }> },
+  build: () => {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }>;
+  },
   pageSize: number = PAGE_SIZE,
 ): Promise<T[]> {
   const out: T[] = [];
@@ -36,7 +43,12 @@ export async function fetchAllPages<T>(
 }
 
 /** fetchAllPages over id chunks of ID_CHUNK (one `.in()` filter per chunk). */
-async function fetchByIds<T>(ids: string[], build: (chunk: string[]) => { range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }> }): Promise<T[]> {
+async function fetchByIds<T>(
+  ids: string[],
+  build: (chunk: string[]) => {
+    range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error?: unknown }>;
+  },
+): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < ids.length; i += ID_CHUNK) {
     const chunk = ids.slice(i, i + ID_CHUNK);
