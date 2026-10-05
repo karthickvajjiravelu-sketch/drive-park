@@ -54,7 +54,12 @@ describe("A1 neighbourhood demand", () => {
   });
 
   it(`${MIN_DEMAND_PEERS}+ nearby slots are not sparse`, () => {
-    const n = neighbourhoodPeers(SELF, [peer("a", 0.1), peer("b", 0.2), peer("c", 0.3), peer("d", 0.4)]);
+    const n = neighbourhoodPeers(SELF, [
+      peer("a", 0.1),
+      peer("b", 0.2),
+      peer("c", 0.3),
+      peer("d", 0.4),
+    ]);
     expect(n.peerIds.length).toBe(5);
     expect(n.sparse).toBe(false);
   });
@@ -90,7 +95,14 @@ describe("A1 neighbourhood demand", () => {
   });
 
   it("5+ nearby slots use overlap occupancy", async () => {
-    const slots = [{ ...peer("self", 0) }, peer("a", 0.1), peer("b", 0.2), peer("c", 0.3), peer("d", 0.4), peer("far", 3)];
+    const slots = [
+      { ...peer("self", 0) },
+      peer("a", 0.1),
+      peer("b", 0.2),
+      peer("c", 0.3),
+      peer("d", 0.4),
+      peer("far", 3),
+    ];
     const db = fakeDb({
       slots,
       reservations: [
@@ -114,10 +126,24 @@ describe("A1 neighbourhood demand", () => {
   });
 
   it("a lone live slot gets demand 1.0 through pricingInputs", async () => {
-    const db = fakeDb({ slots: [{ ...peer("self", 0) }, peer("x", 2)], reservations: [], public_holidays: [] });
-    const p = await pricingInputs(db as never, { id: "self", lot_id: null }, new Date(), new Date(Date.now() + 3600e3));
+    const db = fakeDb({
+      slots: [{ ...peer("self", 0) }, peer("x", 2)],
+      reservations: [],
+      public_holidays: [],
+    });
+    const p = await pricingInputs(
+      db as never,
+      { id: "self", lot_id: null },
+      new Date(),
+      new Date(Date.now() + 3600e3),
+    );
     expect(p.demandNeutral).toBe(true);
-    const params = pricingParams({ baseRate: 25, occupiedSlots: p.occupied, totalSlots: p.total, demandNeutral: p.demandNeutral });
+    const params = pricingParams({
+      baseRate: 25,
+      occupiedSlots: p.occupied,
+      totalSlots: p.total,
+      demandNeutral: p.demandNeutral,
+    });
     expect(params.demandMultiplier).toBe(1);
   });
 });
@@ -137,7 +163,12 @@ describe("A3 monotonic sweep (every half-hour start for a week × 0.25–72 h ×
     let smallest: string | null = null;
     for (const capOn of [true, false]) {
       for (const [d, [occ, tot]] of Object.entries(demandOcc)) {
-        const params = pricingParams({ baseRate: 40, occupiedSlots: occ, totalSlots: tot, holidayDates: holidays });
+        const params = pricingParams({
+          baseRate: 40,
+          occupiedSlots: occ,
+          totalSlots: tot,
+          holidayDates: holidays,
+        });
         expect(params.demandMultiplier).toBe(Number(d));
         if (!capOn) params.cap = { min: 0, max: Infinity };
         for (let k = 0; k < 48 * 7; k++) {
@@ -159,7 +190,14 @@ describe("A3 monotonic sweep (every half-hour start for a week × 0.25–72 h ×
   });
 
   it("cap still limits each hour", () => {
-    const b = calculatePrice({ baseRate: 40, tier: "T1", occupiedSlots: 10, totalSlots: 10, startTime: ist("2026-06-13T18:00:00"), durationHours: 3 });
+    const b = calculatePrice({
+      baseRate: 40,
+      tier: "T1",
+      occupiedSlots: 10,
+      totalSlots: 10,
+      startTime: ist("2026-06-13T18:00:00"),
+      durationHours: 3,
+    });
     expect(b.combinedMultiplier).toBeLessThanOrEqual(MULTIPLIER_CAP.max + 1e-9);
     expect(b.capApplied).toBe("max");
   });

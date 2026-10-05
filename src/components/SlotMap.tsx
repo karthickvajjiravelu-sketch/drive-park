@@ -138,7 +138,11 @@ export default function SlotMap({
       const listed = Number((s as unknown as Record<string, number>)[`${rate}_rate`]) || 0;
       const priceText = `₹${listed}`;
       const unit = rate === "hourly" ? "hour" : rate === "daily" ? "day" : "month";
-      const pin = pricePinIcon(isFull ? "#E85D3D" : "#1FA35A", priceText, isDark ? "#F0ECF8" : "#241F3D");
+      const pin = pricePinIcon(
+        isFull ? "#E85D3D" : "#1FA35A",
+        priceText,
+        isDark ? "#F0ECF8" : "#241F3D",
+      );
       const icon = {
         url: pin.url,
         scaledSize: new g.maps.Size(pin.width, 38),

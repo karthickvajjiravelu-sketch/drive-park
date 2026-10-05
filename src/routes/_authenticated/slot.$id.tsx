@@ -40,7 +40,6 @@ import { durationSchema, validate, MESSAGES } from "@/lib/validation";
 import { slotAmenities, POLICY_META } from "@/lib/amenities";
 import { PayNowButton } from "@/components/PayNowButton";
 
-
 export const Route = createFileRoute("/_authenticated/slot/$id")({
   component: SlotDetail,
   errorComponent: RouteError,
@@ -146,7 +145,6 @@ function SlotDetail() {
     new Date(startTime),
     new Date(new Date(startTime).getTime() + duration * msPerUnit),
   );
-
 
   async function refreshPrice() {
     const previous = breakdown?.grandTotal;
@@ -546,7 +544,6 @@ function SlotDetail() {
             >
               {busy ? "…" : "Reserve now"}
             </button>
-
           </div>
         )}
 
@@ -609,7 +606,6 @@ function SlotDetail() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
