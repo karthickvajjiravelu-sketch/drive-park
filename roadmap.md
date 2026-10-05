@@ -1,4 +1,5 @@
 - [x] Pricing v2 fixes (A–F)
-- [x] 3D view plan (plan only, not implemented)
+- [x] 3D view plan
+- [x] 3D view prototype behind VITE_FEATURE_MAP_3D (map toggle + slot-page button)
 - [x] Pricing v2 corrections (neighbourhood demand, preview window, price-changed 409, monotonic sweep) and map fixes B1–B7
 - [x] Half-hour schema, locked-address panel, reserve-while-loading, time-window search (B1–B8)
