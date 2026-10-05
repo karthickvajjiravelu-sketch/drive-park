@@ -2,8 +2,6 @@
 // All money values are computed here from database state; clients never supply prices.
 import { createBookingSchema, type CreateBookingInput } from "@/lib/bookings.schema";
 import {
-  calculatePrice,
-  countOccupiedSlots,
   isV2Breakdown,
   priceWithParams,
   type LocationTier,
@@ -11,9 +9,10 @@ import {
   type PeerCandidate,
   type SlotType,
   DEMAND_RADIUS_KM,
-  neighbourhoodPeers,
 } from "@/lib/pricing";
+import { checkWithinHours } from "@/lib/availability";
 import {
+  asIstLocal,
   demandFromRows,
   quoteFromData,
   UNIT_MS,
@@ -35,8 +34,6 @@ import {
 
 export const MAX_UNPAID_HOLDS = REFUND_CONFIG.maxUnpaidHolds;
 export const PAYMENT_HOLD_MS = REFUND_CONFIG.holdMinutes * 60 * 1000;
-const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
-const UNIT_MS = { hourly: 3600e3, daily: 86400e3, monthly: 30 * 86400e3 } as const;
 
 export class BookingError extends Error {
   constructor(
@@ -59,10 +56,6 @@ async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
-
-/** Shift an instant so a UTC runtime's local getters read IST wall-clock time. */
-const asIstLocal = (d: Date) =>
-  new Date(d.getTime() + IST_OFFSET_MS + d.getTimezoneOffset() * 60e3);
 
 type Db = Awaited<ReturnType<typeof admin>>;
 
