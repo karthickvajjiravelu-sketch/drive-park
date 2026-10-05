@@ -139,13 +139,12 @@ export default function SlotMap({
       seen.add(s.id);
       const isFull = s.status === "full";
       const listed = Number((s as unknown as Record<string, number>)[`${rate}_rate`]) || 0;
-      const priceText = `₹${listed}`;
+      const w = windowPrices?.get(s.id);
       const unit = rate === "hourly" ? "hour" : rate === "daily" ? "day" : "month";
-      const pin = pricePinIcon(
-        isFull ? "#E85D3D" : "#1FA35A",
-        priceText,
-        isDark ? "#F0ECF8" : "#241F3D",
-      );
+      const priceText = w ? `₹${w.total}` : `₹${listed}`;
+      const unavailable = w ? !w.available : isFull;
+      const color = w ? (w.available ? "#1FA35A" : "#8A8496") : isFull ? "#E85D3D" : "#1FA35A";
+      const pin = pricePinIcon(color, priceText, isDark ? "#F0ECF8" : "#241F3D");
       const icon = {
         url: pin.url,
         scaledSize: new g.maps.Size(pin.width, 38),
