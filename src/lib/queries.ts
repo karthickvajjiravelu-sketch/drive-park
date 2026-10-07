@@ -189,7 +189,7 @@ export const useProfile = () => useQuery(profileQuery());
 
 /** Public slot columns. Address + access instructions come from get_slots_private. */
 export const SLOT_COLUMNS =
-  "id, owner_id, name, approx_area, lat:approx_lat, lng:approx_lng, hourly_rate, daily_rate, monthly_rate, status, vehicle_type, vehicle_size_limit, photos, rating, created_at, covered, cctv, disabled_access, height_limit_cm, width_limit_cm, cancellation_policy, archived, lot_id, slot_type, base_rate, is_available, approval_status, approval_note, approved_at";
+  "id, owner_id, name, approx_area, lat:public_lat, lng:public_lng, hourly_rate, daily_rate, monthly_rate, status, vehicle_type, vehicle_size_limit, photos, rating, created_at, covered, cctv, disabled_access, height_limit_cm, width_limit_cm, cancellation_policy, archived, lot_id, slot_type, base_rate, is_available, approval_status, approval_note, approved_at";
 
 export type SlotPrivate = { slot_id: string; full_address: string; access_instructions: string };
 

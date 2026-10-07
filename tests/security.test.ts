@@ -157,12 +157,22 @@ describe.skipIf(!enabled)("security hardening", () => {
   it("#4f exact lat/lng are not readable; approximate ones are 150-450 m away", async () => {
     await expect(asUser(stranger, () => sql("SELECT lat FROM public.slots WHERE id=$1", [slotId]))).rejects.toThrow();
     const r = await asUser(stranger, () =>
-      sql("SELECT approx_lat, approx_lng FROM public.slots WHERE id=$1", [slotId]),
+      sql("SELECT public_lat, public_lng FROM public.slots WHERE id=$1", [slotId]),
     );
-    const { approx_lat: la, approx_lng: ln } = r.rows[0];
+    const { public_lat: la, public_lng: ln } = r.rows[0];
     const metres = Math.hypot(la * 111320, ln * 111320);
     expect(metres).toBeGreaterThan(80); // 150-300 m offset, then rounded to ~110 m grid
     expect(metres).toBeLessThan(450);
+  });
+
+  it("#4g approx_seed and the old id-derived approx columns are not selectable", async () => {
+    for (const col of ["approx_seed", "approx_lat", "approx_lng"]) {
+      await expect(asUser(stranger, () => sql(`SELECT ${col} FROM public.slots WHERE id=$1`, [slotId]))).rejects.toThrow();
+    }
+    const priv = await sql(
+      "SELECT has_column_privilege('anon','public.slots','approx_seed','SELECT') a, has_column_privilege('authenticated','public.slots','approx_seed','SELECT') b",
+    );
+    expect(priv.rows[0]).toEqual({ a: false, b: false });
   });
 
   it("#6 messages must go between the booking's driver and host", async () => {

@@ -27,8 +27,8 @@ const slot = (id: string, extra: Partial<QuoteSlot> = {}) => ({
   monthly_rate: 5000,
   lat: 13.05,
   lng: 80.24,
-  approx_lat: 13.051,
-  approx_lng: 80.241,
+  public_lat: 13.051,
+  public_lng: 80.241,
   ...extra,
 });
 const empty = { hours: [], reservations: [], holidays: [], demand: null };

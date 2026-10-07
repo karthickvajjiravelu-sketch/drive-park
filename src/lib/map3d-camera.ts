@@ -9,7 +9,7 @@ export type LatLng = { lat: number; lng: number };
 export type Bounds = { north: number; south: number; east: number; west: number };
 
 /**
- * Largest possible distance between a slot's real point and its approx_lat/approx_lng
+ * Largest possible distance between a slot's real point and its public_lat/public_lng
  * (generated in drizzle/migrations/0004_location_privacy.sql): a 150-300 m radial offset,
  * then each coordinate is rounded to 3 decimals (up to 0.0005 deg = 55.66 m north-south and
  * at most 55.66 m east-west), so worst case 300 + sqrt(2) * 55.66 = 378.7 m. The locked

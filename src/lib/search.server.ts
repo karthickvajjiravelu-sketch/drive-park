@@ -72,8 +72,8 @@ export type WindowResult = {
 type SlotRow = QuoteSlot &
   PeerCandidate & {
     lot_id: string | null;
-    approx_lat: number | null;
-    approx_lng: number | null;
+    public_lat: number | null;
+    public_lng: number | null;
   };
 
 // Loose type so tests can pass a small fake of the admin client.
@@ -97,7 +97,7 @@ export async function searchWindow(
     db
       .from("slots")
       .select(
-        "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, approx_lat, approx_lng",
+        "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, public_lat, public_lng",
       )
       .order("id"),
   );
@@ -174,10 +174,10 @@ export async function searchWindow(
       now,
     );
     const approxDistanceKm =
-      input.lat != null && input.lng != null && slot.approx_lat != null && slot.approx_lng != null
+      input.lat != null && input.lng != null && slot.public_lat != null && slot.public_lng != null
         ? haversineKm(
             { lat: input.lat, lng: input.lng },
-            { lat: Number(slot.approx_lat), lng: Number(slot.approx_lng) },
+            { lat: Number(slot.public_lat), lng: Number(slot.public_lng) },
           )
         : null;
     return {
