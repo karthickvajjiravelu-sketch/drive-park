@@ -50,6 +50,13 @@
       "when": 1791224855392,
       "tag": "0006_restore_realtime_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791356105185,
+      "tag": "0007_approx_seed_secret",
+      "breakpoints": true
     }
   ]
 }

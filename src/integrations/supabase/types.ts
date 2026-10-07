@@ -872,6 +872,7 @@ export type Database = {
           approx_area: string
           approx_lat: number | null
           approx_lng: number | null
+          approx_seed: string
           archived: boolean
           base_rate: number
           cancellation_policy: string
@@ -892,6 +893,8 @@ export type Database = {
           name: string
           owner_id: string
           photos: string[]
+          public_lat: number | null
+          public_lng: number | null
           rating: number
           slot_type: Database["public"]["Enums"]["slot_type"]
           status: Database["public"]["Enums"]["slot_status"]
@@ -907,6 +910,7 @@ export type Database = {
           approx_area: string
           approx_lat?: number | null
           approx_lng?: number | null
+          approx_seed?: string
           archived?: boolean
           base_rate?: number
           cancellation_policy?: string
@@ -927,6 +931,8 @@ export type Database = {
           name: string
           owner_id: string
           photos?: string[]
+          public_lat?: number | null
+          public_lng?: number | null
           rating?: number
           slot_type?: Database["public"]["Enums"]["slot_type"]
           status?: Database["public"]["Enums"]["slot_status"]
@@ -942,6 +948,7 @@ export type Database = {
           approx_area?: string
           approx_lat?: number | null
           approx_lng?: number | null
+          approx_seed?: string
           archived?: boolean
           base_rate?: number
           cancellation_policy?: string
@@ -962,6 +969,8 @@ export type Database = {
           name?: string
           owner_id?: string
           photos?: string[]
+          public_lat?: number | null
+          public_lng?: number | null
           rating?: number
           slot_type?: Database["public"]["Enums"]["slot_type"]
           status?: Database["public"]["Enums"]["slot_status"]
