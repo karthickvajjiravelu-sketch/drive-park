@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ThemeQuickToggle } from "@/components/ThemeToggle";
-import { useMySlots } from "@/lib/queries";
+import { useMySlots, useOwnerBookings } from "@/lib/queries";
+import { FULL_FLAG_WINDOW_HOURS } from "@/lib/quote";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -13,6 +14,10 @@ export const Route = createFileRoute("/_authenticated/my-slots")({
 function MySlots() {
   const { data: slots = [], isLoading, isError, error, refetch } = useMySlots();
   const qc = useQueryClient();
+  const { data: bookings = [] } = useOwnerBookings();
+  const openCount = (slotId: string) =>
+    bookings.filter((b) => b.slot_id === slotId && (b.status === "upcoming" || b.status === "active"))
+      .length;
 
   async function toggle(id: string, current: "open" | "full") {
     const next = current === "open" ? "full" : "open";
@@ -22,6 +27,13 @@ function MySlots() {
   }
 
   async function remove(id: string, name: string) {
+    const n = openCount(id);
+    if (n > 0) {
+      toast.error(
+        `You have ${n} upcoming ${n === 1 ? "booking" : "bookings"}. Contact support to cancel them first.`,
+      );
+      return;
+    }
     if (
       !confirm(
         `Delete "${name}"? Existing bookings are kept, but drivers won't see this slot anymore.`,
@@ -34,7 +46,11 @@ function MySlots() {
       .update({ archived: true, status: "full" })
       .eq("id", id);
     if (error) {
-      toast.error(error.message);
+      toast.error(
+        error.message.includes("upcoming or active bookings")
+          ? "You have upcoming bookings. Contact support to cancel them first."
+          : "Couldn't remove this slot. Please try again.",
+      );
       return;
     }
     toast.success("Slot removed");
@@ -94,13 +110,36 @@ function MySlots() {
                   <div className="font-bold truncate">{s.name}</div>
                   <div className="text-xs text-muted-foreground truncate">{s.approx_area}</div>
                 </div>
+                <ApprovalBadge status={s.approval_status} />
+              </div>
+              {s.approval_status === "rejected" && s.approval_note && (
+                <p className="mt-1 text-xs text-destructive">Reason: {s.approval_note}</p>
+              )}
+              {(s.approval_status !== "approved" || !s.is_available) && (
+                <p className="mt-2 rounded-lg bg-muted px-2 py-1 text-xs font-semibold">
+                  Not visible to drivers
+                  {s.approval_status === "pending" && " until Usop approves it"}
+                  {s.approval_status === "approved" && !s.is_available && " (unavailable)"}
+                </p>
+              )}
+              <div className="mt-3 flex items-center justify-between gap-2">
                 <button
                   onClick={() => toggle(s.id, s.status)}
-                  className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${s.status === "open" ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}
+                  aria-pressed={s.status === "open"}
+                  className={`shrink-0 text-xs font-bold px-3 py-2 rounded-full ${s.status === "open" ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}
                 >
-                  {s.status.toUpperCase()}
+                  {s.status === "open" ? "Accepting bookings" : "Marked full"}
                 </button>
+                {openCount(s.id) > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {openCount(s.id)} upcoming/active
+                  </span>
+                )}
               </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Marking full blocks bookings that start within the next {FULL_FLAG_WINDOW_HOURS}{" "}
+                hours. Later times stay bookable.
+              </p>
               <div className="mt-2 text-xs text-muted-foreground">
                 ₹{s.hourly_rate}/hr · ₹{s.daily_rate}/day · ₹{s.monthly_rate}/mo
               </div>
@@ -161,4 +200,14 @@ function MySlots() {
       </div>
     </div>
   );
+}
+
+function ApprovalBadge({ status }: { status: string | null | undefined }) {
+  const map: Record<string, [string, string]> = {
+    pending: ["Pending review", "bg-accent text-accent-foreground"],
+    approved: ["Approved", "bg-success text-success-foreground"],
+    rejected: ["Rejected", "bg-destructive text-destructive-foreground"],
+  };
+  const [text, cls] = map[status ?? "pending"] ?? map.pending;
+  return <span className={`shrink-0 text-xs font-bold px-3 py-1 rounded-full ${cls}`}>{text}</span>;
 }
