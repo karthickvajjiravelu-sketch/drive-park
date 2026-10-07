@@ -1107,6 +1107,7 @@ export type Database = {
         }
         Returns: number
       }
+      advance_reservations: { Args: never; Returns: Json }
       apply_extension: { Args: { _id: string }; Returns: string }
       claim_payment: {
         Args: {

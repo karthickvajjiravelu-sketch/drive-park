@@ -57,6 +57,13 @@
       "when": 1791356105185,
       "tag": "0007_approx_seed_secret",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791356189881,
+      "tag": "0008_reservation_lifecycle",
+      "breakpoints": true
     }
   ]
 }
