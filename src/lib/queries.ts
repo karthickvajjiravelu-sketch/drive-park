@@ -51,6 +51,10 @@ export type Slot = {
   width_limit_cm: number | null;
   cancellation_policy: "flexible" | "moderate" | "strict";
   archived: boolean;
+  approval_status?: "pending" | "approved" | "rejected";
+  approval_note?: string | null;
+  approved_at?: string | null;
+  is_available?: boolean;
 };
 
 export type Vehicle = {
