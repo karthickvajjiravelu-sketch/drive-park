@@ -32,9 +32,23 @@ type Row = { weekday: number; open_time: string; close_time: string; closed: boo
 const DEFAULT_ROW = (weekday: number): Row => ({
   weekday,
   open_time: "00:00",
-  close_time: "23:59",
+  close_time: "00:00", // midnight = end of day (stored as 24:00)
   closed: false,
 });
+
+/** Stored 24:00 and legacy 23:59 both show as 00:00 (midnight, end of day). */
+function displayClose(t: string): string {
+  const v = t.slice(0, 5);
+  return v === "24:00" || v === "23:59" ? "00:00" : v;
+}
+const storeClose = (t: string) => (t === "00:00" ? "24:00" : t);
+
+function closeHint(r: Row): string | null {
+  if (r.closed) return null;
+  if (r.close_time === "00:00") return "(midnight)";
+  if (r.close_time < r.open_time) return "(next day)";
+  return null;
+}
 
 function toRows(saved: SlotAvailability[]): Row[] {
   return WEEKDAYS.map((_, i) => {
@@ -43,7 +57,7 @@ function toRows(saved: SlotAvailability[]): Row[] {
       ? {
           weekday: i,
           open_time: r.open_time.slice(0, 5),
-          close_time: r.close_time.slice(0, 5),
+          close_time: displayClose(r.close_time),
           closed: r.closed,
         }
       : DEFAULT_ROW(i);
@@ -80,24 +94,23 @@ function AvailabilityEditor() {
   }
 
   async function save() {
-    const invalid = rows.find((r) => !r.closed && r.open_time >= r.close_time);
+    // Same open and close = no hours (00:00 to 00:00 means a full day).
+    const invalid = rows.find(
+      (r) => !r.closed && r.open_time === r.close_time && r.close_time !== "00:00",
+    );
     if (invalid) {
-      toast.error(`${WEEKDAYS[invalid.weekday]}: closing time must be after opening time.`);
+      toast.error(`${WEEKDAYS[invalid.weekday]}: opening and closing time can't be the same.`);
       return;
     }
     setBusy(true);
-    const { error: delError } = await supabase.from("slot_availability").delete().eq("slot_id", id);
-    if (delError) {
-      setBusy(false);
-      toast.error(delError.message);
-      return;
-    }
-    const { error } = await supabase
-      .from("slot_availability")
-      .insert(rows.map((r) => ({ ...r, slot_id: id })));
+    // One atomic upsert of all 7 days: a failure leaves the previous hours untouched.
+    const { error } = await supabase.from("slot_availability").upsert(
+      rows.map((r) => ({ ...r, close_time: storeClose(r.close_time), slot_id: id })),
+      { onConflict: "slot_id,weekday" },
+    );
     setBusy(false);
     if (error) {
-      toast.error(error.message);
+      toast.error("Couldn't save opening hours. Your previous hours are unchanged.");
       return;
     }
     toast.success("Opening hours saved");
@@ -131,7 +144,7 @@ function AvailabilityEditor() {
       <div className="px-4 py-4 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            Drivers can only book inside these hours. No schedule = open 24/7.
+            Drivers can only book inside these hours. A closing time earlier than opening runs into the next day. No schedule = open 24/7.
           </p>
           <button
             onClick={applyToAll}
@@ -171,6 +184,9 @@ function AvailabilityEditor() {
                   onChange={(e) => update(i, { close_time: e.target.value })}
                   className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm"
                 />
+                {closeHint(r) && (
+                  <span className="text-xs text-muted-foreground shrink-0">{closeHint(r)}</span>
+                )}
               </div>
             )}
           </div>
