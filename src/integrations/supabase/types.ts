@@ -1200,6 +1200,7 @@ export type Database = {
         Args: { _ext: Json; _id: string }
         Returns: boolean
       }
+      slot_open_booking_count: { Args: { _slot_id: string }; Returns: number }
       verify_internal_token: {
         Args: { _name: string; _token: string }
         Returns: boolean

@@ -64,6 +64,13 @@
       "when": 1791356189881,
       "tag": "0008_reservation_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791356221459,
+      "tag": "0009_slot_guards_and_checks",
+      "breakpoints": true
     }
   ]
 }
