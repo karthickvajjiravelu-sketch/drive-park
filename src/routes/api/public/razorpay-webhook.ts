@@ -41,7 +41,11 @@ export const Route = createFileRoute("/api/public/razorpay-webhook")({
         const eventId = request.headers.get("x-razorpay-event-id") ??
           createHmac("sha256", "evt").update(raw).digest("hex");
         const { error: dupErr } = await supabaseAdmin.from("webhook_events").insert({ event_id: eventId, event });
-        if (dupErr) return new Response("ok"); // already processed
+        if (dupErr) {
+          if (dupErr.code === "23505") return new Response("ok"); // already processed
+          console.error("webhook_events insert failed", dupErr);
+          return new Response("retry", { status: 500 });
+        }
 
         const svc = await import("@/lib/payments.server");
         try {

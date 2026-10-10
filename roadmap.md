@@ -3,3 +3,8 @@
 - [x] 3D view prototype behind VITE_FEATURE_MAP_3D (map toggle + slot-page button)
 - [x] Pricing v2 corrections (neighbourhood demand, preview window, price-changed 409, monotonic sweep) and map fixes B1–B7
 - [x] Half-hour schema, locked-address panel, reserve-while-loading, time-window search (B1–B8)
+- [x] Fix batch: nearest-first search, unpaid end guard, webhook retries, paid-cancel guard, read access, idempotency cleanup, housekeeping
+- [ ] Mobile API endpoints
+- [ ] Capacitor Android pilot
+- [ ] Razorpay live-mode test
+- [ ] Privacy policy and terms pages

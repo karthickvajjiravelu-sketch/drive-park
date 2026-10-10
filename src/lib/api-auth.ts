@@ -4,7 +4,13 @@ import type { Database } from "@/integrations/supabase/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 type UserCtx = { supabase: SupabaseClient<Database>; userId: string };
 
-const ALLOWED_ORIGINS = ["https://www.usop.in", "https://usop.in"];
+const ALLOWED_ORIGINS = [
+  "https://www.usop.in",
+  "https://usop.in",
+  "capacitor://localhost",
+  "https://localhost",
+  "http://localhost",
+];
 
 export function cors(request: Request): Record<string, string> {
   const origin = request.headers.get("origin");
@@ -72,10 +78,17 @@ export function handle(
         const db = await adminDb();
         const { error } = await db.from("idempotency_keys").insert({ user_id: ctx.userId, scope: opts.idempotent, key });
         if (error) {
-          const { data: prev } = await db.from("idempotency_keys").select("response, status_code")
+          const { data: prev } = await db.from("idempotency_keys").select("response, status_code, created_at")
             .eq("user_id", ctx.userId).eq("scope", opts.idempotent).eq("key", key).maybeSingle();
           if (prev?.status_code) return json(request, prev.response, prev.status_code);
-          throw new HttpError("A request with this Idempotency-Key is still in progress", 409);
+          // No response after 2 minutes: the earlier request was abandoned; take the key over.
+          const abandoned = prev && Date.now() - new Date(prev.created_at).getTime() > 2 * 60e3;
+          if (!abandoned) throw new HttpError("A request with this Idempotency-Key is still in progress", 409);
+          await db.from("idempotency_keys").delete().eq("user_id", ctx.userId).eq("scope", opts.idempotent)
+            .eq("key", key).is("status_code", null);
+          const { error: again } = await db.from("idempotency_keys")
+            .insert({ user_id: ctx.userId, scope: opts.idempotent, key });
+          if (again) throw new HttpError("A request with this Idempotency-Key is still in progress", 409);
         }
         idem = { db, userId: ctx.userId, key };
       }

@@ -421,6 +421,7 @@ export async function runMaintenance() {
   const { data: n } = await db.rpc("expire_unpaid_reservations");
   out.expired = Number(n ?? 0);
   const now = new Date().toISOString();
+  await db.from("idempotency_keys").delete().lt("created_at", new Date(Date.now() - 7 * 86400e3).toISOString());
 
   // Stale "pending" refunds with no Razorpay id (crash mid-call) go back to the queue.
   await db.from("refunds").update({ status: "queued" }).eq("status", "pending").is("razorpay_refund_id", null)
