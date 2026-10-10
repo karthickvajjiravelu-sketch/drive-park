@@ -179,4 +179,26 @@ describe.skipIf(!enabled)("money safety (database)", () => {
     await expect(asService(a, () => a.query("INSERT INTO webhook_events (event_id, event) VALUES ($1,'payment.captured')", [id]))).rejects.toThrow();
     await a.query("DELETE FROM webhook_events WHERE event_id=$1", [id]);
   });
+
+  const asDriver = async (sql: string, args: unknown[]) => {
+    await a.query("BEGIN");
+    try {
+      await a.query("SELECT set_config('request.jwt.claims', $1, true)", [JSON.stringify({ sub: driver, role: "authenticated" })]);
+      await a.query("SET LOCAL ROLE authenticated");
+      return await a.query(sql, args);
+    } finally {
+      await a.query("ROLLBACK");
+    }
+  };
+
+  it("an unpaid priced booking cannot be completed", async () => {
+    const r = await reservation({ startH: 0, hours: 1, status: "active", hold: true });
+    await expect(asDriver("UPDATE reservations SET status='completed' WHERE id=$1", [r])).rejects.toThrow(/pay for this booking/);
+  });
+
+  it("a paid booking cannot be cancelled directly by the driver", async () => {
+    const r = await reservation({ startH: 100, hours: 1 });
+    await payment(r, "captured");
+    await expect(asDriver("UPDATE reservations SET status='cancelled' WHERE id=$1", [r])).rejects.toThrow(/through the app/);
+  });
 });

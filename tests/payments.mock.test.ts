@@ -77,7 +77,7 @@ describe("razorpay webhook", () => {
 
   it("drops a replayed event without touching payments", async () => {
     process.env.RAZORPAY_WEBHOOK_SECRET = "whsec";
-    resolver = (c) => (c.table === "webhook_events" ? { data: null, error: { message: "duplicate key" } } : { data: null, error: null });
+    resolver = (c) => (c.table === "webhook_events" ? { data: null, error: { code: "23505", message: "duplicate key" } } : { data: null, error: null });
     const sig = createHmac("sha256", "whsec").update(body).digest("hex");
     const res = await post(body, sig);
     expect(res.status).toBe(200);

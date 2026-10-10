@@ -421,6 +421,8 @@ export async function endSession(userId: string, id: string) {
   const chargedPaise = toPaise(Number(r.total_price));
   const keptPaise = earlyEndKeptPaise(r, chargedPaise, nowMs);
   const paid = (await capturedPayments(id)).length > 0;
+  if (r.payment_expires_at != null || (!paid && chargedPaise > 0))
+    throw new BookingError("Please pay for this booking first", 409);
   const refundPaise = paid ? refundablePaise(chargedPaise - keptPaise) : 0;
   const billedPaise = paid ? chargedPaise - refundPaise : keptPaise;
 

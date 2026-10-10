@@ -2,6 +2,7 @@
 // createBooking, with batched reads. Exact coordinates and addresses never leave this file.
 import type { SearchWindowInput } from "@/lib/bookings.schema";
 import {
+  DEMAND_RADIUS_KM,
   haversineKm,
   neighbourhoodPeers,
   type OccupancyRow,
@@ -17,6 +18,11 @@ import {
 } from "@/lib/quote";
 
 export const SEARCH_RESULT_CAP = 100;
+export const SEARCH_RADIUS_KM = 15;
+export const SEARCH_RADIUS_WIDE_KM = 30;
+const MIN_RESULTS = 20;
+/** Approximate coordinates sit up to ~0.4 km from the exact point. */
+const APPROX_MARGIN_KM = 0.5;
 /** PostgREST max rows per response; we page at this size. */
 export const PAGE_SIZE = 1000;
 /** Ids per `.in()` filter, keeps request URLs short. */
@@ -93,22 +99,57 @@ export async function searchWindow(
   const start = new Date(input.startTime);
   const end = new Date(start.getTime() + input.duration * UNIT_MS[input.rateType]);
 
-  const all = await fetchAllPages<SlotRow>(() =>
-    db
-      .from("slots")
-      .select(
-        "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, public_lat, public_lng",
-      )
-      .order("id"),
-  );
-  const slots = all.map((s) => ({
-    ...s,
-    lat: Number(s.lat),
-    lng: Number(s.lng),
-  }));
-  const candidates = slots
-    .filter((s) => s.approval_status === "approved" && !s.archived && s.is_available)
-    .slice(0, SEARCH_RESULT_CAP);
+  const cols =
+    "id, status, archived, is_available, approval_status, slot_type, lot_id, hourly_rate, daily_rate, monthly_rate, lat, lng, public_lat, public_lng";
+  const visible = (s: SlotRow) => s.approval_status === "approved" && !s.archived && s.is_available;
+  const loadSlots = async (box?: { lat: number; lng: number; km: number }) => {
+    const rows = await fetchAllPages<SlotRow>(() => {
+      let q = db.from("slots").select(cols);
+      if (box) {
+        const dLat = box.km / 111;
+        const dLng = box.km / (111 * Math.max(0.1, Math.cos((box.lat * Math.PI) / 180)));
+        q = q
+          .gte("public_lat", box.lat - dLat)
+          .lte("public_lat", box.lat + dLat)
+          .gte("public_lng", box.lng - dLng)
+          .lte("public_lng", box.lng + dLng);
+      }
+      return q.order("id");
+    });
+    return rows.map((s) => ({ ...s, lat: Number(s.lat), lng: Number(s.lng) }));
+  };
+  const approxKm = (s: SlotRow) =>
+    input.lat != null && input.lng != null && s.public_lat != null && s.public_lng != null
+      ? haversineKm(
+          { lat: input.lat, lng: input.lng },
+          { lat: Number(s.public_lat), lng: Number(s.public_lng) },
+        )
+      : null;
+
+  let slots: SlotRow[];
+  let candidates: SlotRow[];
+  if (input.lat != null && input.lng != null) {
+    // Nearest first: box on approximate coords, widened when sparse. Exact lat/lng are only
+    // loaded for slots that can be demand peers (box + DEMAND_RADIUS_KM + approx offset margin).
+    const pick = async (km: number) => {
+      const loaded = await loadSlots({
+        lat: input.lat!,
+        lng: input.lng!,
+        km: km + DEMAND_RADIUS_KM + APPROX_MARGIN_KM,
+      });
+      const inBox = loaded.filter((s) => visible(s) && (approxKm(s) ?? Infinity) <= km);
+      return { loaded, inBox };
+    };
+    let r = await pick(SEARCH_RADIUS_KM);
+    if (r.inBox.length < MIN_RESULTS) r = await pick(SEARCH_RADIUS_WIDE_KM);
+    slots = r.loaded;
+    candidates = r.inBox
+      .sort((a, b) => approxKm(a)! - approxKm(b)!)
+      .slice(0, SEARCH_RESULT_CAP);
+  } else {
+    slots = await loadSlots();
+    candidates = slots.filter(visible).slice(0, SEARCH_RESULT_CAP);
+  }
   if (!candidates.length) return [];
   const ids = candidates.map((c) => c.id);
 
@@ -173,13 +214,7 @@ export async function searchWindow(
       },
       now,
     );
-    const approxDistanceKm =
-      input.lat != null && input.lng != null && slot.public_lat != null && slot.public_lng != null
-        ? haversineKm(
-            { lat: input.lat, lng: input.lng },
-            { lat: Number(slot.public_lat), lng: Number(slot.public_lng) },
-          )
-        : null;
+    const approxDistanceKm = approxKm(slot);
     return {
       slotId: slot.id,
       available: q.available,
