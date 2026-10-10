@@ -185,6 +185,27 @@ describe("search quote equals booking quote", () => {
   }
 });
 
+describe("search returns nearest slots", () => {
+  it("with 150 slots, the 100 nearest are returned in distance order", async () => {
+    // Ids sorted opposite to distance so id order would pick the farthest.
+    const slots = Array.from({ length: 150 }, (_, i) => {
+      const lat = 13.05 + i * 0.0005;
+      return slot(`s${String(149 - i).padStart(3, "0")}`, { lat, public_lat: lat, public_lng: 80.24 });
+    });
+    const db = fakeDb({ slots, slot_availability: [], reservations: [], public_holidays: [], parking_lots: [] });
+    const found = await searchWindow(
+      db,
+      { startTime: ist("2026-06-09T12:00:00").toISOString(), duration: 1, rateType: "hourly", lat: 13.05, lng: 80.24 },
+      NOW,
+    );
+    expect(found).toHaveLength(100);
+    expect(found[0].slotId).toBe("s149");
+    expect(found[99].slotId).toBe("s050");
+    const d = found.map((f) => f.approxDistanceKm!);
+    expect([...d].sort((a, b) => a - b)).toEqual(d);
+  });
+});
+
 describe("full gate (slot page)", () => {
   it(`active only for starts within ${FULL_FLAG_WINDOW_HOURS} h`, () => {
     expect(isFullGateActive("full", new Date(NOW.getTime() + 2 * H - 60e3), NOW)).toBe(true);
