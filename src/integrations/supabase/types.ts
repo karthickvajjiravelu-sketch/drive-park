@@ -1187,6 +1187,10 @@ export type Database = {
         }[]
       }
       reservation_balance: { Args: { _id: string }; Returns: number }
+      reservation_has_captured_payment: {
+        Args: { _id: string }
+        Returns: boolean
+      }
       rl_hit: {
         Args: {
           _bucket: string
